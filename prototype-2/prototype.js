@@ -5,10 +5,8 @@
   let locationTerm = '';
   let previousSearchTerm = '';
   let preserveMapView = false;
-  let fromLocationResults = false;
-  let searchSlidesUp = false;
-  let searchOpenedFromLocation = false;
-  let goBackToLocation = false;
+  let returnScreen = null; // tracks which results screen to go back to when X is tapped
+  let activeTab = 'search';
 
   // Autocomplete data
   const searchSuggestions = {
@@ -478,12 +476,10 @@
     const isPrevInput = previousEl && previousEl.classList.contains('input-screen');
     const isTargetMap = MAP_SCREENS.includes(id);
     const isPrevMap = MAP_SCREENS.includes(previousScreen);
-    const isLocation = (id === 'screen-location-focused');
-    const shouldSearchSlideUp = searchSlidesUp;
-    const shouldGoBackToLocation = goBackToLocation;
-    searchSlidesUp = false;
-    goBackToLocation = false;
-    const wasLocation = (previousScreen === 'screen-location-focused');
+    const isLocation = false;
+    const shouldSearchSlideUp = false;
+    const shouldGoBackToLocation = false;
+    const wasLocation = false;
 
     // Helper: deactivate all screens except specific ones
     function deactivateOthers(keep) {
@@ -525,7 +521,6 @@
         previousEl.classList.remove('active', ...ANIM_CLASSES);
       }, { once: true });
       currentScreen = id;
-      document.getElementById('current-location-label').textContent = locationTerm || 'Current location';
       return;
     }
 
@@ -561,24 +556,43 @@
         if (prevSbc) prevSbc.classList.remove('anim-search-exit');
       }, { once: true });
       currentScreen = id;
-      document.getElementById('current-location-label').textContent = locationTerm || 'Current location';
       return;
     }
 
-    // --- EXIT: search-focused → map: screen fades out to reveal map ---
+    // --- EXIT: search-focused → map: reverse enter animations ---
     const isSearchExit = previousScreen === 'screen-search-focused' && isTargetMap && previousEl;
     if (isSearchExit) {
       deactivateOthers([previousEl, target]);
       target.classList.add('active');
-      previousEl.classList.add('anim-fade-out');
-      previousEl.addEventListener('animationend', function handler() {
-        previousEl.removeEventListener('animationend', handler);
-        previousEl.classList.remove('active', ...ANIM_CLASSES);
-        const prevSbc = previousEl.querySelector('.search-bar-container');
-        if (prevSbc) prevSbc.classList.remove('anim-search-exit');
-        attachMapToScreen(id);
-        updateMapForCurrentState();
-      }, { once: true });
+      // Clear any leftover enter animation classes before applying exit
+      previousEl.classList.remove(...ANIM_CLASSES);
+      // Fade out background and content (toggle, content-area) — keyboard excluded via CSS
+      previousEl.classList.add('anim-bg-fade-out');
+      // Slide keyboard down (reverse of slide-up on enter)
+      const prevKb = previousEl.querySelector('.keyboard');
+      if (prevKb) {
+        prevKb.classList.add('anim-kb-slide-down');
+        prevKb.addEventListener('animationend', function handler() {
+          prevKb.removeEventListener('animationend', handler);
+          prevKb.classList.remove('anim-kb-slide-down');
+          previousEl.classList.remove('active', ...ANIM_CLASSES);
+          attachMapToScreen(id);
+          updateMapForCurrentState();
+        }, { once: true });
+      } else {
+        previousEl.addEventListener('animationend', function handler() {
+          previousEl.removeEventListener('animationend', handler);
+          previousEl.classList.remove('active', ...ANIM_CLASSES);
+          attachMapToScreen(id);
+          updateMapForCurrentState();
+        }, { once: true });
+      }
+      // Slide close button out (reverse of slide-in on enter)
+      const prevSbc = previousEl.querySelector('.search-bar-container');
+      if (prevSbc) {
+        prevSbc.classList.add('anim-search-exit');
+        prevSbc.addEventListener('animationend', () => prevSbc.classList.remove('anim-search-exit'), { once: true });
+      }
       currentScreen = id;
       return;
     }
@@ -632,15 +646,6 @@
       updateMapForCurrentState();
     }
 
-    // Update the location label when entering search-focused screen
-    if (id === 'screen-search-focused') {
-      const label = document.getElementById('current-location-label');
-      if (locationTerm) {
-        label.textContent = locationTerm;
-      } else {
-        label.textContent = 'Current location';
-      }
-    }
   }
 
   // ========== HINT ==========
@@ -755,13 +760,8 @@
     list.innerHTML = '';
     searchRecents.forEach(term => {
       const div = document.createElement('div');
-      div.className = 'autocomplete-item';
-      div.innerHTML = `
-        <div class="ac-icon">
-          <svg viewBox="0 0 20 20" fill="none" stroke="#8e8e93" stroke-width="2"><circle cx="8.5" cy="8.5" r="6.5"/><line x1="13.5" y1="13.5" x2="18" y2="18" stroke-linecap="round"/></svg>
-        </div>
-        <div class="ac-text">${term}</div>
-      `;
+      div.className = 'chip';
+      div.textContent = term;
       div.addEventListener('click', () => {
         searchTerm = term;
         submitSearch();
@@ -799,46 +799,57 @@
   });
 
   searchClose.addEventListener('click', () => {
-    searchInput.value = '';
-    searchTerm = '';
-    updateSearchUI();
-    if (searchOpenedFromLocation) {
-      searchOpenedFromLocation = false;
-      goBackToLocation = true;
-      showScreen('screen-location-focused', 'fade-in');
+    if (returnScreen) {
+      const dest = returnScreen;
+      returnScreen = null;
+      // Restore inputs to confirmed state, don't clear terms
+      searchInput.value = searchTerm;
+      locationInput.value = locationTerm || '';
+      updateSearchUI();
+      updateLocationUI();
+      preserveMapView = true;
+      showScreen(dest, 'fade-in');
     } else {
+      searchInput.value = '';
+      locationInput.value = '';
+      searchTerm = '';
       locationTerm = '';
-      const sbc = document.querySelector('#screen-search-focused .search-bar-container');
-      if (sbc) {
-        sbc.classList.add('anim-search-exit');
-        sbc.addEventListener('animationend', function handler() {
-          sbc.removeEventListener('animationend', handler);
-          showScreen('screen-map-default', 'fade-in');
-        }, { once: true });
-      } else {
-        showScreen('screen-map-default', 'fade-in');
-      }
+      updateSearchUI();
+      updateLocationUI();
+      showScreen('screen-map-default', 'fade-in');
     }
   });
 
   searchSubmitBtn.addEventListener('click', () => {
-    searchTerm = searchInput.value;
-    submitSearch();
-  });
-
-  searchBackspace.addEventListener('click', () => {
-    const val = searchInput.value;
-    if (val.length > 0) {
-      searchInput.value = val.slice(0, -1);
-      updateSearchUI();
+    if (activeTab === 'location') {
+      if (locationInput.value.length > 0) { locationTerm = locationInput.value; }
+      if (locationTerm) { selectLocation(); }
+    } else {
+      searchTerm = searchInput.value;
+      submitSearch();
     }
   });
 
-  // Visual keyboard keys for search
+  searchBackspace.addEventListener('click', () => {
+    if (activeTab === 'location') {
+      const val = locationInput.value;
+      if (val.length > 0) { locationInput.value = val.slice(0, -1); updateLocationUI(); }
+    } else {
+      const val = searchInput.value;
+      if (val.length > 0) { searchInput.value = val.slice(0, -1); updateSearchUI(); }
+    }
+  });
+
+  // Visual keyboard keys — route to active tab's input
   document.querySelectorAll('#keyboard-search .key[data-key]').forEach(key => {
     key.addEventListener('click', () => {
-      searchInput.value += key.dataset.key;
-      updateSearchUI();
+      if (activeTab === 'location') {
+        locationInput.value += key.dataset.key;
+        updateLocationUI();
+      } else {
+        searchInput.value += key.dataset.key;
+        updateSearchUI();
+      }
     });
   });
 
@@ -851,32 +862,12 @@
     });
   });
 
-  // Current location button
-  document.getElementById('current-location-btn').addEventListener('click', () => {
-    previousSearchTerm = searchInput.value;
-    // Pre-populate location input with current location term
-    const locInput = document.getElementById('location-input-field');
-    if (locationTerm && locationTerm !== 'Current location') {
-      locInput.value = locationTerm;
-    } else {
-      locInput.value = '';
-    }
-    showScreen('screen-location-focused', 'fade-in');
-    setTimeout(() => {
-      locInput.focus();
-      updateLocationUI();
-    }, 100);
-  });
-
   // ========== LOCATION INPUT LOGIC ==========
   const locationInput = document.getElementById('location-input-field');
   const locationClear = document.getElementById('location-clear');
-  const locationClose = document.getElementById('location-close');
   const locationRecents = document.getElementById('location-recents-section');
   const locationAutocomplete = document.getElementById('location-autocomplete');
   const locationAutocompleteList = document.getElementById('location-autocomplete-list');
-  const locationSubmitBtn = document.getElementById('location-submit-btn');
-  const locationBackspace = document.getElementById('location-backspace');
 
   function updateLocationUI() {
     const val = locationInput.value;
@@ -891,9 +882,9 @@
 
     // Update search button style
     if (val.length > 0) {
-      locationSubmitBtn.classList.add('active-search');
+      searchSubmitBtn.classList.add('active-search');
     } else {
-      locationSubmitBtn.classList.remove('active-search');
+      searchSubmitBtn.classList.remove('active-search');
     }
 
     // Show recents or autocomplete
@@ -1005,25 +996,15 @@
     renderLocationRecents();
   });
 
-  document.getElementById('loc-to-search-btn').addEventListener('click', () => {
-    searchInput.value = '';
-    updateSearchUI();
-    searchOpenedFromLocation = true;
-    searchSlidesUp = true;
-    showScreen('screen-search-focused', 'fade-in');
-    setTimeout(() => searchInput.focus(), 350);
-  });
-
   function selectLocation() {
-    fromLocationResults = false;
-    document.getElementById('location-search-cta').classList.add('hidden');
+    returnScreen = null;
     locationSearched = true;
     addLocationRecent(locationTerm);
     locationInput.value = '';
 
-    // If we had a previous search term, go to combined results
-    if (previousSearchTerm) {
-      searchTerm = previousSearchTerm;
+    const currentSearch = searchInput.value.trim();
+    if (currentSearch) {
+      searchTerm = currentSearch;
       document.getElementById('both-search-text').innerHTML = searchTerm + ' <span style="color:#90939D">\u00B7 ' + locationTerm + '</span>';
       showScreen('screen-both-results', 'fade-in');
     } else {
@@ -1039,59 +1020,6 @@
     locationInput.value = '';
     updateLocationUI();
     locationInput.focus();
-  });
-
-  locationClose.addEventListener('click', () => {
-    locationInput.value = '';
-    document.getElementById('location-search-cta').classList.add('hidden');
-    if (fromLocationResults) {
-      fromLocationResults = false;
-      preserveMapView = true;
-      showScreen('screen-location-results', 'fade-in');
-    } else {
-      locationTerm = '';
-      const sbc = document.querySelector('#screen-location-focused .search-bar-container');
-      if (sbc) {
-        sbc.classList.add('anim-search-exit');
-        sbc.addEventListener('animationend', function handler() {
-          sbc.removeEventListener('animationend', handler);
-          showScreen('screen-search-focused', 'fade-in');
-          searchInput.value = previousSearchTerm || '';
-          updateSearchUI();
-          setTimeout(() => searchInput.focus(), 100);
-        }, { once: true });
-      } else {
-        showScreen('screen-search-focused', 'fade-in');
-        searchInput.value = previousSearchTerm || '';
-        updateSearchUI();
-        setTimeout(() => searchInput.focus(), 100);
-      }
-    }
-  });
-
-  locationSubmitBtn.addEventListener('click', () => {
-    if (locationInput.value.length > 0) {
-      locationTerm = locationInput.value;
-    }
-    if (locationTerm) {
-      selectLocation();
-    }
-  });
-
-  locationBackspace.addEventListener('click', () => {
-    const val = locationInput.value;
-    if (val.length > 0) {
-      locationInput.value = val.slice(0, -1);
-      updateLocationUI();
-    }
-  });
-
-  // Visual keyboard keys for location
-  document.querySelectorAll('#keyboard-location .key[data-key]').forEach(key => {
-    key.addEventListener('click', () => {
-      locationInput.value += key.dataset.key;
-      updateLocationUI();
-    });
   });
 
   // Recent location chips
@@ -1110,19 +1038,25 @@
 
   // ========== MAP SCREEN HOTSPOTS ==========
 
-  // Map default → search focused
+  // Map default → search focused (search tab)
   document.getElementById('hotspot-search-default').addEventListener('click', () => {
+    returnScreen = null;
     searchTerm = '';
     searchInput.value = '';
     updateSearchUI();
+    setActiveTab('search');
     showScreen('screen-search-focused', 'fade-in');
     setTimeout(() => searchInput.focus(), 300);
   });
 
-  // Search results → search focused
+  // Search results → search focused (search tab)
   document.getElementById('hotspot-search-results').addEventListener('click', () => {
+    returnScreen = 'screen-search-results';
     searchInput.value = searchTerm;
+    locationInput.value = (locationTerm && locationTerm !== 'Current location') ? locationTerm : '';
     updateSearchUI();
+    updateLocationUI();
+    setActiveTab('search');
     showScreen('screen-search-focused', 'fade-in');
     setTimeout(() => searchInput.focus(), 300);
   });
@@ -1132,15 +1066,13 @@
     showScreen('screen-map-default', 'fade-in');
   });
 
-  // Location results → location input (slide up modal)
+  // Location results → unified search screen, location tab
   document.getElementById('hotspot-search-locresults').addEventListener('click', () => {
-    fromLocationResults = true;
-    previousSearchTerm = '';
-    const locInput = document.getElementById('location-input-field');
-    locInput.value = locationTerm || '';
-    document.getElementById('location-search-cta').classList.remove('hidden');
-    showScreen('screen-location-focused', 'fade-in');
-    setTimeout(() => { locInput.focus(); updateLocationUI(); }, 150);
+    returnScreen = 'screen-location-results';
+    locationInput.value = (locationTerm && locationTerm !== 'Current location') ? locationTerm : '';
+    setActiveTab('location');
+    showScreen('screen-search-focused', 'fade-in');
+    setTimeout(() => { locationInput.focus(); updateLocationUI(); }, 150);
   });
   document.getElementById('hotspot-x-locresults').addEventListener('click', () => {
     searchTerm = '';
@@ -1148,10 +1080,14 @@
     showScreen('screen-map-default', 'fade-in');
   });
 
-  // Both results → search focused
+  // Both results → search focused (search tab)
   document.getElementById('hotspot-search-both').addEventListener('click', () => {
+    returnScreen = 'screen-both-results';
     searchInput.value = searchTerm;
+    locationInput.value = (locationTerm && locationTerm !== 'Current location') ? locationTerm : '';
     updateSearchUI();
+    updateLocationUI();
+    setActiveTab('search');
     showScreen('screen-search-focused', 'fade-in');
     setTimeout(() => searchInput.focus(), 300);
   });
@@ -1165,6 +1101,7 @@
   document.getElementById('hotspot-search-tab').addEventListener('click', () => {
     searchInput.value = '';
     updateSearchUI();
+    setActiveTab('search');
     showScreen('screen-search-focused', 'fade-in');
     setTimeout(() => searchInput.focus(), 300);
   });
@@ -1173,6 +1110,47 @@
     locationTerm = '';
     preserveMapView = true;
     showScreen('screen-map-default', 'fade-in');
+  });
+
+  // ========== SEARCH TAB TOGGLE ==========
+  function setActiveTab(tab) {
+    activeTab = tab;
+    const tabSearch = document.getElementById('tab-search');
+    const tabLocation = document.getElementById('tab-location');
+    const searchContent = document.getElementById('search-tab-content');
+    const locationContent = document.getElementById('location-tab-content');
+    const searchField = document.getElementById('unified-search-field');
+    const locationField = document.getElementById('unified-location-field');
+    const toggle = tabSearch.closest('.search-toggle');
+
+    if (tab === 'search') {
+      toggle.classList.remove('tab-location');
+      tabSearch.classList.add('active');
+      tabLocation.classList.remove('active');
+      searchContent.classList.remove('hidden');
+      locationContent.classList.add('hidden');
+      searchField.style.display = 'flex';
+      locationField.style.display = 'none';
+      searchInput.focus();
+    } else {
+      toggle.classList.add('tab-location');
+      tabLocation.classList.add('active');
+      tabSearch.classList.remove('active');
+      locationContent.classList.remove('hidden');
+      searchContent.classList.add('hidden');
+      locationField.style.display = 'flex';
+      searchField.style.display = 'none';
+      locationInput.focus();
+      updateLocationUI();
+    }
+  }
+
+  document.getElementById('tab-search').addEventListener('click', () => {
+    setActiveTab('search');
+  });
+
+  document.getElementById('tab-location').addEventListener('click', () => {
+    setActiveTab('location');
   });
 
   // ========== PREVENT ZOOM ON iOS ==========
