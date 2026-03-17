@@ -7,38 +7,28 @@
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-    html, body {
-      height: 100%;
-    }
+    html, body { height: 100%; }
 
     body {
       font-family: -apple-system, BlinkMacSystemFont, sans-serif;
-      background: #111;
+      background: #fff;
       color: #111;
-      display: flex;
-      height: 100vh;
     }
 
-    /* Left sidebar */
-    .sidebar {
-      width: 300px;
-      flex-shrink: 0;
-      background: #fff;
-      padding: 48px 32px;
-      display: flex;
-      flex-direction: column;
-      overflow-y: auto;
+    .page {
+      padding: 48px;
+      max-width: 480px;
     }
 
     h1 {
-      font-size: 16px;
-      font-weight: 600;
+      font-size: 20px;
+      font-weight: 700;
       margin-bottom: 6px;
     }
 
     .subtitle {
       color: #999;
-      font-size: 13px;
+      font-size: 14px;
       margin-bottom: 40px;
       line-height: 1.5;
     }
@@ -49,92 +39,120 @@
       gap: 4px;
     }
 
-    .item {
-      border-radius: 8px;
-      padding: 10px 12px;
-      cursor: pointer;
-      transition: background 0.1s;
-    }
-
-    .item:hover {
-      background: #f5f5f5;
-    }
-
-    .item.active {
-      background: #f1f2f3;
-    }
-
     .item a {
       display: block;
-      font-size: 14px;
-      font-weight: 500;
+      font-size: 16px;
+      font-weight: 600;
       color: #111;
       text-decoration: none;
-      margin-bottom: 3px;
+      padding: 6px 0;
+    }
+
+    .item a:hover {
+      text-decoration: underline;
     }
 
     .item p {
-      font-size: 12px;
+      font-size: 14px;
       color: #999;
       line-height: 1.4;
+      margin-bottom: 2px;
     }
 
-    /* Right preview panel */
-    .preview {
-      flex: 1;
-      display: flex;
+    /* Preview panel — fixed to the right, hidden until open */
+    .preview-panel {
+      display: none;
+      position: fixed;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      left: 0;
       align-items: center;
-      justify-content: center;
-      background: #111;
+      justify-content: flex-end;
+      pointer-events: none;
     }
 
-    .preview iframe {
+    .preview-panel.open {
+      display: flex;
+    }
+
+    .preview-panel iframe {
+      pointer-events: all;
       width: 393px;
       height: 852px;
       border: none;
       border-radius: 40px;
-      box-shadow: 0 24px 80px rgba(0,0,0,0.6);
-      display: block;
+      box-shadow: 0 8px 40px rgba(0,0,0,0.12);
+      margin-right: calc(50vw - 196px - 80px);
+    }
+
+    /* Close button */
+    .close-btn {
+      position: fixed;
+      top: 24px;
+      right: 24px;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: #fff;
+      border: none;
+      cursor: pointer;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+      z-index: 101;
+      pointer-events: all;
+    }
+
+    .close-btn svg {
+      width: 14px;
+      height: 14px;
+      color: #111;
     }
   </style>
 </head>
 <body>
-  <div class="sidebar">
+  <div class="page">
     <h1>Playlist Prototypes</h1>
-    <p class="subtitle">Work in progress — built with Claude + Figma MCP.</p>
-    <div class="list">
-      <div class="item" data-href="/prototype-2/prototype.html">
-        <a href="/prototype-2/prototype.html">Search UX Prototype — 2</a>
+    <p class="subtitle">Scratch prototypes built with Claude Code.</p>
+   <div class="list">
+      <div class="item">
+        <a href="/prototype-2/prototype.html" class="proto-link">Search UX Prototype</a>
         <p>Exploration for keyword and location search with unified input screens.</p>
       </div>
     </div>
   </div>
 
-  <div class="preview">
-    <iframe id="preview-frame" src="/prototype-2/prototype.html"></iframe>
+  <div class="preview-panel" id="preview-panel">
+    <iframe id="preview-frame"></iframe>
   </div>
 
+  <button class="close-btn" id="close-btn" aria-label="Close">
+    <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+      <line x1="1" y1="1" x2="13" y2="13"/>
+      <line x1="13" y1="1" x2="1" y2="13"/>
+    </svg>
+  </button>
+
   <script>
+    const panel = document.getElementById('preview-panel');
     const frame = document.getElementById('preview-frame');
-    const items = document.querySelectorAll('.item');
+    const closeBtn = document.getElementById('close-btn');
 
-    // Mark the active item based on current iframe src
-    function setActive(href) {
-      items.forEach(item => {
-        item.classList.toggle('active', item.dataset.href === href);
-      });
-    }
-
-    // Auto-mark first item active on load
-    setActive('/prototype-2/prototype.html');
-
-    items.forEach(item => {
-      item.addEventListener('click', e => {
+    document.querySelectorAll('.proto-link').forEach(link => {
+      link.addEventListener('click', e => {
         e.preventDefault();
-        const href = item.dataset.href;
-        frame.src = href;
-        setActive(href);
+        frame.src = link.href;
+        panel.classList.add('open');
+        closeBtn.style.display = 'flex';
       });
+    });
+
+    closeBtn.addEventListener('click', () => {
+      panel.classList.remove('open');
+      closeBtn.style.display = 'none';
+      frame.src = '';
     });
   </script>
 </body>
