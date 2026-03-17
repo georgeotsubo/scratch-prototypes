@@ -338,12 +338,20 @@
     }
   }
 
-  // User location icon
+  // Current location icon — black circle with white outline
   const userLocIcon = L.divIcon({
     className: 'playlist-pin',
     html: '<div class="user-location-dot"></div>',
     iconSize: [22, 22],
     iconAnchor: [11, 11]
+  });
+
+  // Location search center pin — provided SVG asset
+  const locationPinIcon = L.divIcon({
+    className: 'playlist-pin',
+    html: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><rect width="24" height="24" rx="12" fill="black"/><path d="M11.8682 5C12.3944 5.00001 12.8742 5.12738 13.3076 5.38281C13.741 5.63835 14.0854 5.98338 14.3408 6.41699C14.5963 6.85068 14.7246 7.3308 14.7246 7.85742C14.7246 8.48472 14.5425 9.04635 14.1787 9.54199C13.8149 10.0298 13.3542 10.3669 12.7969 10.5527V16.4189C12.7969 16.9688 12.7581 17.4917 12.6807 17.9873C12.6033 18.4751 12.4948 18.8739 12.3555 19.1836C12.2239 19.4856 12.0616 19.6367 11.8682 19.6367C11.6746 19.6367 11.5045 19.4817 11.3574 19.1719C11.2181 18.8621 11.1096 18.4634 11.0322 17.9756C10.9626 17.48 10.9277 16.961 10.9277 16.4189V10.5527C10.3704 10.3591 9.90971 10.0182 9.5459 9.53027C9.18209 9.04237 9 8.48472 9 7.85742C9 7.3308 9.12835 6.85465 9.38379 6.42871C9.64697 5.99507 9.99526 5.65008 10.4287 5.39453C10.8621 5.13136 11.3419 5 11.8682 5ZM11.1602 6.18457C10.9202 6.18457 10.7073 6.278 10.5215 6.46387C10.3358 6.64971 10.2422 6.8625 10.2422 7.10254C10.25 7.35028 10.3435 7.56711 10.5215 7.75293C10.7072 7.93095 10.9203 8.02051 11.1602 8.02051C11.4077 8.02043 11.6209 7.93098 11.7988 7.75293C11.9767 7.56715 12.0654 7.35021 12.0654 7.10254C12.0654 6.86264 11.9766 6.64963 11.7988 6.46387C11.6209 6.27808 11.4077 6.18465 11.1602 6.18457Z" fill="white"/></svg>',
+    iconSize: [24, 24],
+    iconAnchor: [12, 12]
   });
 
   function showUserLocation() {
@@ -382,11 +390,14 @@
       loc = findLocation(locationTerm) || LOCATIONS['_default'];
     }
     markerGroup.clearLayers();
-    // Show user location marker at the map's target center
+    // Pick icon: current location → circle dot, searched location → pin badge
+    const isCurrentLoc = !locationTerm || locationTerm === 'Current location';
+    const centerIcon = isCurrentLoc ? userLocIcon : locationPinIcon;
     if (userLocationMarker) {
       userLocationMarker.setLatLng([loc.lat, loc.lng]);
+      userLocationMarker.setIcon(centerIcon);
     } else {
-      userLocationMarker = L.marker([loc.lat, loc.lng], { icon: userLocIcon, zIndexOffset: 1000, interactive: false })
+      userLocationMarker = L.marker([loc.lat, loc.lng], { icon: centerIcon, zIndexOffset: 1000, interactive: false })
         .addTo(map);
     }
 
