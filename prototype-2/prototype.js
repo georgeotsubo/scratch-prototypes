@@ -253,6 +253,7 @@
   // ========== MAP SETUP ==========
   const mapDiv = document.getElementById('live-map');
   let userLat = null, userLng = null;
+  const DEFAULT_LAT = 40.7380, DEFAULT_LNG = -73.9855;
   let userLocationMarker = null;
 
   const map = L.map('live-map', {
@@ -441,6 +442,7 @@
     // Show user location marker at map center (real or default)
     if (userLocationMarker) {
       userLocationMarker.setLatLng([lat, lng]);
+      userLocationMarker.setIcon(userLocIcon);
     } else {
       userLocationMarker = L.marker([lat, lng], { icon: userLocIcon, zIndexOffset: 1000, interactive: false })
         .addTo(map);
@@ -822,11 +824,11 @@
       showScreen(dest, 'fade-in');
     } else {
       searchInput.value = '';
-      locationInput.value = '';
+      locationInput.value = (locationTerm && locationTerm !== 'Current location') ? locationTerm : '';
       searchTerm = '';
-      locationTerm = '';
       updateSearchUI();
       updateLocationUI();
+      preserveMapView = true;
       showScreen('screen-map-default', 'fade-in');
     }
   });
@@ -1047,6 +1049,18 @@
     selectLocation();
   });
 
+  // ========== NAV BUTTON (current location) ==========
+  document.querySelectorAll('.map-nav-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const lat = userLat ?? DEFAULT_LAT;
+      const lng = userLng ?? DEFAULT_LNG;
+      const label = userLat ? 'Nearby' : 'Manhattan';
+      const offsetCenter = getOffsetCenter(lat, lng, 14);
+      map.flyTo(offsetCenter, 14, { duration: 0.8 });
+      map.once('moveend', () => initDefaultMap(lat, lng, 14, label));
+    });
+  });
+
   // ========== MAP SCREEN HOTSPOTS ==========
 
   // Map default → search focused (search tab)
@@ -1054,7 +1068,9 @@
     returnScreen = null;
     searchTerm = '';
     searchInput.value = '';
+    locationInput.value = (locationTerm && locationTerm !== 'Current location') ? locationTerm : '';
     updateSearchUI();
+    updateLocationUI();
     setActiveTab('search');
     showScreen('screen-search-focused', 'fade-in');
     setTimeout(() => searchInput.focus(), 300);
