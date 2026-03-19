@@ -85,7 +85,7 @@
     animation: fadeIn 0.3s ease-in forwards;
     z-index: -1;
   }
-  .screen.anim-bg-fade-in > *:not(.search-bar-container):not(.status-bar):not(.keyboard) {
+  .screen.anim-bg-fade-in > *:not(.search-bar-container):not(.status-bar):not(.keyboard):not(.map-overlay-bar) {
     animation: fadeIn 0.3s ease-in;
   }
   .screen.anim-bg-fade-out {
@@ -156,10 +156,10 @@
     to   { margin-left: -52px; opacity: 0; transform: translateX(52px); }
   }
   .search-bar-container.anim-search-enter .close-btn {
-    animation: closeBtnSlideIn 0.3s ease-out forwards;
+    animation: none;
   }
   .search-bar-container.anim-search-exit .close-btn {
-    animation: closeBtnSlideOut 0.2s ease-in forwards;
+    animation: none;
   }
 
   /* Status bar */
@@ -234,6 +234,9 @@
     flex-shrink: 0;
     display: flex;
     align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
     color: #8e8e93;
   }
   .map-search-pill .pill-text {
@@ -264,43 +267,37 @@
     background: #f1f2f3;
   }
 
-  /* Search bar area — matches Figma Search focused */
+  /* Search bar area — two stacked fields */
   .search-bar-container {
     position: relative;
     display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 8px 24px 12px;
+    flex-direction: column;
+    gap: 12px;
+    padding: 8px 24px 16px;
     flex-shrink: 0;
     background: #f1f2f3;
   }
-  .search-bar-container::before {
-    content: '';
-    position: absolute;
-    left: 0;
-    right: 0;
-    bottom: 100%;
-    height: 28px;
-    background: linear-gradient(to bottom, rgba(241,242,243,0), #f1f2f3);
-    pointer-events: none;
-  }
   .search-field {
-    flex: 1;
     display: flex;
     align-items: center;
     height: 48px;
+    width: 100%;
     background: #fff;
     border-radius: 40px;
     padding: 0 16px;
-    gap: 4px;
+    gap: 12px;
+    box-sizing: border-box;
   }
-  .search-field .icon {
-    color: #8e8e93;
-    flex-shrink: 0;
+  .back-btn {
     display: flex;
     align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    color: #020203;
+    cursor: pointer;
+    width: 24px;
+    height: 24px;
   }
-  .search-field .icon svg { width: 16px; height: 16px; }
   .search-field input {
     flex: 1;
     border: none;
@@ -316,6 +313,7 @@
   }
   #search-input-field {
     font-size: 16px;
+    color: #020203;
   }
   .search-field .clear-btn {
     width: 20px;
@@ -331,29 +329,18 @@
   .search-field .clear-btn.hidden { display: none; }
   .search-field .clear-btn svg { width: 10px; height: 10px; color: #fff; }
 
-  .close-btn {
-    width: 44px;
-    height: 44px;
-    background: #fff;
-    border-radius: 9999px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    flex-shrink: 0;
-  }
-  .close-btn svg { width: 20px; height: 20px; color: #000; }
 
   /* Location field */
   .location-field {
-    flex: 1;
     display: flex;
     align-items: center;
     height: 48px;
+    width: 100%;
     background: #fff;
-    border-radius: 40px;
+    border-radius: 24px;
     padding: 0 16px;
     gap: 10px;
+    box-sizing: border-box;
   }
   .location-field .loc-icon {
     display: flex;
@@ -364,7 +351,7 @@
     background-color: unset;
     color: rgba(0, 0, 0, 0);
   }
-  .location-field .loc-icon svg { width: 14px; height: 14px; color: #8e8e93; }
+  .location-field .loc-icon svg { width: 24px; height: 24px; }
   .location-field input {
     flex: 1;
     border: none;
@@ -374,7 +361,7 @@
     background: transparent;
     color: #000;
   }
-  .location-field input::placeholder { color: #8e8e93; }
+  .location-field input::placeholder { color: #717171; }
   #location-input-field {
     font-size: 16px;
   }
@@ -391,6 +378,9 @@
   }
   .location-field .clear-btn.hidden { display: none; }
   .location-field .clear-btn svg { width: 10px; height: 10px; color: #fff; }
+
+  #unified-search-field { gap: 4px; padding-left: 16px; padding-right: 16px; }
+  #unified-location-field { gap: 4px; padding-left: 16px; padding-right: 16px; }
 
   /* Current location link — Figma: neutral hover pill, 8px gap, left-aligned */
   .location-section {
@@ -472,12 +462,14 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 12px 20px 8px;
+    padding: 12px 20px 4px;
   }
   .section-heading-row h2 {
+    font-family: "DM Sans";
     font-size: 20px;
-    font-weight: 700;
-    color: #000;
+    font-weight: 900;
+    color: #020203;
+    line-height: 28px;
     display: flex;
     align-items: center;
     gap: 6px;
@@ -809,11 +801,11 @@
     box-shadow: 0 2px 8px rgba(0,0,0,0.08);
     z-index: 20;
     cursor: pointer;
-    color: #717171;
+    color: #90939D;
     font-size: 16px;
     font-family: 'DM Sans', -apple-system, sans-serif;
   }
-  .map-search-pill-default .pill-icon { flex-shrink: 0; display: flex; }
+  .map-search-pill-default .pill-icon { flex-shrink: 0; display: flex; align-items: center; justify-content: center; width: 24px; height: 24px; }
 
   /* Current location / navigate button on map */
   .map-nav-btn {

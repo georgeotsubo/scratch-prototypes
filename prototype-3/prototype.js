@@ -677,13 +677,17 @@
   const searchAutocompleteList = document.getElementById('search-autocomplete-list');
   const searchSubmitBtn = document.getElementById('search-submit-btn');
   const searchBackspace = document.getElementById('search-backspace');
+  let searchInputFocused = false;
+
+  searchInput.addEventListener('focus', () => { searchInputFocused = true; updateSearchUI(); });
+  searchInput.addEventListener('blur', () => { searchInputFocused = false; updateSearchUI(); });
 
   function updateSearchUI() {
     const val = searchInput.value;
     searchTerm = val;
 
-    // Show/hide clear button
-    if (val.length > 0) {
+    // Show/hide clear button — only when field is focused and has text
+    if (val.length > 0 && searchInputFocused) {
       searchClear.classList.remove('hidden');
     } else {
       searchClear.classList.add('hidden');
@@ -784,7 +788,9 @@
   }
 
   function submitSearch() {
-    if (!searchTerm && !locationTerm) return;
+    if (!searchTerm) {
+      locationTerm = locationTerm || 'Current location';
+    }
 
     if (searchTerm) addSearchRecent(searchTerm);
     const loc = locationTerm || 'Current location';
@@ -804,7 +810,8 @@
   // Search input events
   searchInput.addEventListener('input', updateSearchUI);
 
-  searchClear.addEventListener('click', () => {
+  searchClear.addEventListener('mousedown', (e) => {
+    e.preventDefault();
     searchInput.value = '';
     searchTerm = '';
     updateSearchUI();
@@ -834,11 +841,12 @@
   });
 
   searchSubmitBtn.addEventListener('click', () => {
-    if (activeTab === 'location') {
-      if (locationInput.value.length > 0) { locationTerm = locationInput.value; }
-      if (locationTerm) { selectLocation(); }
+    if (activeTab === 'location' && locationInput.value.length > 0) {
+      locationTerm = locationInput.value;
+      selectLocation();
     } else {
       searchTerm = searchInput.value;
+      if (!locationInput.value) locationTerm = '';
       submitSearch();
     }
   });
@@ -878,6 +886,11 @@
   // ========== LOCATION INPUT LOGIC ==========
   const locationInput = document.getElementById('location-input-field');
   const locationClear = document.getElementById('location-clear');
+
+  let locationInputFocused = false;
+
+  locationInput.addEventListener('focus', () => { locationInputFocused = true; locationInput.placeholder = 'Enter neighborhood or zip'; updateLocationUI(); });
+  locationInput.addEventListener('blur', () => { locationInputFocused = false; locationInput.placeholder = 'Current location'; updateLocationUI(); });
   const locationRecents = document.getElementById('location-recents-section');
   const locationAutocomplete = document.getElementById('location-autocomplete');
   const locationAutocompleteList = document.getElementById('location-autocomplete-list');
@@ -886,8 +899,8 @@
     const val = locationInput.value;
     const locationCurrentCta = document.getElementById('location-current-cta');
 
-    // Show/hide clear button
-    if (val.length > 0) {
+    // Show/hide clear button — only when field is focused and has text
+    if (val.length > 0 && locationInputFocused) {
       locationClear.classList.remove('hidden');
     } else {
       locationClear.classList.add('hidden');
@@ -1004,6 +1017,11 @@
     });
   }
 
+  document.getElementById('search-clear-recents').addEventListener('click', () => {
+    searchRecents.length = 0;
+    renderSearchRecents();
+  });
+
   document.getElementById('location-clear-recents').addEventListener('click', () => {
     locationRecentsData.length = 0;
     renderLocationRecents();
@@ -1029,8 +1047,10 @@
   // Location input events
   locationInput.addEventListener('input', updateLocationUI);
 
-  locationClear.addEventListener('click', () => {
+  locationClear.addEventListener('mousedown', (e) => {
+    e.preventDefault();
     locationInput.value = '';
+    locationInput.placeholder = 'Current location';
     updateLocationUI();
     locationInput.focus();
   });
@@ -1103,11 +1123,6 @@
     showScreen('screen-search-focused', 'fade-in');
     setTimeout(() => searchInput.focus(), 300);
   });
-  document.getElementById('hotspot-x-results').addEventListener('click', () => {
-    searchTerm = '';
-    preserveMapView = true;
-    showScreen('screen-map-default', 'fade-in');
-  });
 
   // Location results → unified search screen, location tab
   document.getElementById('hotspot-search-locresults').addEventListener('click', () => {
@@ -1116,11 +1131,6 @@
     setActiveTab('location');
     showScreen('screen-search-focused', 'fade-in');
     setTimeout(() => { locationInput.focus(); updateLocationUI(); }, 150);
-  });
-  document.getElementById('hotspot-x-locresults').addEventListener('click', () => {
-    searchTerm = '';
-    preserveMapView = true;
-    showScreen('screen-map-default', 'fade-in');
   });
 
   // Both results → search focused (search tab)
@@ -1133,11 +1143,6 @@
     setActiveTab('search');
     showScreen('screen-search-focused', 'fade-in');
     setTimeout(() => searchInput.focus(), 300);
-  });
-  document.getElementById('hotspot-x-both').addEventListener('click', () => {
-    searchTerm = '';
-    preserveMapView = true;
-    showScreen('screen-map-default', 'fade-in');
   });
 
   // Search tab hotspots
@@ -1158,42 +1163,27 @@
   // ========== SEARCH TAB TOGGLE ==========
   function setActiveTab(tab) {
     activeTab = tab;
-    const tabSearch = document.getElementById('tab-search');
-    const tabLocation = document.getElementById('tab-location');
     const searchContent = document.getElementById('search-tab-content');
     const locationContent = document.getElementById('location-tab-content');
-    const searchField = document.getElementById('unified-search-field');
-    const locationField = document.getElementById('unified-location-field');
-    const toggle = tabSearch.closest('.search-toggle');
 
     if (tab === 'search') {
-      toggle.classList.remove('tab-location');
-      tabSearch.classList.add('active');
-      tabLocation.classList.remove('active');
       searchContent.classList.remove('hidden');
       locationContent.classList.add('hidden');
-      searchField.style.display = 'flex';
-      locationField.style.display = 'none';
       searchInput.focus();
     } else {
-      toggle.classList.add('tab-location');
-      tabLocation.classList.add('active');
-      tabSearch.classList.remove('active');
       locationContent.classList.remove('hidden');
       searchContent.classList.add('hidden');
-      locationField.style.display = 'flex';
-      searchField.style.display = 'none';
       locationInput.focus();
       updateLocationUI();
     }
   }
 
-  document.getElementById('tab-search').addEventListener('click', () => {
-    setActiveTab('search');
+  searchInput.addEventListener('focus', () => {
+    if (activeTab !== 'search') setActiveTab('search');
   });
 
-  document.getElementById('tab-location').addEventListener('click', () => {
-    setActiveTab('location');
+  locationInput.addEventListener('focus', () => {
+    if (activeTab !== 'location') setActiveTab('location');
   });
 
   // ========== PREVENT ZOOM ON iOS ==========

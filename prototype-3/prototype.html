@@ -56,18 +56,35 @@
       <img src="figma-screens/status-bar.png" alt="Status bar">
     </div>
 
-    <!-- Search/Location Toggle -->
-    <div class="search-toggle-wrapper">
-      <div class="search-toggle">
-        <div class="search-toggle-opt active" id="tab-search">Search</div>
-        <div class="search-toggle-opt" id="tab-location">Location</div>
+    <!-- Stacked input fields -->
+    <div class="search-bar-container" id="unified-input-bar">
+      <div class="search-field" id="unified-search-field">
+        <div class="back-btn close-btn" id="search-close">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6.375 11.6543C6.375 11.502 6.40137 11.3613 6.4541 11.2324C6.5127 11.1035 6.60059 10.9805 6.71777 10.8633L13.5645 4.16602C13.7637 3.97266 14.0039 3.87598 14.2852 3.87598C14.4785 3.87598 14.6514 3.92285 14.8037 4.0166C14.9619 4.10449 15.0879 4.22461 15.1816 4.37695C15.2754 4.5293 15.3223 4.70215 15.3223 4.89551C15.3223 5.1709 15.2139 5.41699 14.9971 5.63379L8.82715 11.6543L14.9971 17.6748C15.2139 17.8916 15.3223 18.1406 15.3223 18.4219C15.3223 18.6094 15.2754 18.7793 15.1816 18.9316C15.0879 19.0898 14.9619 19.2129 14.8037 19.3008C14.6514 19.3945 14.4785 19.4414 14.2852 19.4414C14.0039 19.4414 13.7637 19.3418 13.5645 19.1426L6.71777 12.4453C6.60059 12.3281 6.5127 12.2051 6.4541 12.0762C6.40137 11.9473 6.375 11.8066 6.375 11.6543Z" fill="#020203"/></svg>
+        </div>
+        <input type="text" id="search-input-field" placeholder="Search for yoga, barre, cycling..." autocomplete="off" autocapitalize="off" spellcheck="false">
+        <div class="clear-btn hidden" id="search-clear">
+          <svg viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="2" y1="2" x2="8" y2="8"/><line x1="8" y1="2" x2="2" y2="8"/></svg>
+        </div>
+      </div>
+      <div class="location-field" id="unified-location-field">
+        <div class="loc-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M8.79688 6.64844C8.79688 6.05469 8.9401 5.51562 9.22656 5.03125C9.51302 4.54167 9.89844 4.15104 10.3828 3.85938C10.8672 3.56771 11.4062 3.42188 12 3.42188C12.5938 3.42188 13.1328 3.56771 13.6172 3.85938C14.1016 4.15104 14.487 4.54167 14.7734 5.03125C15.0651 5.51562 15.2109 6.05469 15.2109 6.64844C15.2109 7.13802 15.1094 7.59375 14.9062 8.01562C14.7031 8.43229 14.4271 8.79167 14.0781 9.09375C13.7292 9.39062 13.3307 9.60156 12.8828 9.72656V14.6328C12.8828 15.1328 12.8542 15.5885 12.7969 16C12.7396 16.4062 12.6667 16.7578 12.5781 17.0547C12.4896 17.3516 12.3932 17.5807 12.2891 17.7422C12.1849 17.8984 12.0885 17.9766 12 17.9766C11.9115 17.9766 11.8151 17.8984 11.7109 17.7422C11.612 17.5807 11.5156 17.3516 11.4219 17.0547C11.3333 16.7578 11.2578 16.4062 11.1953 16C11.138 15.5885 11.1094 15.1328 11.1094 14.6328V9.72656C10.6667 9.60156 10.2708 9.39062 9.92188 9.09375C9.57292 8.79167 9.29688 8.43229 9.09375 8.01562C8.89583 7.59375 8.79688 7.13802 8.79688 6.64844ZM11.0938 6.82812C11.3958 6.82812 11.6536 6.71875 11.8672 6.5C12.0859 6.28125 12.1953 6.02344 12.1953 5.72656C12.1953 5.42969 12.0859 5.17448 11.8672 4.96094C11.6536 4.74219 11.3958 4.63281 11.0938 4.63281C10.8021 4.63281 10.5469 4.74219 10.3281 4.96094C10.1094 5.17448 10 5.42969 10 5.72656C10 6.02344 10.1094 6.28125 10.3281 6.5C10.5469 6.71875 10.8021 6.82812 11.0938 6.82812ZM12 21.1875C10.7188 21.1875 9.56771 21.0885 8.54688 20.8906C7.53125 20.6979 6.66406 20.4271 5.94531 20.0781C5.23177 19.7344 4.6849 19.3359 4.30469 18.8828C3.92969 18.4349 3.74219 17.9557 3.74219 17.4453C3.74219 17.0182 3.85938 16.6224 4.09375 16.2578C4.32812 15.8932 4.64583 15.5651 5.04688 15.2734C5.44792 14.9766 5.90625 14.7214 6.42188 14.5078C6.9375 14.2891 7.47917 14.1146 8.04688 13.9844C8.61979 13.8542 9.1849 13.776 9.74219 13.75V15.2969C9.27865 15.3229 8.80469 15.3906 8.32031 15.5C7.84115 15.6094 7.39844 15.7526 6.99219 15.9297C6.59115 16.1068 6.26823 16.3125 6.02344 16.5469C5.77865 16.7812 5.65625 17.0339 5.65625 17.3047C5.65625 17.6432 5.8125 17.9505 6.125 18.2266C6.4375 18.5078 6.8776 18.7474 7.44531 18.9453C8.01302 19.1432 8.68229 19.2969 9.45312 19.4062C10.2292 19.5208 11.0781 19.5781 12 19.5781C12.9167 19.5781 13.7604 19.5208 14.5312 19.4062C15.3073 19.2969 15.9792 19.1406 16.5469 18.9375C17.1146 18.7396 17.5547 18.5026 17.8672 18.2266C18.1849 17.9505 18.3438 17.6432 18.3438 17.3047C18.3438 17.0339 18.2188 16.7812 17.9688 16.5469C17.7188 16.3125 17.3932 16.1068 16.9922 15.9297C16.5911 15.7526 16.151 15.6094 15.6719 15.5C15.1927 15.3906 14.7161 15.3229 14.2422 15.2969V13.75C14.8047 13.776 15.3698 13.8542 15.9375 13.9844C16.5104 14.1146 17.0547 14.2891 17.5703 14.5078C18.0859 14.7214 18.5443 14.9766 18.9453 15.2734C19.3516 15.5651 19.6693 15.8932 19.8984 16.2578C20.1328 16.6224 20.25 17.0182 20.25 17.4453C20.25 17.9557 20.0599 18.4349 19.6797 18.8828C19.3047 19.3359 18.7604 19.7344 18.0469 20.0781C17.3333 20.4271 16.4661 20.6979 15.4453 20.8906C14.4297 21.0885 13.2812 21.1875 12 21.1875Z" fill="#020203"/></svg>
+        </div>
+        <input type="text" id="location-input-field" placeholder="Current location" autocomplete="off" autocapitalize="off" spellcheck="false">
+        <div class="clear-btn hidden" id="location-clear">
+          <svg viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="2" y1="2" x2="8" y2="8"/><line x1="8" y1="2" x2="2" y2="8"/></svg>
+        </div>
       </div>
     </div>
 
     <!-- Search tab content -->
     <div class="content-area" id="search-tab-content">
       <div id="search-recents-section" class="hidden">
-        <h2 class="section-heading">Recents</h2>
+        <div class="section-heading-row">
+          <h2>Recents</h2>
+          <span class="clear-link" id="search-clear-recents">Clear</span>
+        </div>
         <div class="chips-container">
           <div class="chips-grid" id="search-recents-list"></div>
         </div>
@@ -111,7 +128,7 @@
       </div>
       <div id="location-recents-section" class="hidden">
         <div class="section-heading-row">
-          <h2>Recents <span class="chevron"><svg viewBox="0 0 8 13" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 1l5 5.5-5 5.5"/></svg></span></h2>
+          <h2>Recents</h2>
           <span class="clear-link" id="location-clear-recents">Clear</span>
         </div>
         <div class="recents-chips" id="location-recents-chips"></div>
@@ -128,31 +145,6 @@
           </div>
           <div id="loc-ac-suggestions"></div>
         </div>
-      </div>
-    </div>
-
-    <!-- Bottom input bar -->
-    <div class="search-bar-container" id="unified-input-bar">
-      <div class="search-field" id="unified-search-field">
-        <span class="icon">
-          <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="#8e8e93" stroke-width="2"><circle cx="8.5" cy="8.5" r="6.5"/><line x1="13.5" y1="13.5" x2="18" y2="18" stroke-linecap="round"/></svg>
-        </span>
-        <input type="text" id="search-input-field" placeholder="Search for yoga, barre, cycling..." autocomplete="off" autocapitalize="off" spellcheck="false">
-        <div class="clear-btn hidden" id="search-clear">
-          <svg viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="2" y1="2" x2="8" y2="8"/><line x1="8" y1="2" x2="2" y2="8"/></svg>
-        </div>
-      </div>
-      <div class="location-field" id="unified-location-field" style="display:none">
-        <div class="loc-icon">
-          <img src="https://www.figma.com/api/mcp/asset/b0154b02-ed5d-49e9-9975-c1583638106c" alt="Location" style="width:16px;height:16px;">
-        </div>
-        <input type="text" id="location-input-field" placeholder="Enter neighborhood or zip" autocomplete="off" autocapitalize="off" spellcheck="false">
-        <div class="clear-btn hidden" id="location-clear">
-          <svg viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="2" y1="2" x2="8" y2="8"/><line x1="8" y1="2" x2="2" y2="8"/></svg>
-        </div>
-      </div>
-      <div class="close-btn" id="search-close">
-        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="5" y1="5" x2="15" y2="15"/><line x1="15" y1="5" x2="5" y2="15"/></svg>
       </div>
     </div>
 
@@ -191,11 +183,8 @@
     </div>
     <div class="map-overlay-bar">
       <div class="map-search-pill" id="hotspot-search-results">
-        <span class="pill-icon"><svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="#8e8e93" stroke-width="2"><circle cx="8.5" cy="8.5" r="6.5"/><line x1="13.5" y1="13.5" x2="18" y2="18" stroke-linecap="round"/></svg></span>
+        <span class="pill-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6.375 11.6543C6.375 11.502 6.40137 11.3613 6.4541 11.2324C6.5127 11.1035 6.60059 10.9805 6.71777 10.8633L13.5645 4.16602C13.7637 3.97266 14.0039 3.87598 14.2852 3.87598C14.4785 3.87598 14.6514 3.92285 14.8037 4.0166C14.9619 4.10449 15.0879 4.22461 15.1816 4.37695C15.2754 4.5293 15.3223 4.70215 15.3223 4.89551C15.3223 5.1709 15.2139 5.41699 14.9971 5.63379L8.82715 11.6543L14.9971 17.6748C15.2139 17.8916 15.3223 18.1406 15.3223 18.4219C15.3223 18.6094 15.2754 18.7793 15.1816 18.9316C15.0879 19.0898 14.9619 19.2129 14.8037 19.3008C14.6514 19.3945 14.4785 19.4414 14.2852 19.4414C14.0039 19.4414 13.7637 19.3418 13.5645 19.1426L6.71777 12.4453C6.60059 12.3281 6.5127 12.2051 6.4541 12.0762C6.40137 11.9473 6.375 11.8066 6.375 11.6543Z" fill="#020203"/></svg></span>
         <span class="pill-text" id="results-search-text"></span>
-      </div>
-      <div class="map-close-pill" id="hotspot-x-results">
-        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="5" y1="5" x2="15" y2="15"/><line x1="15" y1="5" x2="5" y2="15"/></svg>
       </div>
     </div>
     <div class="map-nav-btn" style="bottom: 470px;">
@@ -231,11 +220,8 @@
     </div>
     <div class="map-overlay-bar">
       <div class="map-search-pill" id="hotspot-search-locresults">
-        <span class="pill-icon"><svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="#8e8e93" stroke-width="2"><circle cx="8.5" cy="8.5" r="6.5"/><line x1="13.5" y1="13.5" x2="18" y2="18" stroke-linecap="round"/></svg></span>
+        <span class="pill-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6.375 11.6543C6.375 11.502 6.40137 11.3613 6.4541 11.2324C6.5127 11.1035 6.60059 10.9805 6.71777 10.8633L13.5645 4.16602C13.7637 3.97266 14.0039 3.87598 14.2852 3.87598C14.4785 3.87598 14.6514 3.92285 14.8037 4.0166C14.9619 4.10449 15.0879 4.22461 15.1816 4.37695C15.2754 4.5293 15.3223 4.70215 15.3223 4.89551C15.3223 5.1709 15.2139 5.41699 14.9971 5.63379L8.82715 11.6543L14.9971 17.6748C15.2139 17.8916 15.3223 18.1406 15.3223 18.4219C15.3223 18.6094 15.2754 18.7793 15.1816 18.9316C15.0879 19.0898 14.9619 19.2129 14.8037 19.3008C14.6514 19.3945 14.4785 19.4414 14.2852 19.4414C14.0039 19.4414 13.7637 19.3418 13.5645 19.1426L6.71777 12.4453C6.60059 12.3281 6.5127 12.2051 6.4541 12.0762C6.40137 11.9473 6.375 11.8066 6.375 11.6543Z" fill="#020203"/></svg></span>
         <span class="pill-text" id="locresults-search-text"></span>
-      </div>
-      <div class="map-close-pill" id="hotspot-x-locresults">
-        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="5" y1="5" x2="15" y2="15"/><line x1="15" y1="5" x2="5" y2="15"/></svg>
       </div>
     </div>
     <div class="map-nav-btn" style="bottom: 470px;">
@@ -271,11 +257,8 @@
     </div>
     <div class="map-overlay-bar">
       <div class="map-search-pill" id="hotspot-search-both">
-        <span class="pill-icon"><svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="#8e8e93" stroke-width="2"><circle cx="8.5" cy="8.5" r="6.5"/><line x1="13.5" y1="13.5" x2="18" y2="18" stroke-linecap="round"/></svg></span>
+        <span class="pill-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6.375 11.6543C6.375 11.502 6.40137 11.3613 6.4541 11.2324C6.5127 11.1035 6.60059 10.9805 6.71777 10.8633L13.5645 4.16602C13.7637 3.97266 14.0039 3.87598 14.2852 3.87598C14.4785 3.87598 14.6514 3.92285 14.8037 4.0166C14.9619 4.10449 15.0879 4.22461 15.1816 4.37695C15.2754 4.5293 15.3223 4.70215 15.3223 4.89551C15.3223 5.1709 15.2139 5.41699 14.9971 5.63379L8.82715 11.6543L14.9971 17.6748C15.2139 17.8916 15.3223 18.1406 15.3223 18.4219C15.3223 18.6094 15.2754 18.7793 15.1816 18.9316C15.0879 19.0898 14.9619 19.2129 14.8037 19.3008C14.6514 19.3945 14.4785 19.4414 14.2852 19.4414C14.0039 19.4414 13.7637 19.3418 13.5645 19.1426L6.71777 12.4453C6.60059 12.3281 6.5127 12.2051 6.4541 12.0762C6.40137 11.9473 6.375 11.8066 6.375 11.6543Z" fill="#020203"/></svg></span>
         <span class="pill-text" id="both-search-text"></span>
-      </div>
-      <div class="map-close-pill" id="hotspot-x-both">
-        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="5" y1="5" x2="15" y2="15"/><line x1="15" y1="5" x2="5" y2="15"/></svg>
       </div>
     </div>
     <div class="map-nav-btn" style="bottom: 470px;">

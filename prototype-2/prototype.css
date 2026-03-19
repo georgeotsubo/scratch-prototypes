@@ -316,6 +316,7 @@
   }
   #search-input-field {
     font-size: 16px;
+    color: rgba(203, 203, 251, 1);
   }
   .search-field .clear-btn {
     width: 20px;
@@ -391,6 +392,9 @@
   }
   .location-field .clear-btn.hidden { display: none; }
   .location-field .clear-btn svg { width: 10px; height: 10px; color: #fff; }
+
+  #unified-search-field { gap: 4px; padding-left: 16px; padding-right: 16px; }
+  #unified-location-field { gap: 4px; padding-left: 16px; padding-right: 16px; }
 
   /* Current location link — Figma: neutral hover pill, 8px gap, left-aligned */
   .location-section {
