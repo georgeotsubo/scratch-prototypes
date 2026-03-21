@@ -731,8 +731,8 @@
   /* old tab bar styles removed — see new .tab-bar below */
   .tab-item.active svg { color: #000; }
   .tab-item.active span { color: #000; }
-  .tab-item:not(.active) svg { color: #8e8e93; }
-  .tab-item:not(.active) span { color: #8e8e93; }
+  .tab-item:not(.active) svg { color: #000; }
+  .tab-item:not(.active) span { color: #000; }
 
   /* Helper */
   .hidden { display: none !important; }
@@ -872,7 +872,7 @@
   }
   .tab-item.active {
     background: rgba(219,219,219,0.5);
-    mix-blend-mode: luminosity;
+    position: relative;
   }
   .tab-item.active::before {
     content: '';
@@ -881,8 +881,13 @@
     background: rgba(219,219,219,0.5);
     border-radius: 100px;
     pointer-events: none;
+    z-index: 0;
   }
-  .tab-item img {
+  .tab-item.active svg, .tab-item.active span {
+    position: relative;
+    z-index: 1;
+  }
+  .tab-item img, .tab-item svg {
     width: 24px;
     height: 24px;
   }

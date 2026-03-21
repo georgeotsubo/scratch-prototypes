@@ -82,11 +82,14 @@
     position: absolute;
     inset: 0;
     background: #f1f2f3;
-    animation: fadeIn 0.3s ease-in forwards;
+    animation: fadeIn 0.2s ease-in forwards;
     z-index: -1;
   }
   .screen.anim-bg-fade-in > *:not(.search-bar-container):not(.status-bar):not(.keyboard):not(.map-overlay-bar) {
-    animation: fadeIn 0.3s ease-in;
+    animation: fadeIn 0.2s ease-in backwards;
+  }
+  .screen.anim-bg-fade-in > .search-bar-container {
+    animation: fadeIn 0.2s ease-in backwards;
   }
   .screen.anim-bg-fade-out {
     background: transparent;
@@ -659,7 +662,8 @@
   .key.shift {
     flex: 0 0 44.667px;
   }
-  .key.shift img, .key.backspace img { width: 23px; height: 20px; }
+  .key.shift, .key.backspace { display: flex; align-items: center; justify-content: center; }
+  .key.shift img, .key.backspace img, .key.shift svg, .key.backspace svg { width: 23px; height: 20px; }
   .key.backspace {
     flex: 0 0 45px;
   }
@@ -670,6 +674,7 @@
     border-radius: 8.5px;
     color: #fff;
   }
+  .key.search-key { display: flex; align-items: center; justify-content: center; }
   .key.search-key img { width: 100%; height: 100%; object-fit: contain; border-radius: 8.5px; }
   .key.num { flex: 0 0 45px; font-size: 18px; font-family: -apple-system, 'SF Compact Rounded', 'SF Pro Rounded', sans-serif; }
   .key.emoji { flex: 0 0 45px; font-size: 24px; }
@@ -719,8 +724,8 @@
   /* old tab bar styles removed — see new .tab-bar below */
   .tab-item.active svg { color: #000; }
   .tab-item.active span { color: #000; }
-  .tab-item:not(.active) svg { color: #8e8e93; }
-  .tab-item:not(.active) span { color: #8e8e93; }
+  .tab-item:not(.active) svg { color: #000; }
+  .tab-item:not(.active) span { color: #000; }
 
   /* Helper */
   .hidden { display: none !important; }
@@ -824,7 +829,7 @@
     cursor: pointer;
     padding: 12px;
   }
-  .map-nav-btn img {
+  .map-nav-btn img, .map-nav-btn svg {
     width: 24px;
     height: 24px;
   }
@@ -859,8 +864,7 @@
     position: relative;
   }
   .tab-item.active {
-    background: rgba(219,219,219,0.5);
-    mix-blend-mode: luminosity;
+    position: relative;
   }
   .tab-item.active::before {
     content: '';
@@ -869,8 +873,13 @@
     background: rgba(219,219,219,0.5);
     border-radius: 100px;
     pointer-events: none;
+    z-index: 0;
   }
-  .tab-item img {
+  .tab-item.active svg, .tab-item.active span {
+    position: relative;
+    z-index: 1;
+  }
+  .tab-item img, .tab-item svg {
     width: 24px;
     height: 24px;
   }

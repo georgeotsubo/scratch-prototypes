@@ -6,6 +6,7 @@
   let previousSearchTerm = '';
   let preserveMapView = false;
   let returnScreen = null; // tracks which results screen to go back to when X is tapped
+  let searchOpenedFromDefault = false; // true when search opened from map default (no fly needed on back)
   let activeTab = 'search';
 
   // Autocomplete data
@@ -311,13 +312,13 @@
             <div class="venue-title">${pin.name}</div>
             <div class="venue-tags">${tags}</div>
             <div class="venue-subtitle">${distance} mi &middot; ${neighborhood}</div>
-            <div class="venue-rating"><img src="https://www.figma.com/api/mcp/asset/1c18653e-1a93-4ff1-a6ff-fd237f8eb02a" alt="star"> ${rating} (${reviews})</div>
+            <div class="venue-rating"><svg width="16" height="20" viewBox="0 0 16 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3.93356 15.5117C3.79684 15.4102 3.71285 15.2734 3.6816 15.1016C3.65426 14.9336 3.67965 14.7344 3.75778 14.5039L4.96481 10.9238L1.88864 8.71484C1.68942 8.57422 1.55075 8.42773 1.47262 8.27539C1.3945 8.11914 1.38278 7.95898 1.43746 7.79492C1.49215 7.63477 1.59567 7.51562 1.74801 7.4375C1.90035 7.35547 2.09957 7.31641 2.34567 7.32031L6.11325 7.34375L7.26168 3.74609C7.3359 3.51172 7.43356 3.33398 7.55465 3.21289C7.67965 3.08789 7.82614 3.02539 7.9941 3.02539C8.16598 3.02539 8.31246 3.08789 8.43356 3.21289C8.55856 3.33398 8.65817 3.51172 8.73239 3.74609L9.88082 7.34375L13.6484 7.32031C13.8945 7.31641 14.0937 7.35547 14.2461 7.4375C14.3984 7.51562 14.5019 7.63477 14.5566 7.79492C14.6113 7.95898 14.5996 8.11914 14.5214 8.27539C14.4433 8.42773 14.3047 8.57422 14.1054 8.71484L11.0293 10.9238L12.2363 14.5039C12.3144 14.7344 12.3379 14.9336 12.3066 15.1016C12.2793 15.2734 12.1972 15.4102 12.0605 15.5117C11.9238 15.6211 11.7695 15.6602 11.5976 15.6289C11.4257 15.5977 11.2422 15.5117 11.0468 15.3711L7.9941 13.127L4.94723 15.3711C4.75192 15.5117 4.56832 15.5977 4.39645 15.6289C4.22457 15.6602 4.07028 15.6211 3.93356 15.5117Z" fill="#020203"/></svg> ${rating} (${reviews})</div>
           </div>
         </div>
         <div class="venue-desc">${desc}</div>
         <div class="venue-actions">
-          <div class="venue-action-btn"><img src="https://www.figma.com/api/mcp/asset/385d19c1-8708-42e4-a0bc-d0d38c759a01" alt="Save"> Save</div>
-          <div class="venue-action-btn"><img src="https://www.figma.com/api/mcp/asset/d199d353-1d64-4012-a99c-6ed370f3d66b" alt="Schedule"> Schedule</div>
+          <div class="venue-action-btn"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M5.53906 19.2969C5.14323 19.2969 4.82552 19.1667 4.58594 18.9062C4.34635 18.651 4.22656 18.3099 4.22656 17.8828V4.14062C4.22656 3.30729 4.44792 2.66927 4.89062 2.22656C5.33854 1.77865 5.97656 1.55469 6.80469 1.55469H13.1953C14.0182 1.55469 14.651 1.77865 15.0938 2.22656C15.5417 2.66927 15.7656 3.30729 15.7656 4.14062V17.8828C15.7656 18.3099 15.6458 18.651 15.4062 18.9062C15.1667 19.1667 14.849 19.2969 14.4531 19.2969C14.2031 19.2969 13.9792 19.2344 13.7812 19.1094C13.5833 18.9844 13.3281 18.7708 13.0156 18.4688L10.0625 15.5234C10.0208 15.4818 9.97917 15.4818 9.9375 15.5234L6.98438 18.4688C6.67708 18.7708 6.41927 18.9844 6.21094 19.1094C6.00781 19.2344 5.78385 19.2969 5.53906 19.2969ZM6.46094 16.0078L9.32031 13.2344C9.54948 13.0156 9.77604 12.9062 10 12.9062C10.224 12.9062 10.4505 13.0156 10.6797 13.2344L13.5391 16.0078C13.5911 16.0547 13.6406 16.0703 13.6875 16.0547C13.7344 16.0391 13.7578 15.9974 13.7578 15.9297V4.34375C13.7578 4.07292 13.6927 3.875 13.5625 3.75C13.4375 3.625 13.2396 3.5625 12.9688 3.5625H7.03125C6.75521 3.5625 6.55469 3.625 6.42969 3.75C6.30469 3.875 6.24219 4.07292 6.24219 4.34375V15.9297C6.24219 15.9974 6.26562 16.0391 6.3125 16.0547C6.35938 16.0703 6.40885 16.0547 6.46094 16.0078Z" fill="#020203"/></svg> Save</div>
+          <div class="venue-action-btn"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4.86719 17.7031C3.20312 17.7031 2.29688 16.8047 2.29688 15.1484V6.19531C2.29688 4.53906 3.20312 3.64844 4.86719 3.64844H15.1328C16.7969 3.64844 17.6953 4.54688 17.6953 6.19531V15.1484C17.6953 16.8047 16.7969 17.7031 15.1328 17.7031H4.86719ZM4.96875 15.8984H15.0234C15.5859 15.8984 15.8984 15.6172 15.8984 15.0234V8.39062C15.8984 7.78906 15.5859 7.51562 15.0234 7.51562H4.96875C4.40625 7.51562 4.10156 7.78906 4.10156 8.39062V15.0234C4.10156 15.6172 4.40625 15.8984 4.96875 15.8984ZM8.60156 9.95312C8.33594 9.95312 8.24219 9.86719 8.24219 9.59375V9.16406C8.24219 8.89062 8.33594 8.8125 8.60156 8.8125H9.03906C9.30469 8.8125 9.39844 8.89062 9.39844 9.16406V9.59375C9.39844 9.86719 9.30469 9.95312 9.03906 9.95312H8.60156ZM10.9688 9.95312C10.6953 9.95312 10.6016 9.86719 10.6016 9.59375V9.16406C10.6016 8.89062 10.6953 8.8125 10.9688 8.8125H11.3984C11.6719 8.8125 11.7656 8.89062 11.7656 9.16406V9.59375C11.7656 9.86719 11.6719 9.95312 11.3984 9.95312H10.9688ZM13.3359 9.95312C13.0625 9.95312 12.9688 9.86719 12.9688 9.59375V9.16406C12.9688 8.89062 13.0625 8.8125 13.3359 8.8125H13.7656C14.0391 8.8125 14.1328 8.89062 14.1328 9.16406V9.59375C14.1328 9.86719 14.0391 9.95312 13.7656 9.95312H13.3359ZM6.24219 12.2734C5.96875 12.2734 5.875 12.1953 5.875 11.9219V11.4922C5.875 11.2188 5.96875 11.1328 6.24219 11.1328H6.67188C6.94531 11.1328 7.03906 11.2188 7.03906 11.4922V11.9219C7.03906 12.1953 6.94531 12.2734 6.67188 12.2734H6.24219ZM8.60156 12.2734C8.33594 12.2734 8.24219 12.1953 8.24219 11.9219V11.4922C8.24219 11.2188 8.33594 11.1328 8.60156 11.1328H9.03906C9.30469 11.1328 9.39844 11.2188 9.39844 11.4922V11.9219C9.39844 12.1953 9.30469 12.2734 9.03906 12.2734H8.60156ZM10.9688 12.2734C10.6953 12.2734 10.6016 12.1953 10.6016 11.9219V11.4922C10.6016 11.2188 10.6953 11.1328 10.9688 11.1328H11.3984C11.6719 11.1328 11.7656 11.2188 11.7656 11.4922V11.9219C11.7656 12.1953 11.6719 12.2734 11.3984 12.2734H10.9688ZM13.3359 12.2734C13.0625 12.2734 12.9688 12.1953 12.9688 11.9219V11.4922C12.9688 11.2188 13.0625 11.1328 13.3359 11.1328H13.7656C14.0391 11.1328 14.1328 11.2188 14.1328 11.4922V11.9219C14.1328 12.1953 14.0391 12.2734 13.7656 12.2734H13.3359ZM6.24219 14.6016C5.96875 14.6016 5.875 14.5156 5.875 14.25V13.8125C5.875 13.5469 5.96875 13.4609 6.24219 13.4609H6.67188C6.94531 13.4609 7.03906 13.5469 7.03906 13.8125V14.25C7.03906 14.5156 6.94531 14.6016 6.67188 14.6016H6.24219ZM8.60156 14.6016C8.33594 14.6016 8.24219 14.5156 8.24219 14.25V13.8125C8.24219 13.5469 8.33594 13.4609 8.60156 13.4609H9.03906C9.30469 13.4609 9.39844 13.5469 9.39844 13.8125V14.25C9.39844 14.5156 9.30469 14.6016 9.03906 14.6016H8.60156ZM10.9688 14.6016C10.6953 14.6016 10.6016 14.5156 10.6016 14.25V13.8125C10.6016 13.5469 10.6953 13.4609 10.9688 13.4609H11.3984C11.6719 13.4609 11.7656 13.5469 11.7656 13.8125V14.25C11.7656 14.5156 11.6719 14.6016 11.3984 14.6016H10.9688Z" fill="#020203"/></svg> Schedule</div>
         </div>
       </div>`;
     }).join('');
@@ -435,9 +436,11 @@
   }
 
   // ========== GEOLOCATION (primary init) ==========
-  function initDefaultMap(lat, lng, zoom, locationLabel) {
-    const oc = getOffsetCenter(lat, lng, zoom);
-    map.setView(oc, zoom, { animate: false });
+  function initDefaultMap(lat, lng, zoom, locationLabel, skipSetView) {
+    if (!skipSetView) {
+      const oc = getOffsetCenter(lat, lng, zoom);
+      map.setView(oc, zoom, { animate: false });
+    }
     markerGroup.clearLayers();
     // Show user location marker at map center (real or default)
     if (userLocationMarker) {
@@ -636,18 +639,20 @@
         s.classList.remove('active', ...ANIM_CLASSES);
       });
       target.classList.add('active');
-      // Map → search-focused: fade the grey background in + slide keyboard up + search bar shrink
+      // Map → search-focused: fade the grey background in + slide keyboard up
       if (id === 'screen-search-focused' && isPrevMap) {
+        const sbc = target.querySelector('.search-bar-container');
+        if (sbc) sbc.style.opacity = '0';
         target.classList.add('anim-bg-fade-in');
         const kb = target.querySelector('.keyboard');
         if (kb) {
           kb.classList.add('anim-kb-slide-up');
           kb.addEventListener('animationend', () => kb.classList.remove('anim-kb-slide-up'), { once: true });
         }
-        const sbc = target.querySelector('.search-bar-container');
         if (sbc) {
-          sbc.classList.add('anim-search-enter');
-          sbc.addEventListener('animationend', () => sbc.classList.remove('anim-search-enter'), { once: true });
+          requestAnimationFrame(() => {
+            sbc.style.opacity = '';
+          });
         }
       }
     }
@@ -819,24 +824,28 @@
   });
 
   searchClose.addEventListener('click', () => {
-    if (returnScreen) {
-      const dest = returnScreen;
-      returnScreen = null;
-      // Restore inputs to confirmed state, don't clear terms
-      searchInput.value = searchTerm;
-      locationInput.value = locationTerm || '';
-      updateSearchUI();
-      updateLocationUI();
+    const fromDefault = searchOpenedFromDefault;
+    returnScreen = null;
+    searchOpenedFromDefault = false;
+    searchTerm = '';
+    locationTerm = '';
+    searchInput.value = '';
+    locationInput.value = '';
+    updateSearchUI();
+    updateLocationUI();
+    if (fromDefault) {
+      // Map is already at the right position — skip view change entirely
       preserveMapView = true;
-      showScreen(dest, 'fade-in');
-    } else {
-      searchInput.value = '';
-      locationInput.value = (locationTerm && locationTerm !== 'Current location') ? locationTerm : '';
-      searchTerm = '';
-      updateSearchUI();
-      updateLocationUI();
-      preserveMapView = true;
-      showScreen('screen-map-default', 'fade-in');
+    }
+    showScreen('screen-map-default', 'fade-in');
+    if (!fromDefault) {
+      const lat = userLat ?? DEFAULT_LAT;
+      const lng = userLng ?? DEFAULT_LNG;
+      const offsetCenter = getOffsetCenter(lat, lng, 14);
+      map.flyTo(offsetCenter, 14, { duration: 0.8 });
+      map.once('moveend', () => {
+        initDefaultMap(lat, lng, 14, userLat ? 'Nearby' : 'Manhattan', true);
+      });
     }
   });
 
@@ -955,7 +964,7 @@
       div.className = 'loc-autocomplete-item';
       div.innerHTML = `
         <div class="loc-ac-icon">
-          <img src="https://www.figma.com/api/mcp/asset/b0154b02-ed5d-49e9-9975-c1583638106c" alt="Location" style="width:16px;height:16px;">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#8e8e93" stroke-width="1.5" stroke-linecap="round"><circle cx="8" cy="6.5" r="2.5"/><path d="M8 1C5.24 1 3 3.24 3 6.5c0 3.5 5 9 5 9s5-5.5 5-9C13 3.24 10.76 1 8 1z"/></svg>
         </div>
         <div class="loc-ac-info">
           <div class="loc-ac-name"></div>
@@ -1102,6 +1111,7 @@
   // Map default → search focused (search tab)
   document.getElementById('hotspot-search-default').addEventListener('click', () => {
     returnScreen = null;
+    searchOpenedFromDefault = true;
     searchTerm = '';
     searchInput.value = '';
     locationInput.value = (locationTerm && locationTerm !== 'Current location') ? locationTerm : '';
@@ -1115,6 +1125,7 @@
   // Search results → search focused (search tab)
   document.getElementById('hotspot-search-results').addEventListener('click', () => {
     returnScreen = 'screen-search-results';
+    searchOpenedFromDefault = false;
     searchInput.value = searchTerm;
     locationInput.value = (locationTerm && locationTerm !== 'Current location') ? locationTerm : '';
     updateSearchUI();
@@ -1127,6 +1138,7 @@
   // Location results → unified search screen, location tab
   document.getElementById('hotspot-search-locresults').addEventListener('click', () => {
     returnScreen = 'screen-location-results';
+    searchOpenedFromDefault = false;
     locationInput.value = (locationTerm && locationTerm !== 'Current location') ? locationTerm : '';
     setActiveTab('location');
     showScreen('screen-search-focused', 'fade-in');
@@ -1136,6 +1148,7 @@
   // Both results → search focused (search tab)
   document.getElementById('hotspot-search-both').addEventListener('click', () => {
     returnScreen = 'screen-both-results';
+    searchOpenedFromDefault = false;
     searchInput.value = searchTerm;
     locationInput.value = (locationTerm && locationTerm !== 'Current location') ? locationTerm : '';
     updateSearchUI();
