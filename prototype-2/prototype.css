@@ -365,7 +365,7 @@
     background-color: unset;
     color: rgba(0, 0, 0, 0);
   }
-  .location-field .loc-icon svg { width: 14px; height: 14px; color: #8e8e93; }
+  .location-field .loc-icon svg { width: 20px; height: 20px; color: #8e8e93; }
   .location-field input {
     flex: 1;
     border: none;

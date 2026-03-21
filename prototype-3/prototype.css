@@ -74,8 +74,12 @@
     animation: fadeOut 0.35s ease-out forwards;
     z-index: 5;
   }
+  .screen.anim-fade-out-behind {
+    animation: fadeOut 0.2s ease-in forwards;
+  }
   .screen.anim-bg-fade-in {
     background: transparent;
+    animation: fadeIn 0.2s ease-in backwards;
   }
   .screen.anim-bg-fade-in::before {
     content: '';

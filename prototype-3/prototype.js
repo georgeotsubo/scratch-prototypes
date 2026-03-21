@@ -484,7 +484,7 @@
 
   // ========== SCREEN MANAGEMENT ==========
   function showScreen(id, animation) {
-    const ANIM_CLASSES = ['anim-fade-in', 'anim-fade-out', 'anim-bg-fade-in', 'anim-bg-fade-out', 'anim-slide-up', 'anim-slide-down', 'anim-screen-fade-in'];
+    const ANIM_CLASSES = ['anim-fade-in', 'anim-fade-out', 'anim-fade-out-behind', 'anim-bg-fade-in', 'anim-bg-fade-out', 'anim-slide-up', 'anim-slide-down', 'anim-screen-fade-in'];
     const previousScreen = currentScreen;
     const previousEl = previousScreen ? document.getElementById(previousScreen) : null;
     const target = document.getElementById(id);
@@ -633,28 +633,30 @@
         target.classList.add('anim-bg-fade-in');
         previousEl.classList.remove('active', ...ANIM_CLASSES);
       }
+    } else if (id === 'screen-search-focused' && isPrevMap) {
+      // Cross-fade: map fades out behind while search fades in on top
+      document.querySelectorAll('.screen').forEach(s => {
+        if (s !== previousEl && s !== target) s.classList.remove('active', ...ANIM_CLASSES);
+      });
+      // Map fades out (no z-index boost so search screen paints on top)
+      previousEl.classList.add('anim-fade-out-behind');
+      previousEl.addEventListener('animationend', function handler() {
+        previousEl.removeEventListener('animationend', handler);
+        previousEl.classList.remove('active', ...ANIM_CLASSES);
+      }, { once: true });
+      // Search screen fades in on top
+      target.classList.add('active', 'anim-bg-fade-in');
+      const kb = target.querySelector('.keyboard');
+      if (kb) {
+        kb.classList.add('anim-kb-slide-up');
+        kb.addEventListener('animationend', () => kb.classList.remove('anim-kb-slide-up'), { once: true });
+      }
     } else {
-      // Default: instant swap with bg fade for search-focused from map
+      // Default: instant swap
       document.querySelectorAll('.screen').forEach(s => {
         s.classList.remove('active', ...ANIM_CLASSES);
       });
       target.classList.add('active');
-      // Map → search-focused: fade the grey background in + slide keyboard up
-      if (id === 'screen-search-focused' && isPrevMap) {
-        const sbc = target.querySelector('.search-bar-container');
-        if (sbc) sbc.style.opacity = '0';
-        target.classList.add('anim-bg-fade-in');
-        const kb = target.querySelector('.keyboard');
-        if (kb) {
-          kb.classList.add('anim-kb-slide-up');
-          kb.addEventListener('animationend', () => kb.classList.remove('anim-kb-slide-up'), { once: true });
-        }
-        if (sbc) {
-          requestAnimationFrame(() => {
-            sbc.style.opacity = '';
-          });
-        }
-      }
     }
 
     currentScreen = id;
