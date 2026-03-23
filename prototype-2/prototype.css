@@ -624,7 +624,7 @@
     justify-content: center;
     flex-shrink: 0;
   }
-  .loc-autocomplete-item .loc-ac-icon svg { width: 16px; height: 16px; color: #6e6e73; }
+  .loc-autocomplete-item .loc-ac-icon svg { width: 24px; height: 24px; color: #6e6e73; }
   .loc-autocomplete-item .loc-ac-info { display: flex; flex-direction: column; gap: 2px; }
   .loc-autocomplete-item .loc-ac-name { font-size: 17px; color: #000; }
   .loc-autocomplete-item .loc-ac-name strong { font-weight: 500; }
