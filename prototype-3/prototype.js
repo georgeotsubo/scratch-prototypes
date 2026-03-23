@@ -826,28 +826,35 @@
   });
 
   searchClose.addEventListener('click', () => {
-    const fromDefault = searchOpenedFromDefault;
-    returnScreen = null;
-    searchOpenedFromDefault = false;
-    searchTerm = '';
-    locationTerm = '';
-    searchInput.value = '';
-    locationInput.value = '';
-    updateSearchUI();
-    updateLocationUI();
-    if (fromDefault) {
-      // Map is already at the right position — skip view change entirely
+    const hasSearch = searchInput.value.trim().length > 0;
+    const hasLocation = locationInput.value.trim().length > 0;
+
+    if (!hasSearch && !hasLocation) {
+      // Both empty — go to default map
+      const fromDefault = searchOpenedFromDefault;
+      returnScreen = null;
+      searchOpenedFromDefault = false;
+      searchTerm = '';
+      locationTerm = '';
+      updateSearchUI();
+      updateLocationUI();
+      // Always skip the instant setView in updateMapForCurrentState — flyTo (below) handles animation
       preserveMapView = true;
-    }
-    showScreen('screen-map-default', 'fade-in');
-    if (!fromDefault) {
-      const lat = userLat ?? DEFAULT_LAT;
-      const lng = userLng ?? DEFAULT_LNG;
-      const offsetCenter = getOffsetCenter(lat, lng, 14);
-      map.flyTo(offsetCenter, 14, { duration: 0.8 });
-      map.once('moveend', () => {
-        initDefaultMap(lat, lng, 14, userLat ? 'Nearby' : 'Manhattan', true);
-      });
+      showScreen('screen-map-default', 'fade-in');
+      if (!fromDefault) {
+        const lat = userLat ?? DEFAULT_LAT;
+        const lng = userLng ?? DEFAULT_LNG;
+        const offsetCenter = getOffsetCenter(lat, lng, 14);
+        map.flyTo(offsetCenter, 14, { duration: 0.8 });
+        map.once('moveend', () => {
+          initDefaultMap(lat, lng, 14, userLat ? 'Nearby' : 'Manhattan', true);
+        });
+      }
+    } else {
+      // Fields have content — go to results
+      searchTerm = searchInput.value;
+      locationTerm = locationInput.value || locationTerm || '';
+      submitSearch();
     }
   });
 
