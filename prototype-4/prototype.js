@@ -5,6 +5,7 @@
   let locationTerm = '';
   let previousSearchTerm = '';
   let preserveMapView = false;
+  let preserveMapContents = false; // skip pin/marker update when returning to map
   let returnScreen = null; // tracks which results screen to go back to when X is tapped
   let searchOpenedFromDefault = false; // true when search opened from map default (no fly needed on back)
   let activeTab = 'search';
@@ -383,6 +384,7 @@
   function updateMapForCurrentState() {
     const keepView = preserveMapView;
     preserveMapView = false;
+    if (preserveMapContents) { preserveMapContents = false; return; }
     let loc;
     if (currentScreen === 'screen-map-default' && userLat && userLng) {
       loc = { lat: userLat, lng: userLng, zoom: 14 };
@@ -830,26 +832,16 @@
     const hasLocation = locationInput.value.trim().length > 0;
 
     if (!hasSearch && !hasLocation) {
-      // Both empty — go to default map
-      const fromDefault = searchOpenedFromDefault;
+      // Both empty — go to default map, keep map where it is
       returnScreen = null;
       searchOpenedFromDefault = false;
       searchTerm = '';
       locationTerm = '';
       updateSearchUI();
       updateLocationUI();
-      // Always skip the instant setView in updateMapForCurrentState — flyTo (below) handles animation
       preserveMapView = true;
+      preserveMapContents = true;
       showScreen('screen-map-default', 'fade-in');
-      if (!fromDefault) {
-        const lat = userLat ?? DEFAULT_LAT;
-        const lng = userLng ?? DEFAULT_LNG;
-        const offsetCenter = getOffsetCenter(lat, lng, 14);
-        map.flyTo(offsetCenter, 14, { duration: 0.8 });
-        map.once('moveend', () => {
-          initDefaultMap(lat, lng, 14, userLat ? 'Nearby' : 'Manhattan', true);
-        });
-      }
     } else {
       // Fields have content — go to results
       searchTerm = searchInput.value;
@@ -1179,6 +1171,7 @@
     searchTerm = '';
     locationTerm = '';
     preserveMapView = true;
+    preserveMapContents = true;
     showScreen('screen-map-default', 'fade-in');
   });
 
@@ -1215,6 +1208,7 @@
     searchTerm = '';
     searchInput.value = '';
     preserveMapView = true;
+    preserveMapContents = true;
     showScreen('screen-map-default');
   }
 
