@@ -828,6 +828,34 @@
   }
   .map-search-pill-default .pill-icon { flex-shrink: 0; display: flex; align-items: center; justify-content: center; width: 24px; height: 24px; }
 
+  /* Search this area button */
+  .search-this-area-btn {
+    position: absolute;
+    top: 122px; /* 62px pill top + 48px pill height + 12px gap */
+    left: 50%;
+    transform: translateX(-50%);
+    background: #020203;
+    color: #fff;
+    border: none;
+    border-radius: 64px;
+    padding: 12px 16px;
+    font-family: 'DM Sans', -apple-system, sans-serif;
+    font-weight: 600;
+    font-size: 14px;
+    line-height: 20px;
+    white-space: nowrap;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+    z-index: 25;
+    opacity: 0;
+    pointer-events: none !important; /* beats .screen.map-screen > * specificity */
+    transition: opacity 0.2s ease;
+  }
+  .search-this-area-btn.visible {
+    opacity: 1;
+    pointer-events: auto !important;
+  }
+
   /* Current location / navigate button on map */
   .map-nav-btn {
     position: absolute;

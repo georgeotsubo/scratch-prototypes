@@ -1201,6 +1201,38 @@
     if (activeTab !== 'location') setActiveTab('location');
   });
 
+  // ========== SEARCH THIS AREA ==========
+  const searchThisAreaBtn = document.getElementById('search-this-area');
+
+  function showSearchThisArea() {
+    if (currentScreen !== 'screen-map-default') return;
+    searchThisAreaBtn.classList.add('visible');
+  }
+
+  function hideSearchThisArea() {
+    searchThisAreaBtn.classList.remove('visible');
+  }
+
+  map.on('dragstart drag', showSearchThisArea);
+
+  searchThisAreaBtn.addEventListener('click', () => {
+    hideSearchThisArea();
+    // Derive the geographic center of the visible area (between search bar and sheet)
+    // by inverting the same offset used in getOffsetCenter()
+    const zoom = map.getZoom();
+    const mapCenterPx = map.project(map.getCenter(), zoom);
+    const visibleCenterPx = L.point(mapCenterPx.x, mapCenterPx.y - MAP_CENTER_OFFSET_PX);
+    const visibleCenter = map.unproject(visibleCenterPx, zoom);
+    const loc = { lat: visibleCenter.lat, lng: visibleCenter.lng };
+    markerGroup.clearLayers();
+    const locationKey = visibleCenter.lat.toFixed(3) + ',' + visibleCenter.lng.toFixed(3);
+    const pins = generatePins('', locationKey, loc, 10);
+    pins.forEach(pin => {
+      L.marker([pin.lat, pin.lng], { icon: pinIcon, interactive: false }).addTo(markerGroup);
+    });
+    populateVenueList('screen-map-default', pins, 'Fitness', 'Nearby');
+  });
+
   // ========== RESULTS PILL X BUTTONS ==========
   // Clear search term, preserve location, stay at current map position
   function clearSearchFromResults(e) {
