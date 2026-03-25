@@ -1113,8 +1113,10 @@
       const lng = userLng ?? DEFAULT_LNG;
       locationTerm = 'Current location';
 
-      // Update the search bar label on whichever results screen is active
-      if (currentScreen === 'screen-both-results') {
+      // Update the search bar label on whichever screen is active
+      if (currentScreen === 'screen-map-default') {
+        document.querySelector('#hotspot-search-default span:last-child').textContent = 'Current location';
+      } else if (currentScreen === 'screen-both-results') {
         document.getElementById('both-search-text').innerHTML = searchTerm + ' <span style="color:#90939D">\u00B7 Current location</span>';
       } else if (currentScreen === 'screen-location-results') {
         document.getElementById('locresults-search-text').textContent = 'Current location';
