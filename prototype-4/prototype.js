@@ -149,15 +149,15 @@
 
   // ========== LOCATION COORDINATES ==========
   const LOCATIONS = {
-    '_default':          { lat: 40.7380, lng: -73.9855, zoom: 13 },
+    '_default':          { lat: 40.7380, lng: -73.9855, zoom: 14 },
     'Lower East Side':   { lat: 40.7150, lng: -73.9843, zoom: 15 },
     'Lower Manhattan':   { lat: 40.7075, lng: -74.0021, zoom: 14 },
     'Long Island City':  { lat: 40.7425, lng: -73.9234, zoom: 15 },
     'Williamsburg':      { lat: 40.7081, lng: -73.9571, zoom: 15 },
     'West Village':      { lat: 40.7336, lng: -74.0027, zoom: 15 },
-    'Brooklyn':          { lat: 40.6782, lng: -73.9442, zoom: 13 },
+    'Brooklyn':          { lat: 40.6782, lng: -73.9442, zoom: 14 },
     'Bushwick':          { lat: 40.6944, lng: -73.9213, zoom: 15 },
-    'Bronx':             { lat: 40.8448, lng: -73.8648, zoom: 13 },
+    'Bronx':             { lat: 40.8448, lng: -73.8648, zoom: 14 },
     'Chelsea':           { lat: 40.7465, lng: -74.0014, zoom: 15 },
     'Chinatown':         { lat: 40.7158, lng: -73.9970, zoom: 16 },
     'Upper East Side':   { lat: 40.7736, lng: -73.9566, zoom: 15 },
@@ -211,21 +211,23 @@
     };
   }
 
-  // Pre-vetted offsets that stay on land for NYC neighborhoods.
-  // Skewed to avoid due-west (Hudson) and due-south (bay) extremes.
+  // Pre-vetted offsets: ~2.5km spread, lng capped ±0.014 to stay off rivers for NYC
   const LAND_OFFSETS = [
-    [ 0.0042,  0.0023], [ 0.0031, -0.0018], [-0.0028,  0.0035], [-0.0039, -0.0014],
-    [ 0.0058,  0.0012], [ 0.0015,  0.0048], [-0.0012, -0.0041], [-0.0051,  0.0008],
-    [ 0.0025, -0.0032], [-0.0022,  0.0027], [ 0.0068,  0.0019], [-0.0044, -0.0022],
-    [ 0.0033,  0.0041], [-0.0036,  0.0015], [ 0.0048, -0.0025], [-0.0019,  0.0052],
-    [ 0.0062, -0.0011], [-0.0055,  0.0031], [ 0.0019,  0.0063], [-0.0065, -0.0008],
+    [ 0.0016,  0.0022], [ 0.0032, -0.0020], [-0.0022,  0.0028], [-0.0028, -0.0016],
+    [ 0.0045,  0.0010], [ 0.0010,  0.0042], [-0.0014, -0.0038], [-0.0042,  0.0006],
+    [ 0.0058,  0.0020], [-0.0048, -0.0026], [ 0.0022,  0.0054], [-0.0060,  0.0014],
+    [ 0.0052, -0.0030], [-0.0035,  0.0050], [ 0.0072,  0.0010], [-0.0064,  0.0026],
+    [ 0.0014,  0.0068], [-0.0074, -0.0006], [ 0.0076, -0.0012], [-0.0020,  0.0074],
+    [ 0.0092,  0.0012], [-0.0084,  0.0028], [ 0.0032,  0.0088], [-0.0092, -0.0008],
+    [ 0.0110,  0.0006], [-0.0100,  0.0022], [ 0.0058,  0.0102], [-0.0114, -0.0004],
+    [ 0.0128,  0.0014], [-0.0120,  0.0016], [ 0.0026,  0.0120], [-0.0132, -0.0010],
+    [ 0.0148,  0.0008], [-0.0138,  0.0018], [ 0.0070,  0.0136], [-0.0150, -0.0005],
   ];
 
   function generatePins(search, location, center, count) {
     const seed = simpleHash((search || '') + (location || ''));
     const rand = seededRandom(seed || 1);
     const names = STUDIO_NAMES[search] || STUDIO_NAMES['_default'];
-    // Shuffle offsets using the seeded random so each search/location looks different
     const offsets = LAND_OFFSETS.slice().sort(() => rand() - 0.5);
     const pins = [];
     for (let i = 0; i < count; i++) {
@@ -273,7 +275,7 @@
 
   const markerGroup = L.layerGroup().addTo(map);
   // Temporary view so Leaflet initializes (tiles won't flash — map is hidden until ready)
-  map.setView([40.7380, -73.9855], 13);
+  map.setView([40.7380, -73.9855], 14);
 
   const pinIcon = L.divIcon({
     className: 'playlist-pin',
@@ -382,14 +384,19 @@
   }
 
   function updateMapForCurrentState() {
-    const keepView = preserveMapView;
+    expandSheets();
+    let keepView = preserveMapView;
     preserveMapView = false;
     if (preserveMapContents) { preserveMapContents = false; return; }
     let loc;
     if (currentScreen === 'screen-map-default' && userLat && userLng) {
-      loc = { lat: userLat, lng: userLng, zoom: 14 };
+      loc = { lat: userLat, lng: userLng, zoom: map.getZoom() };
     } else if (locationTerm === 'Current location' && userLat && userLng) {
-      loc = { lat: userLat, lng: userLng, zoom: 14 };
+      loc = { lat: userLat, lng: userLng, zoom: map.getZoom() };
+    } else if (locationTerm === 'Mapped area') {
+      const c = map.getCenter();
+      loc = { lat: c.lat, lng: c.lng, zoom: map.getZoom() };
+      keepView = true;
     } else {
       loc = findLocation(locationTerm) || LOCATIONS['_default'];
     }
@@ -408,7 +415,7 @@
     // Always show pins — use defaults for the default screen
     const effectiveSearch = searchTerm || (currentScreen === 'screen-map-default' ? '' : '');
     const effectiveLocation = locationTerm || '';
-    const pins = generatePins(effectiveSearch, effectiveLocation || 'nearby', loc, 10);
+    const pins = generatePins(effectiveSearch, effectiveLocation || 'nearby', loc, 20);
     pins.forEach(pin => {
       L.marker([pin.lat, pin.lng], { icon: pinIcon, interactive: false })
         .addTo(markerGroup);
@@ -452,7 +459,7 @@
       userLocationMarker = L.marker([lat, lng], { icon: userLocIcon, zIndexOffset: 1000, interactive: false })
         .addTo(map);
     }
-    const pins = generatePins('', 'nearby', { lat: lat, lng: lng }, 10);
+    const pins = generatePins('', 'nearby', { lat: lat, lng: lng }, 20);
     pins.forEach(pin => {
       L.marker([pin.lat, pin.lng], { icon: pinIcon, interactive: false })
         .addTo(markerGroup);
@@ -819,6 +826,14 @@
   // Search input events
   searchInput.addEventListener('input', updateSearchUI);
 
+  searchInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      searchTerm = searchInput.value;
+      if (!locationInput.value) locationTerm = '';
+      submitSearch();
+    }
+  });
+
   searchClear.addEventListener('mousedown', (e) => {
     e.preventDefault();
     searchInput.value = '';
@@ -837,6 +852,7 @@
       searchOpenedFromDefault = false;
       searchTerm = '';
       locationTerm = '';
+      document.querySelector('#hotspot-search-default span:last-child').textContent = 'Search for yoga, barre, cycling...';
       updateSearchUI();
       updateLocationUI();
       preserveMapView = true;
@@ -1057,6 +1073,17 @@
   // Location input events
   locationInput.addEventListener('input', updateLocationUI);
 
+  locationInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      if (locationInput.value.trim()) {
+        locationTerm = locationInput.value.trim();
+        selectLocation();
+      } else {
+        submitSearch();
+      }
+    }
+  });
+
   locationClear.addEventListener('mousedown', (e) => {
     e.preventDefault();
     locationInput.value = '';
@@ -1096,10 +1123,11 @@
       }
 
       const offsetCenter = getOffsetCenter(lat, lng, 14);
-      map.flyTo(offsetCenter, 14, { duration: 0.8 });
+      map.setView(offsetCenter, 14, { animate: true, duration: 0.4 });
       map.once('moveend', () => {
+        preserveMapView = true;
         if (currentScreen === 'screen-map-default') {
-          initDefaultMap(lat, lng, 14, userLat ? 'Nearby' : 'Manhattan');
+          initDefaultMap(lat, lng, 14, userLat ? 'Nearby' : 'Manhattan', true);
         } else {
           updateMapForCurrentState();
         }
@@ -1119,6 +1147,7 @@
     updateSearchUI();
     updateLocationUI();
     setActiveTab('search');
+    searchThisAreaBtn.classList.remove('visible');
     showScreen('screen-search-focused', 'fade-in');
     setTimeout(() => searchInput.focus(), 300);
   });
@@ -1132,6 +1161,7 @@
     updateSearchUI();
     updateLocationUI();
     setActiveTab('search');
+    searchThisAreaBtn.classList.remove('visible');
     showScreen('screen-search-focused', 'fade-in');
     setTimeout(() => searchInput.focus(), 300);
   });
@@ -1142,6 +1172,7 @@
     searchOpenedFromDefault = false;
     locationInput.value = (locationTerm && locationTerm !== 'Current location') ? locationTerm : '';
     setActiveTab('location');
+    searchThisAreaBtn.classList.remove('visible');
     showScreen('screen-search-focused', 'fade-in');
     setTimeout(() => { locationInput.focus(); updateLocationUI(); }, 150);
   });
@@ -1155,6 +1186,7 @@
     updateSearchUI();
     updateLocationUI();
     setActiveTab('search');
+    searchThisAreaBtn.classList.remove('visible');
     showScreen('screen-search-focused', 'fade-in');
     setTimeout(() => searchInput.focus(), 300);
   });
@@ -1164,14 +1196,21 @@
     searchInput.value = '';
     updateSearchUI();
     setActiveTab('search');
+    searchThisAreaBtn.classList.remove('visible');
     showScreen('screen-search-focused', 'fade-in');
     setTimeout(() => searchInput.focus(), 300);
   });
   document.getElementById('hotspot-x-tab').addEventListener('click', () => {
     searchTerm = '';
     locationTerm = '';
+    document.querySelector('#hotspot-search-default span:last-child').textContent = 'Search for yoga, barre, cycling...';
     preserveMapView = true;
     preserveMapContents = true;
+    // Remove location marker — only shown after an explicit location search
+    if (userLocationMarker) {
+      userLocationMarker.remove();
+      userLocationMarker = null;
+    }
     showScreen('screen-map-default', 'fade-in');
   });
 
@@ -1203,42 +1242,195 @@
 
   // ========== SEARCH THIS AREA ==========
   const searchThisAreaBtn = document.getElementById('search-this-area');
+  const allSheets = document.querySelectorAll('.results-sheet');
+  const allNavBtns = document.querySelectorAll('.map-nav-btn');
 
-  function showSearchThisArea() {
-    if (currentScreen !== 'screen-map-default') return;
+  function collapseSheets() {
+    if (!MAP_SCREENS.includes(currentScreen)) return;
+    allSheets.forEach(s => {
+      s.style.transform = '';
+      s.style.transition = '';
+      s.classList.add('collapsed');
+    });
+    allNavBtns.forEach(b => b.classList.add('collapsed'));
     searchThisAreaBtn.classList.add('visible');
   }
 
-  function hideSearchThisArea() {
+  function expandSheets() {
+    allSheets.forEach(s => {
+      s.classList.remove('collapsed');
+      s.style.transform = '';
+      s.style.transition = '';
+    });
+    allNavBtns.forEach(b => b.classList.remove('collapsed'));
     searchThisAreaBtn.classList.remove('visible');
   }
 
-  map.on('dragstart drag', showSearchThisArea);
+  map.on('dragstart drag', collapseSheets);
+
+  // Draggable sheet — follows finger/mouse, snaps on release
+  const COLLAPSED_Y = 291; // px, matches CSS .collapsed translateY
+  const SNAP_THRESHOLD = 60; // px drag distance to trigger state change
+
+  allSheets.forEach(sheet => {
+    let dragging = false;
+    let startY = 0;
+    let startOffset = 0; // translateY at drag start
+    let currentOffset = 0;
+
+    function getSheetOffset() {
+      return sheet.classList.contains('collapsed') ? COLLAPSED_Y : 0;
+    }
+
+    function setSheetY(y, animate) {
+      sheet.style.transition = animate ? '' : 'none';
+      sheet.style.transform = `translateY(${y}px)`;
+      // Keep nav buttons in sync — always explicit so CSS class doesn't flash in
+      allNavBtns.forEach(b => {
+        b.style.transition = animate ? '' : 'none';
+        b.style.transform = `translateY(${y}px)`;
+      });
+    }
+
+    function onDragStart(clientY) {
+      dragging = true;
+      startY = clientY;
+      startOffset = getSheetOffset();
+      currentOffset = startOffset;
+      setSheetY(currentOffset, false);
+    }
+
+    function onDragMove(clientY) {
+      if (!dragging) return;
+      const delta = clientY - startY;
+      currentOffset = Math.max(0, Math.min(COLLAPSED_Y, startOffset + delta));
+      setSheetY(currentOffset, false);
+    }
+
+    function onDragEnd(clientY) {
+      if (!dragging) return;
+      dragging = false;
+      const delta = clientY - startY;
+      let snapTo;
+      if (Math.abs(delta) < 10) {
+        // Treat as tap — don't change state
+        snapTo = startOffset;
+      } else if (delta < -SNAP_THRESHOLD) {
+        // Dragged up enough → expand
+        snapTo = 0;
+      } else if (delta > SNAP_THRESHOLD) {
+        // Dragged down enough → collapse
+        snapTo = COLLAPSED_Y;
+      } else {
+        // Not far enough — snap back to original state
+        snapTo = startOffset;
+      }
+      // Re-enable CSS transition for snap animation
+      setSheetY(snapTo, true);
+      if (snapTo === 0) {
+        sheet.classList.remove('collapsed');
+        allNavBtns.forEach(b => { b.classList.remove('collapsed'); });
+        searchThisAreaBtn.classList.remove('visible');
+      } else {
+        sheet.classList.add('collapsed');
+        allNavBtns.forEach(b => { b.classList.add('collapsed'); });
+        // Don't show "Search this area" on sheet drag — only on map pan
+      }
+      // After transition ends, clear inline styles so CSS classes are in control
+      const cleanup = () => {
+        sheet.style.transform = '';
+        sheet.style.transition = '';
+        allNavBtns.forEach(b => { b.style.transform = ''; b.style.transition = ''; });
+        sheet.removeEventListener('transitionend', cleanup);
+      };
+      sheet.addEventListener('transitionend', cleanup);
+    }
+
+    // Touch events
+    sheet.addEventListener('touchstart', e => {
+      onDragStart(e.touches[0].clientY);
+    }, { passive: true });
+
+    sheet.addEventListener('touchmove', e => {
+      onDragMove(e.touches[0].clientY);
+    }, { passive: true });
+
+    sheet.addEventListener('touchend', e => {
+      onDragEnd(e.changedTouches[0].clientY);
+    });
+
+    // Mouse events (for desktop testing)
+    sheet.addEventListener('mousedown', e => {
+      onDragStart(e.clientY);
+      const onMove = ev => onDragMove(ev.clientY);
+      const onUp = ev => {
+        onDragEnd(ev.clientY);
+        window.removeEventListener('mousemove', onMove);
+        window.removeEventListener('mouseup', onUp);
+      };
+      window.addEventListener('mousemove', onMove);
+      window.addEventListener('mouseup', onUp);
+    });
+  });
 
   searchThisAreaBtn.addEventListener('click', () => {
-    hideSearchThisArea();
-    // Derive the geographic center of the visible area (between search bar and sheet)
-    // by inverting the same offset used in getOffsetCenter()
+    // Fade out button, keep sheet (and nav button) in collapsed position
+    searchThisAreaBtn.classList.remove('visible');
+
+    // Derive the geographic center of the visible area (between search bar and sheet).
+    // When sheet is collapsed the visible area extends much further down, so use a
+    // smaller offset (sheet top ~683px vs ~392px normal → visible center ~396px vs ~251px).
+    const sheetCollapsed = allSheets[0] && allSheets[0].classList.contains('collapsed');
+    const offsetPx = sheetCollapsed ? 30 : MAP_CENTER_OFFSET_PX;
     const zoom = map.getZoom();
     const mapCenterPx = map.project(map.getCenter(), zoom);
-    const visibleCenterPx = L.point(mapCenterPx.x, mapCenterPx.y - MAP_CENTER_OFFSET_PX);
+    const visibleCenterPx = L.point(mapCenterPx.x, mapCenterPx.y - offsetPx);
     const visibleCenter = map.unproject(visibleCenterPx, zoom);
     const loc = { lat: visibleCenter.lat, lng: visibleCenter.lng };
+
+    // Set location to "Mapped area" in the search field
+    locationTerm = 'Mapped area';
+    locationInput.value = 'Mapped area';
+    if (currentScreen === 'screen-map-default') {
+      document.querySelector('#hotspot-search-default span:last-child').textContent = 'Mapped area';
+    } else if (currentScreen === 'screen-search-results') {
+      document.getElementById('results-search-text').innerHTML = searchTerm + ' <span style="color:#90939D">\u00B7 Mapped area</span>';
+    } else if (currentScreen === 'screen-location-results') {
+      document.getElementById('locresults-search-text').textContent = 'Mapped area';
+    } else if (currentScreen === 'screen-both-results') {
+      document.getElementById('both-search-text').innerHTML = searchTerm + ' <span style="color:#90939D">\u00B7 Mapped area</span>';
+    }
+    if (userLocationMarker) {
+      if (userLat && userLng) {
+        userLocationMarker.setLatLng([userLat, userLng]);
+        userLocationMarker.setIcon(userLocIcon);
+      } else {
+        userLocationMarker.remove();
+        userLocationMarker = null;
+      }
+    }
+
     markerGroup.clearLayers();
     const locationKey = visibleCenter.lat.toFixed(3) + ',' + visibleCenter.lng.toFixed(3);
-    const pins = generatePins('', locationKey, loc, 10);
+    const pins = generatePins(searchTerm || '', locationKey, loc, 20);
     pins.forEach(pin => {
       L.marker([pin.lat, pin.lng], { icon: pinIcon, interactive: false }).addTo(markerGroup);
     });
-    populateVenueList('screen-map-default', pins, 'Fitness', 'Nearby');
+    populateVenueList(currentScreen, pins, searchTerm || 'Fitness', 'Nearby');
   });
 
   // ========== RESULTS PILL X BUTTONS ==========
-  // Clear search term, preserve location, stay at current map position
+  // Clear search term and location, stay at current map position, hide location pin
   function clearSearchFromResults(e) {
     e.stopPropagation();
     searchTerm = '';
     searchInput.value = '';
+    locationTerm = '';
+    document.querySelector('#hotspot-search-default span:last-child').textContent = 'Search for yoga, barre, cycling...';
+    if (userLocationMarker) {
+      userLocationMarker.remove();
+      userLocationMarker = null;
+    }
     preserveMapView = true;
     preserveMapContents = true;
     showScreen('screen-map-default');

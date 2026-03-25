@@ -848,12 +848,12 @@
     box-shadow: 0 2px 8px rgba(0,0,0,0.12);
     z-index: 25;
     opacity: 0;
-    pointer-events: none !important; /* beats .screen.map-screen > * specificity */
+    pointer-events: none;
     transition: opacity 0.2s ease;
   }
   .search-this-area-btn.visible {
     opacity: 1;
-    pointer-events: auto !important;
+    pointer-events: auto;
   }
 
   /* Current location / navigate button on map */
@@ -872,6 +872,10 @@
     border: 1px solid rgba(255,255,255,0.35);
     cursor: pointer;
     padding: 12px;
+    transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .map-nav-btn.collapsed {
+    transform: translateY(291px);
   }
   .map-nav-btn img, .map-nav-btn svg {
     width: 24px;
@@ -949,6 +953,10 @@
     display: flex;
     flex-direction: column;
     overflow: hidden;
+    transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .results-sheet.collapsed {
+    transform: translateY(291px); /* sheet top lands at ~683px from screen top */
   }
   .sheet-handle {
     width: 49px;
