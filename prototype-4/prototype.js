@@ -1299,6 +1299,7 @@
     let startY = 0;
     let startOffset = 0; // translateY at drag start
     let currentOffset = 0;
+    let prevSheetY = null; // tracks last sheet Y for incremental map panning
 
     function getSheetOffset() {
       if (sheet.classList.contains('collapsed')) return COLLAPSED_Y;
@@ -1322,6 +1323,13 @@
           b.style.opacity = String(1 - progress);
         }
       });
+      // Pan map so content stays centered in the visible area between search bar and sheet.
+      // The visible center shifts by Δy/2 for every pixel the sheet moves, so pan by Δy/2.
+      if (prevSheetY !== null && prevSheetY !== y) {
+        const mapPanDelta = (prevSheetY - y) / 2;
+        map.panBy([0, mapPanDelta], { animate: animate, noMoveStart: true, duration: 0.35, easeLinearity: 0.5 });
+        prevSheetY = y;
+      }
     }
 
     function onDragStart(clientY) {
@@ -1329,6 +1337,7 @@
       startY = clientY;
       startOffset = getSheetOffset();
       currentOffset = startOffset;
+      prevSheetY = startOffset;
       setSheetY(currentOffset, false);
     }
 
