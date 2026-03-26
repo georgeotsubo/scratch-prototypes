@@ -860,7 +860,7 @@
   .map-nav-btn {
     position: absolute;
     right: 16px;
-    z-index: 15;
+    z-index: 9;
     width: 48px;
     height: 48px;
     background: white;
@@ -872,7 +872,7 @@
     border: 1px solid rgba(255,255,255,0.35);
     cursor: pointer;
     padding: 12px;
-    transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.35s cubic-bezier(0.4, 0, 0.2, 1);
   }
   .map-nav-btn.collapsed {
     transform: translateY(291px);
@@ -943,10 +943,10 @@
   /* ========== BOTTOM SHEET ========== */
   .results-sheet {
     position: absolute;
-    bottom: 0;
+    bottom: -266px; /* overflow so translateY(-266) still reaches screen bottom */
     left: 0;
     right: 0;
-    height: 460px;
+    height: 726px; /* 460px visible + 266px overflow to cover full screen when dragged up */
     background: #f1f2f3;
     border-radius: 32px 32px 0 0;
     z-index: 10;
@@ -958,6 +958,9 @@
   }
   .results-sheet.collapsed {
     transform: translateY(291px); /* sheet top lands at ~683px from screen top */
+  }
+  .results-sheet.expanded {
+    transform: translateY(-266px); /* sheet top lands at ~126px = 16px below search bar */
   }
   .sheet-handle {
     width: 49px;

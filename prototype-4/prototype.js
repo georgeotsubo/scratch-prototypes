@@ -1259,19 +1259,29 @@
     allSheets.forEach(s => {
       s.style.transform = '';
       s.style.transition = '';
+      s.classList.remove('expanded');
       s.classList.add('collapsed');
     });
-    allNavBtns.forEach(b => b.classList.add('collapsed'));
+    allNavBtns.forEach(b => {
+      b.classList.add('collapsed');
+      b.style.transform = '';
+      b.style.opacity = '';
+    });
     searchThisAreaBtn.classList.add('visible');
   }
 
   function expandSheets() {
     allSheets.forEach(s => {
-      s.classList.remove('collapsed');
+      s.classList.remove('collapsed', 'expanded');
       s.style.transform = '';
       s.style.transition = '';
     });
-    allNavBtns.forEach(b => b.classList.remove('collapsed'));
+    allNavBtns.forEach(b => {
+      b.classList.remove('collapsed');
+      b.style.transform = '';
+      b.style.transition = '';
+      b.style.opacity = '';
+    });
     searchThisAreaBtn.classList.remove('visible');
   }
 
@@ -1279,6 +1289,9 @@
 
   // Draggable sheet — follows finger/mouse, snaps on release
   const COLLAPSED_Y = 291; // px, matches CSS .collapsed translateY
+  // EXPANDED_Y: sheet top lands 16px below search bar bottom (110px) → top at 126px
+  // Sheet at y=0 has top = 852 - 460 = 392px → delta = 126 - 392 = -266px
+  const EXPANDED_Y = -266;
   const SNAP_THRESHOLD = 60; // px drag distance to trigger state change
 
   allSheets.forEach(sheet => {
@@ -1288,16 +1301,26 @@
     let currentOffset = 0;
 
     function getSheetOffset() {
-      return sheet.classList.contains('collapsed') ? COLLAPSED_Y : 0;
+      if (sheet.classList.contains('collapsed')) return COLLAPSED_Y;
+      if (sheet.classList.contains('expanded')) return EXPANDED_Y;
+      return 0;
     }
 
     function setSheetY(y, animate) {
       sheet.style.transition = animate ? '' : 'none';
       sheet.style.transform = `translateY(${y}px)`;
-      // Keep nav buttons in sync — always explicit so CSS class doesn't flash in
       allNavBtns.forEach(b => {
         b.style.transition = animate ? '' : 'none';
-        b.style.transform = `translateY(${y}px)`;
+        if (y >= 0) {
+          // Sheet moving down — nav button follows sheet
+          b.style.transform = `translateY(${y}px)`;
+          b.style.opacity = '1';
+        } else {
+          // Sheet moving up above default — nav button stays put, fades out
+          b.style.transform = 'translateY(0px)';
+          const progress = Math.min(1, Math.abs(y) / Math.abs(EXPANDED_Y));
+          b.style.opacity = String(1 - progress);
+        }
       });
     }
 
@@ -1312,7 +1335,7 @@
     function onDragMove(clientY) {
       if (!dragging) return;
       const delta = clientY - startY;
-      currentOffset = Math.max(0, Math.min(COLLAPSED_Y, startOffset + delta));
+      currentOffset = Math.max(EXPANDED_Y, Math.min(COLLAPSED_Y, startOffset + delta));
       setSheetY(currentOffset, false);
     }
 
@@ -1325,22 +1348,36 @@
         // Treat as tap — don't change state
         snapTo = startOffset;
       } else if (delta < -SNAP_THRESHOLD) {
-        // Dragged up enough → expand
-        snapTo = 0;
+        // Dragged up enough
+        if (startOffset >= COLLAPSED_Y) {
+          snapTo = 0; // collapsed → default
+        } else {
+          snapTo = EXPANDED_Y; // default → fully expanded up
+        }
       } else if (delta > SNAP_THRESHOLD) {
-        // Dragged down enough → collapse
-        snapTo = COLLAPSED_Y;
+        // Dragged down enough
+        if (startOffset <= EXPANDED_Y) {
+          snapTo = 0; // fully expanded up → default
+        } else {
+          snapTo = COLLAPSED_Y; // default or collapsed → collapsed
+        }
       } else {
         // Not far enough — snap back to original state
         snapTo = startOffset;
       }
       // Re-enable CSS transition for snap animation
       setSheetY(snapTo, true);
-      if (snapTo === 0) {
+      if (snapTo === EXPANDED_Y) {
         sheet.classList.remove('collapsed');
+        sheet.classList.add('expanded');
+        allNavBtns.forEach(b => { b.classList.remove('collapsed'); });
+        searchThisAreaBtn.classList.remove('visible');
+      } else if (snapTo === 0) {
+        sheet.classList.remove('collapsed', 'expanded');
         allNavBtns.forEach(b => { b.classList.remove('collapsed'); });
         searchThisAreaBtn.classList.remove('visible');
       } else {
+        sheet.classList.remove('expanded');
         sheet.classList.add('collapsed');
         allNavBtns.forEach(b => { b.classList.add('collapsed'); });
         // Don't show "Search this area" on sheet drag — only on map pan
@@ -1349,7 +1386,15 @@
       const cleanup = () => {
         sheet.style.transform = '';
         sheet.style.transition = '';
-        allNavBtns.forEach(b => { b.style.transform = ''; b.style.transition = ''; });
+        allNavBtns.forEach(b => {
+          b.style.transform = '';
+          b.style.transition = '';
+          if (snapTo === EXPANDED_Y) {
+            b.style.opacity = '0'; // keep hidden when sheet is fully expanded up
+          } else {
+            b.style.opacity = '';
+          }
+        });
         sheet.removeEventListener('transitionend', cleanup);
       };
       sheet.addEventListener('transitionend', cleanup);
