@@ -947,6 +947,10 @@
       locationCurrentCta.classList.remove('hidden');
       if (locationRecentsData.length > 0) locationRecents.classList.remove('hidden');
       locationAutocomplete.classList.add('hidden');
+    } else if (val === 'Mapped area') {
+      locationCurrentCta.classList.remove('hidden');
+      locationRecents.classList.add('hidden');
+      locationAutocomplete.classList.add('hidden');
     } else if (suggestions) {
       locationCurrentCta.classList.add('hidden');
       locationRecents.classList.add('hidden');
@@ -1013,7 +1017,7 @@
   const MAX_LOCATION_RECENTS = 5;
 
   function addLocationRecent(term) {
-    if (!term || term === 'Current location') return;
+    if (!term || term === 'Current location' || term === 'Mapped area') return;
     const idx = locationRecentsData.indexOf(term);
     if (idx !== -1) locationRecentsData.splice(idx, 1);
     locationRecentsData.unshift(term);

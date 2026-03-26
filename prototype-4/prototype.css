@@ -954,6 +954,7 @@
     flex-direction: column;
     overflow: hidden;
     transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    user-select: none;
   }
   .results-sheet.collapsed {
     transform: translateY(291px); /* sheet top lands at ~683px from screen top */
