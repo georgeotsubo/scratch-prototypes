@@ -730,12 +730,15 @@
       searchRecentsSection.classList.add('hidden');
       searchAutocomplete.classList.remove('hidden');
       renderSearchSuggestions(suggestions, val);
-    } else {
+    } else if (val.trim().length > 0) {
       exploreSection.classList.add('hidden');
       searchRecentsSection.classList.add('hidden');
       searchAutocomplete.classList.remove('hidden');
-      // Show the typed text as-is suggestion
-      renderSearchSuggestions([val], val);
+      renderSearchSuggestions([val.trim()], val);
+    } else {
+      exploreSection.classList.add('hidden');
+      searchRecentsSection.classList.add('hidden');
+      searchAutocomplete.classList.add('hidden');
     }
   }
 
