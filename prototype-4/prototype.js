@@ -211,17 +211,18 @@
     };
   }
 
-  // Pre-vetted offsets: ~2.5km spread, lng capped ±0.014 to stay off rivers for NYC
+  // Pre-vetted offsets: ~1.5km spread, evenly distributed across quadrants,
+  // minimum ~0.004deg from center to avoid clustering, lng capped ±0.012 for NYC
   const LAND_OFFSETS = [
-    [ 0.0016,  0.0022], [ 0.0032, -0.0020], [-0.0022,  0.0028], [-0.0028, -0.0016],
-    [ 0.0045,  0.0010], [ 0.0010,  0.0042], [-0.0014, -0.0038], [-0.0042,  0.0006],
-    [ 0.0058,  0.0020], [-0.0048, -0.0026], [ 0.0022,  0.0054], [-0.0060,  0.0014],
-    [ 0.0052, -0.0030], [-0.0035,  0.0050], [ 0.0072,  0.0010], [-0.0064,  0.0026],
-    [ 0.0014,  0.0068], [-0.0074, -0.0006], [ 0.0076, -0.0012], [-0.0020,  0.0074],
-    [ 0.0092,  0.0012], [-0.0084,  0.0028], [ 0.0032,  0.0088], [-0.0092, -0.0008],
-    [ 0.0110,  0.0006], [-0.0100,  0.0022], [ 0.0058,  0.0102], [-0.0114, -0.0004],
-    [ 0.0128,  0.0014], [-0.0120,  0.0016], [ 0.0026,  0.0120], [-0.0132, -0.0010],
-    [ 0.0148,  0.0008], [-0.0138,  0.0018], [ 0.0070,  0.0136], [-0.0150, -0.0005],
+    [ 0.0052,  0.0038], [ 0.0038, -0.0055], [-0.0048,  0.0042], [-0.0060, -0.0035],
+    [ 0.0075,  0.0025], [ 0.0028,  0.0068], [-0.0032, -0.0060], [-0.0070,  0.0018],
+    [ 0.0090,  0.0050], [-0.0065, -0.0048], [ 0.0045,  0.0085], [-0.0085,  0.0030],
+    [ 0.0080, -0.0042], [-0.0055,  0.0075], [ 0.0035,  0.0095], [-0.0042, -0.0080],
+    [ 0.0062,  0.0070], [-0.0095,  0.0010], [ 0.0100, -0.0028], [-0.0025,  0.0100],
+    [ 0.0115,  0.0018], [-0.0078,  0.0062], [ 0.0055,  0.0105], [-0.0110, -0.0022],
+    [ 0.0040, -0.0090], [-0.0100,  0.0045], [ 0.0085,  0.0078], [-0.0030, -0.0105],
+    [ 0.0120,  0.0035], [-0.0115,  0.0025], [ 0.0022,  0.0115], [-0.0088, -0.0065],
+    [ 0.0065, -0.0100], [-0.0050,  0.0108], [ 0.0108,  0.0060], [-0.0125, -0.0015],
   ];
 
   function generatePins(search, location, center, count) {
@@ -394,8 +395,14 @@
     } else if (locationTerm === 'Current location' && userLat && userLng) {
       loc = { lat: userLat, lng: userLng, zoom: map.getZoom() };
     } else if (locationTerm === 'Mapped area') {
-      const c = map.getCenter();
-      loc = { lat: c.lat, lng: c.lng, zoom: map.getZoom() };
+      // map.getCenter() is the screen center (426px) which is behind the sheet.
+      // Project to pixel space, shift up by MAP_CENTER_OFFSET_PX so the loc point
+      // appears at the visible area center (~231px) — same as getOffsetCenter for other searches.
+      const zoom = map.getZoom();
+      const screenCenterPx = map.project(map.getCenter(), zoom);
+      const visibleCenterPx = L.point(screenCenterPx.x, screenCenterPx.y - MAP_CENTER_OFFSET_PX);
+      const visibleCenter = map.unproject(visibleCenterPx, zoom);
+      loc = { lat: visibleCenter.lat, lng: visibleCenter.lng, zoom: zoom };
       keepView = true;
     } else {
       loc = findLocation(locationTerm) || LOCATIONS['_default'];
@@ -426,11 +433,9 @@
     if (keepView) {
       // Map is already in the right position — don't animate
     } else if (isResultsScreen && pins.length > 0) {
-      const allPoints = pins.map(p => [p.lat, p.lng]);
-      allPoints.push([loc.lat, loc.lng]);
-      const bounds = L.latLngBounds(allPoints);
-      // Pad top for search bar (~120px) and bottom for sheet area (~450px)
-      map.flyToBounds(bounds, { paddingTopLeft: [20, 120], paddingBottomRight: [20, 450], duration: 0.8, maxZoom: 15 });
+      // Use fixed zoom 14 (same as current location) for consistent zoom across all searches
+      const offsetCenter = getOffsetCenter(loc.lat, loc.lng, 14);
+      map.flyTo(offsetCenter, 14, { duration: 0.8 });
     } else {
       const offsetCenter = getOffsetCenter(loc.lat, loc.lng, loc.zoom);
       if (currentScreen === 'screen-map-default') {
