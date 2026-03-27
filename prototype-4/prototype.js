@@ -924,7 +924,7 @@
   let locationInputFocused = false;
 
   locationInput.addEventListener('focus', () => { locationInputFocused = true; locationInput.placeholder = 'Enter neighborhood or zip'; updateLocationUI(); });
-  locationInput.addEventListener('blur', () => { locationInputFocused = false; locationInput.placeholder = 'Current location'; updateLocationUI(); });
+  locationInput.addEventListener('blur', () => { locationInputFocused = false; locationInput.placeholder = locationTerm === 'Mapped area' ? 'Mapped area' : 'Current location'; updateLocationUI(); });
   const locationRecents = document.getElementById('location-recents-section');
   const locationAutocomplete = document.getElementById('location-autocomplete');
   const locationAutocompleteList = document.getElementById('location-autocomplete-list');
