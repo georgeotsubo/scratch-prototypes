@@ -923,7 +923,14 @@
 
   let locationInputFocused = false;
 
-  locationInput.addEventListener('focus', () => { locationInputFocused = true; locationInput.placeholder = 'Enter neighborhood or zip'; updateLocationUI(); });
+  locationInput.addEventListener('focus', () => {
+    locationInputFocused = true;
+    locationInput.placeholder = 'Enter neighborhood or zip';
+    updateLocationUI();
+    if (locationInput.value === 'Mapped area') {
+      setTimeout(() => locationInput.setSelectionRange(0, 0), 0);
+    }
+  });
   locationInput.addEventListener('blur', () => { locationInputFocused = false; locationInput.placeholder = locationTerm || 'Current location'; updateLocationUI(); });
   const locationRecents = document.getElementById('location-recents-section');
   const locationAutocomplete = document.getElementById('location-autocomplete');
@@ -1488,12 +1495,12 @@
   });
 
   // ========== RESULTS PILL X BUTTONS ==========
-  // Clear search term and location, stay at current map position, hide location pin
+  // Clear search term, stay at current map position, hide location pin
   function clearSearchFromResults(e) {
     e.stopPropagation();
     searchTerm = '';
     searchInput.value = '';
-    locationTerm = '';
+    // keep locationTerm so the location field placeholder persists on next open
     document.querySelector('#hotspot-search-default span:last-child').textContent = 'Search for yoga, barre, cycling...';
     if (userLocationMarker) {
       userLocationMarker.remove();
