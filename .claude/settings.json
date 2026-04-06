@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(curl -s -w \"\\\\n%{http_code}\" -H \"Accept: application/json\" -H \"Authorization: fsq3cJJVEA8Aicd/IsAmQ30LyPLOf3rYIYAGnTI4qtM1wyM=\" \"https://api.foursquare.com/v3/places/nearby?ll=40.738%2C-73.985&limit=5\")",
+      "Bash(curl -s -w \"\\\\n%{http_code}\" -H \"Accept: application/json\" -H \"Authorization: fsq3cJJVEA8Aicd/IsAmQ30LyPLOf3rYIYAGnTI4qtM1wyM=\" \"https://api.foursquare.com/v3/autocomplete?query=gym&ll=40.738%2C-73.985&limit=5\")",
+      "Bash(curl -s -w \"\\\\n%{http_code}\" -H \"Accept: application/json\" -H \"Authorization: fsq3cJJVEA8Aicd/IsAmQ30LyPLOf3rYIYAGnTI4qtM1wyM=\" \"https://places-api.foursquare.com/v1/places/search?ll=40.738%2C-73.985&query=gym&limit=5\")",
+      "WebFetch(domain:docs.foursquare.com)",
+      "Bash(curl -s -w \"\\\\n%{http_code}\" -H \"Accept: application/json\" -H \"Authorization: fsq3cJJVEA8Aicd/IsAmQ30LyPLOf3rYIYAGnTI4qtM1wyM=\" -H \"X-Places-Api-Version: 1970-01-01\" \"https://api.foursquare.com/v3/places/search?ll=40.738%2C-73.985&query=gym&limit=5\")"
+    ]
+  }
+}
