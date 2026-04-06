@@ -1489,6 +1489,7 @@
 
   map.on('dragstart', () => { mapPanned = true; collapseSheets(); });
   map.on('drag', collapseSheets);
+  map.on('zoomstart', (e) => { if (e.originalEvent) { mapPanned = true; collapseSheets(); } });
 
   function setNavBtnActive(active) {
     allNavBtns.forEach(b => b.classList.toggle('active', active));
