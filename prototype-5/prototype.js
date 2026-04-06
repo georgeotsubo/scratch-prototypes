@@ -79,7 +79,7 @@
   }
 
   // ========== FOURSQUARE PLACES API ==========
-  const FOURSQUARE_KEY = 'UVVTTD4P2UPJLYTG0HIK5BNQF2S35RSRESTYYVMB1YO0EMA1';
+  const FOURSQUARE_KEY = window.FOURSQUARE_KEY;
   let placesAbort = null;
 
   async function fetchNearbyPlaces(lat, lng, query) {
@@ -92,8 +92,7 @@
       sort: 'DISTANCE',
     });
     params.set('query', query || 'gym fitness yoga pilates');
-    const baseUrl = `https://places-api.foursquare.com/places/search?${params}`;
-    const url = `https://corsproxy.io/?url=${encodeURIComponent(baseUrl)}`;
+    const url = `/api/foursquare/places/search?${params}`;
     try {
       const res = await fetch(url, {
         headers: {

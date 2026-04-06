@@ -1,0 +1,8 @@
+{
+  "rewrites": [
+    {
+      "source": "/api/foursquare/:path*",
+      "destination": "https://places-api.foursquare.com/:path*"
+    }
+  ]
+}
