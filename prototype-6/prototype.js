@@ -2001,14 +2001,16 @@
     venueDetailOpen = false;
     venueDetailEl.style.background = '';
     venueDetailEl.classList.remove('venue-detail-visible');
+    // Get the sheet height so we can animate to a pixel value (avoids % vs px mismatch)
+    var sheetHeight = venueDetailSheet.offsetHeight;
     if (motionAnimate) {
       var closeSpring = motionSpring ? {
         type: motionSpring,
-        stiffness: 400,
-        damping: 35,
+        stiffness: 300,
+        damping: 30,
         velocity: velocity || 0
       } : { duration: 0.35 };
-      motionAnimate(venueDetailSheet, { transform: 'translateY(100%)' }, closeSpring).then(function() {
+      motionAnimate(venueDetailSheet, { transform: 'translateY(' + sheetHeight + 'px)' }, closeSpring).then(function() {
         venueDetailSheet.style.transform = '';
         venueDetailSheet.style.visibility = '';
         persistentTabBar.style.display = 'none';
@@ -2034,14 +2036,12 @@
   // Sticky nav: show venue name when scrolled past the header
   (function() {
     var stickyNav = document.getElementById('vd-sticky-nav');
-    var debug = document.getElementById('vd-scroll-debug');
     // Threshold: once scrollTop > 0, the user has scrolled and the title should appear.
     // Use a small threshold to avoid flicker at exactly 0.
     var SCROLL_THRESHOLD = 10;
 
     venueDetailScroll.addEventListener('scroll', function() {
       if (!venueDetailOpen) return;
-      if (debug) debug.textContent = Math.round(venueDetailScroll.scrollTop);
       if (venueDetailScroll.scrollTop > SCROLL_THRESHOLD) {
         stickyNav.classList.add('scrolled');
       } else {
@@ -2432,9 +2432,9 @@
       if (dragDelta > 80 || dragVelocity > 500) {
         closeVenueDetail(dragVelocity / 1000);
       } else {
-        // Snap back with spring
+        // Snap back with spring (use px to match current inline transform)
         if (motionAnimate) {
-          motionAnimate(venueDetailSheet, { transform: 'translateY(0%)' }, iosSnapSpring);
+          motionAnimate(venueDetailSheet, { transform: 'translateY(0px)' }, iosSnapSpring);
         } else {
           venueDetailSheet.style.transition = '';
           venueDetailSheet.style.transform = '';
