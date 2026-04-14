@@ -10,6 +10,11 @@
   let searchOpenedFromDefault = false; // true when search opened from map default (no fly needed on back)
   let activeTab = 'search';
   let mapPanned = false; // true when user has dragged the map from its original position
+  let venueDetailOpen = false;
+  let currentPins = []; // stores the currently displayed pins for venue detail reference
+  let currentSearchLabel = '';
+  let currentLocationLabel = '';
+  let wasDragging = false; // prevents venue card click after drag scroll
 
   // Autocomplete data
   const searchSuggestions = {
@@ -128,8 +133,17 @@
 
   // Display real places on map and in venue list
   function displayPlaces(places, screenId, search, location) {
+    currentPins = places;
+    currentSearchLabel = search || '';
+    currentLocationLabel = location || '';
     clearMarkers();
-    places.forEach(p => addPinMarker(p.lng, p.lat));
+    places.forEach((p, i) => {
+      const marker = addPinMarker(p.lng, p.lat);
+      marker.getElement().addEventListener('click', function(e) {
+        e.stopPropagation();
+        openVenueDetail(i);
+      });
+    });
     scheduleWaterCheck();
     populateVenueList(screenId, places, search, location);
   }
@@ -432,12 +446,66 @@
     setTimeout(() => map.resize(), 50);
   }
 
-  const VENUE_DESCRIPTIONS = [
-    'A welcoming studio offering a variety of classes for all levels, from beginners to advanced practitioners.',
-    'Modern facility with state-of-the-art equipment and experienced instructors dedicated to your fitness journey.',
-    'Boutique fitness studio known for its intimate class sizes and personalized attention to each member.',
-    'Community-focused space offering group classes, workshops, and private sessions in a supportive environment.',
-  ];
+  const VENUE_DESCRIPTIONS_BY_NAME = {
+    'Y7 Studio': 'Hip-hop yoga studio combining heated vinyasa flows with curated playlists in a candlelit setting. Classes focus on building strength and flexibility while vibing to the music.',
+    'Sky Ting Yoga': 'Downtown yoga studio blending Katonah, vinyasa, and Taoist traditions into creative, alignment-focused sequences. Known for its airy loft spaces and thoughtful community events.',
+    'Sky Ting NoHo': 'The NoHo outpost of Sky Ting offering the same blend of Katonah and vinyasa yoga in a bright, welcoming space with natural light and a curated retail corner.',
+    'Modo Yoga NYC': 'Hot yoga studio practicing in a sustainably heated room. Classes follow a set sequence designed to work every muscle, joint, and organ in the body.',
+    'CorePower Yoga': 'National yoga chain offering heated power yoga, sculpt classes with weights, and restorative sessions. Great for athletes looking to cross-train.',
+    'Lyons Den Yoga': 'Power yoga studio in Chelsea with dynamic, music-driven flows. Known for its strong community vibe and challenging sequences that build heat and endurance.',
+    'Yoga Vida': 'Donation-based yoga studio making practice accessible to everyone. Offers vinyasa, yin, and meditation classes with experienced teachers in a no-frills setting.',
+    'Bhakti Center': 'East Village spiritual center offering kirtan, meditation, and yoga rooted in the bhakti tradition. A welcoming space for seekers of all backgrounds.',
+    'Laughing Lotus': 'Colorful, eclectic yoga studio known for its creative flows, live music classes, and joyful community atmosphere. Every class is a unique experience.',
+    'Yoga Shanti': 'Upper East Side studio founded by Colleen Saidman Yee, offering alignment-based vinyasa and restorative yoga in an intimate, calming environment.',
+    'SLT Flatiron': 'High-intensity, low-impact Megaformer Pilates studio. Slow, controlled movements on a specialized machine that targets every muscle group to failure.',
+    'SLT NoHo': 'Megaformer Pilates in the heart of NoHo. Expect a full-body burn with slow, precise movements that shake muscles you didn\'t know you had.',
+    'SLT Tribeca': 'Tribeca location of the cult-favorite Megaformer studio. Small class sizes ensure personal attention during the signature slow-and-controlled workout.',
+    'SLT West 14th': 'West Village SLT studio offering the same intense Megaformer experience. Great for building lean muscle and improving core stability.',
+    'Club Pilates': 'Reformer Pilates studio offering classes for all levels from beginner to advanced. TRX, springboard, and chair exercises complement the reformer work.',
+    'New York Pilates': 'Boutique reformer studio on the Upper East Side known for its dynamic, music-driven classes that blend classical Pilates with contemporary fitness.',
+    'SLT Brooklyn Hts': 'Brooklyn Heights Megaformer studio bringing the signature SLT burn across the bridge. Convenient for downtown Brooklyn residents.',
+    'SLT Williamsburg': 'Williamsburg outpost of SLT with the same intense 50-minute Megaformer classes that sculpt and tone the entire body.',
+    'SLT NoMad': 'NoMad location offering SLT\'s signature Megaformer workout in a sleek, modern space. Perfect for a lunch-break burn.',
+    'Gramercy Pilates': 'Classical Pilates studio in Gramercy offering private and semi-private sessions on reformer, cadillac, and chair with highly trained instructors.',
+    'Physique 57 UES': 'Barre fitness studio combining isometric exercises with orthopedic stretches for a total-body workout. Known for visible results in just 8 sessions.',
+    'Physique 57 SoHo': 'SoHo barre studio offering the signature Physique 57 method — interval overload with restorative stretching for a lean, sculpted physique.',
+    'Pure Barre Flatiron': 'Low-impact, high-intensity barre workout using small isometric movements to tone and strengthen. Multiple class formats from classic to empower.',
+    'Barre3': 'Barre studio combining ballet barre, yoga, and Pilates into a balanced workout. Modifications offered for every move so all levels feel challenged.',
+    'Barry\'s Bootcamp': 'High-energy interval training alternating between treadmill sprints and floor exercises with heavy weights. The "Best Workout in the World" according to regulars.',
+    'Rumble Boxing': 'Boxing-inspired group fitness with a nightclub atmosphere. Alternate between water-filled bag rounds and strength training on the floor.',
+    'Tone House': 'Extreme athletic conditioning inspired by sports training. Turf-based HIIT workouts designed by a former NFL strength coach. Not for the faint of heart.',
+    'Fhitting Room': 'Functional high-intensity training using kettlebells, rowers, and ski ergs. Science-backed programming in small groups with expert coaching.',
+    'Peloton Studio': 'Home of the live Peloton classes — cycling, running, strength, and yoga all filmed here. Drop in to ride with the instructors you see on screen.',
+  };
+
+  const VENUE_DESC_BY_CATEGORY = {
+    'Yoga': [
+      'A welcoming yoga studio offering heated and unheated classes for all levels, from gentle restorative flows to challenging power sequences.',
+      'Thoughtfully designed yoga space with experienced teachers guiding students through creative vinyasa flows, meditation, and breathwork.',
+    ],
+    'Pilates': [
+      'Reformer and mat Pilates studio focused on core strength, flexibility, and body awareness. Small class sizes ensure personalized attention.',
+      'Modern Pilates studio with top-of-the-line equipment and expert instructors helping you build long, lean muscle through controlled movement.',
+    ],
+    'Barre': [
+      'Ballet-inspired barre studio blending isometric holds, small range-of-motion movements, and deep stretching for a total-body sculpt.',
+      'High-energy barre classes that combine elements of dance, Pilates, and yoga to tone every muscle group in under an hour.',
+    ],
+    '_default': [
+      'Boutique fitness studio known for its intimate class sizes and personalized attention to each member\'s goals.',
+      'Community-focused space offering group classes, workshops, and private sessions in a supportive environment.',
+      'Modern facility with experienced instructors dedicated to helping you reach your fitness goals through expert programming.',
+      'A welcoming studio offering a variety of classes for all levels, from beginners to advanced practitioners.',
+    ],
+  };
+
+  function getVenueDescription(name, category) {
+    if (VENUE_DESCRIPTIONS_BY_NAME[name]) return VENUE_DESCRIPTIONS_BY_NAME[name];
+    var descs = VENUE_DESC_BY_CATEGORY[category] || VENUE_DESC_BY_CATEGORY['_default'];
+    var hash = 0;
+    for (var i = 0; i < name.length; i++) hash = ((hash << 5) - hash) + name.charCodeAt(i);
+    return descs[Math.abs(hash) % descs.length];
+  }
 
   function generateVenueCardHTML(pins, search, location) {
     return pins.map((pin, i) => {
@@ -446,8 +514,8 @@
       const rating = (4.5 + (i % 5) * 0.1).toFixed(1);
       const reviews = 50 + i * 37;
       const neighborhood = pin.locality || location || 'Manhattan';
-      const desc = VENUE_DESCRIPTIONS[i % VENUE_DESCRIPTIONS.length];
-      return `<div class="venue-card">
+      const desc = getVenueDescription(pin.name, tags);
+      return `<div class="venue-card" data-venue-index="${i}">
         <div class="venue-header">
           <div class="venue-image"></div>
           <div class="venue-info">
@@ -478,6 +546,14 @@
       const el = document.getElementById(listId);
       if (el) {
         el.innerHTML = generateVenueCardHTML(pins, search, location);
+        el.querySelectorAll('.venue-card').forEach(card => {
+          card.style.cursor = 'pointer';
+          card.addEventListener('click', function() {
+            if (wasDragging) return;
+            const idx = parseInt(this.dataset.venueIndex, 10);
+            openVenueDetail(idx);
+          });
+        });
       }
     }
   }
@@ -626,18 +702,78 @@
   let resizeChecks = 0;
   const resizeInterval = setInterval(() => {
     map.resize();
+    window.dispatchEvent(new Event('resize'));
     if (++resizeChecks >= 10) clearInterval(resizeInterval);
   }, 200);
+  // Force a window resize on load to trigger layout
+  window.addEventListener('load', () => {
+    setTimeout(() => window.dispatchEvent(new Event('resize')), 100);
+  });
 
   map.on('load', function() {
     map.resize();
 
-    // Remove all text labels from the map
-    map.getStyle().layers.forEach(layer => {
+    // Remove text labels, then apply Apple Maps-like colors
+    var layers = map.getStyle().layers;
+    for (var i = 0; i < layers.length; i++) {
+      var layer = layers[i];
+      // Hide all symbol/label layers
       if (layer.type === 'symbol') {
         map.setLayoutProperty(layer.id, 'visibility', 'none');
+        continue;
       }
-    });
+      try {
+        var id = layer.id.toLowerCase();
+        // Water — soft sky blue
+        if (layer.type === 'fill' && (id.includes('water') || id === 'water')) {
+          map.setPaintProperty(layer.id, 'fill-color', '#b8daf0');
+        }
+        // Parks & green space — only actual parks, not all landuse
+        if (layer.type === 'fill' && id.includes('landuse') && !id.includes('industrial')) {
+          map.setPaintProperty(layer.id, 'fill-color', [
+            'match', ['get', 'class'],
+            'park', '#cde4c6',
+            'pitch', '#c4dcbc',
+            'cemetery', '#d4e4d0',
+            'hospital', '#f0e6e6',
+            'school', '#ece6da',
+            '#f2efe8'  // default to land color for commercial/residential/etc
+          ]);
+        }
+        if (layer.type === 'fill' && id.includes('landcover')) {
+          map.setPaintProperty(layer.id, 'fill-color', '#d8e8d0');
+          map.setPaintProperty(layer.id, 'fill-opacity', 0.3);
+        }
+        // Buildings — light tan
+        if (layer.type === 'fill' && id.includes('building')) {
+          map.setPaintProperty(layer.id, 'fill-color', '#e4ddd4');
+          map.setPaintProperty(layer.id, 'fill-opacity', 0.6);
+        }
+        // Land background — warm cream
+        if (layer.type === 'background') {
+          map.setPaintProperty(layer.id, 'background-color', '#f2efe8');
+        }
+        if (layer.type === 'fill' && (id === 'land' || id === 'land-structure-polygon')) {
+          map.setPaintProperty(layer.id, 'fill-color', '#f2efe8');
+        }
+        // Roads — white
+        if (layer.type === 'line' && id.includes('road') && !id.includes('label')) {
+          map.setPaintProperty(layer.id, 'line-color', '#ffffff');
+        }
+        // Road fills/cases
+        if (layer.type === 'fill' && id.includes('road')) {
+          map.setPaintProperty(layer.id, 'fill-color', '#ffffff');
+        }
+        // Bridge roads
+        if (layer.type === 'line' && id.includes('bridge') && !id.includes('label')) {
+          map.setPaintProperty(layer.id, 'line-color', '#ffffff');
+        }
+        // Tunnel roads — slightly off-white
+        if (layer.type === 'line' && id.includes('tunnel')) {
+          map.setPaintProperty(layer.id, 'line-color', '#ebe8e2');
+        }
+      } catch(e) { /* layer may not support property */ }
+    }
     initDefaultMap(40.7380, -73.9855, DEFAULT_MAP_ZOOM, 'Manhattan');
     document.querySelectorAll('.map-nav-btn').forEach(b => b.classList.add('active'));
   });
@@ -1497,6 +1633,66 @@
   map.on('dragstart', () => setNavBtnActive(false));
   map.on('zoomstart', (e) => { if (!e.originalEvent) return; setNavBtnActive(false); });
 
+  // Venue list interactions: expand collapsed sheet, collapse when dragging down from top
+  document.querySelectorAll('.venue-list').forEach(function(list) {
+    var dragStartY = 0;
+    var isDragging = false;
+
+    function tryExpand() {
+      var sheet = list.closest('.results-sheet');
+      if (sheet && sheet.classList.contains('collapsed')) {
+        expandSheets();
+      }
+    }
+
+    list.addEventListener('wheel', function(e) {
+      tryExpand();
+      // If at top and scrolling down (negative deltaY = scroll up in content terms),
+      // collapse sheet
+      var sheet = list.closest('.results-sheet');
+      if (sheet && !sheet.classList.contains('collapsed') && list.scrollTop <= 0 && e.deltaY < 0) {
+        collapseSheets();
+      }
+    }, { passive: true });
+
+    list.addEventListener('touchstart', function(e) {
+      tryExpand();
+      dragStartY = e.touches[0].clientY;
+      isDragging = true;
+    }, { passive: true });
+
+    list.addEventListener('touchmove', function(e) {
+      if (!isDragging) return;
+      var dy = e.touches[0].clientY - dragStartY;
+      var sheet = list.closest('.results-sheet');
+      // At scroll top and dragging down → collapse
+      if (sheet && !sheet.classList.contains('collapsed') && list.scrollTop <= 0 && dy > 60) {
+        isDragging = false;
+        collapseSheets();
+      }
+    }, { passive: true });
+
+    list.addEventListener('touchend', function() { isDragging = false; }, { passive: true });
+
+    list.addEventListener('mousedown', function(e) {
+      tryExpand();
+      dragStartY = e.clientY;
+      isDragging = true;
+    });
+
+    document.addEventListener('mousemove', function(e) {
+      if (!isDragging) return;
+      var dy = e.clientY - dragStartY;
+      var sheet = list.closest('.results-sheet');
+      if (sheet && !sheet.classList.contains('collapsed') && list.scrollTop <= 0 && dy > 60) {
+        isDragging = false;
+        collapseSheets();
+      }
+    });
+
+    document.addEventListener('mouseup', function() { isDragging = false; });
+  });
+
   // Draggable sheet — follows finger/mouse, snaps on release
   const COLLAPSED_Y = 291; // px, matches CSS .collapsed translateY
   // EXPANDED_Y: sheet top lands 16px below search bar bottom (110px) → top at 126px
@@ -1619,8 +1815,25 @@
       sheet.addEventListener('transitionend', cleanup);
     }
 
+    // Should this event start a sheet drag?
+    // From handle/filter area — always drag.
+    // From venue list — allow if collapsed OR if list is at scroll top (to drag down).
+    function shouldDragSheet(e) {
+      var fromList = e.target.closest('.venue-list');
+      if (!fromList) return true;
+      if (sheet.classList.contains('collapsed')) return true;
+      // In default/expanded state, allow drag if list is at scroll top
+      if (fromList.scrollTop <= 0) return true;
+      return false;
+    }
+
     // Touch events
     sheet.addEventListener('touchstart', e => {
+      if (!shouldDragSheet(e)) {
+        // If collapsed and touching the list, expand instead
+        if (sheet.classList.contains('collapsed')) expandSheets();
+        return;
+      }
       onDragStart(e.touches[0].clientY);
     }, { passive: true });
 
@@ -1634,6 +1847,10 @@
 
     // Mouse events (for desktop testing)
     sheet.addEventListener('mousedown', e => {
+      if (!shouldDragSheet(e)) {
+        if (sheet.classList.contains('collapsed')) expandSheets();
+        return;
+      }
       onDragStart(e.clientY);
       const onMove = ev => onDragMove(ev.clientY);
       const onUp = ev => {
@@ -1709,6 +1926,687 @@
   document.getElementById('pill-clear-results').addEventListener('click', clearSearchFromResults);
   document.getElementById('pill-clear-locresults').addEventListener('click', clearSearchFromResults);
   document.getElementById('pill-clear-both').addEventListener('click', clearSearchFromResults);
+
+  // ========== VENUE DETAIL MODAL ==========
+  const venueDetailEl = document.getElementById('venue-detail');
+  const venueDetailSheet = venueDetailEl.querySelector('.venue-detail-sheet');
+  const venueDetailScroll = venueDetailEl.querySelector('.venue-detail-scroll');
+  const persistentTabBar = document.getElementById('tab-bar-persistent');
+
+  // Motion.js helpers — iOS-like spring configs
+  var motionAnimate = window.Motion && window.Motion.animate;
+  var motionSpring = window.Motion && window.Motion.spring;
+  // iOS sheet spring: slightly underdamped for that bouncy feel
+  var iosSheetSpring = motionSpring ? { type: motionSpring, stiffness: 400, damping: 35 } : { duration: 0.35 };
+  // iOS snap-back spring: stiffer for quick snap
+  var iosSnapSpring = motionSpring ? { type: motionSpring, stiffness: 500, damping: 30 } : { duration: 0.25 };
+  // iOS tab indicator spring: fast and crisp
+  var iosTabSpring = motionSpring ? { type: motionSpring, stiffness: 600, damping: 40 } : { duration: 0.3 };
+
+  function openVenueDetail(index) {
+    const pin = currentPins[index];
+    if (!pin) return;
+
+    const search = currentSearchLabel;
+    const tags = search || pin.category || STUDIO_TAGS[pin.name] || 'Fitness';
+    const distance = pin.distance != null ? (pin.distance / 1609.34).toFixed(1) : (0.1 + (index * 0.15)).toFixed(1);
+    const rating = (4.5 + (index % 5) * 0.1).toFixed(1);
+    const reviews = 50 + index * 37;
+    const neighborhood = pin.locality || currentLocationLabel || 'Manhattan';
+    const desc = getVenueDescription(pin.name, tags);
+
+    document.getElementById('vd-name').textContent = pin.name;
+    document.getElementById('vd-tags').textContent = tags;
+    document.getElementById('vd-rating-text').textContent = rating + ' (' + reviews + ') \u00B7 ' + distance + ' mi \u00B7 ' + neighborhood;
+    document.getElementById('vd-description').textContent = desc;
+    document.getElementById('vd-rating-big').textContent = rating;
+    document.getElementById('vd-reviews-count').textContent = '(' + reviews + ')';
+
+    // Static map thumbnail
+    const mapThumb = document.getElementById('vd-map-thumb');
+    if (pin.lat && pin.lng && window.MAPBOX_TOKEN) {
+      const staticUrl = 'https://api.mapbox.com/styles/v1/mapbox/streets-v12/static/'
+        + pin.lng + ',' + pin.lat + ',14,0/353x204@2x?access_token=' + MAPBOX_TOKEN;
+      mapThumb.style.backgroundImage = 'url(' + staticUrl + ')';
+      mapThumb.style.backgroundSize = 'cover';
+      mapThumb.style.backgroundPosition = 'center';
+    }
+
+    document.getElementById('vd-sticky-title').textContent = pin.name;
+    document.getElementById('vd-sticky-nav').classList.remove('scrolled');
+
+    // Populate reviews panel with this venue's rating
+    if (window.__renderReviewsPanel) {
+      window.__renderReviewsPanel(rating, reviews);
+    }
+
+    venueDetailScroll.scrollTop = 0;
+    venueDetailEl.querySelectorAll('.vd-hscroll').forEach(function(s) { s.scrollLeft = 0; });
+    venueDetailEl.classList.add('venue-detail-visible');
+    // Animate sheet in with iOS spring
+    venueDetailSheet.style.visibility = 'visible';
+    if (motionAnimate) {
+      venueDetailSheet.style.transform = 'translateY(100%)';
+      motionAnimate(venueDetailSheet, { transform: 'translateY(0%)' }, iosSheetSpring);
+    }
+    persistentTabBar.style.display = '';
+    venueDetailOpen = true;
+    if (window.__resetVenueDetailTabs) {
+      // Defer until after the modal becomes visible so layout is correct
+      requestAnimationFrame(function() { window.__resetVenueDetailTabs(); });
+    }
+  }
+
+  function closeVenueDetail(velocity) {
+    venueDetailOpen = false;
+    venueDetailEl.style.background = '';
+    venueDetailEl.classList.remove('venue-detail-visible');
+    if (motionAnimate) {
+      var closeSpring = motionSpring ? {
+        type: motionSpring,
+        stiffness: 400,
+        damping: 35,
+        velocity: velocity || 0
+      } : { duration: 0.35 };
+      motionAnimate(venueDetailSheet, { transform: 'translateY(100%)' }, closeSpring).then(function() {
+        venueDetailSheet.style.transform = '';
+        venueDetailSheet.style.visibility = '';
+        persistentTabBar.style.display = 'none';
+      });
+    } else {
+      venueDetailSheet.style.transition = '';
+      void venueDetailSheet.offsetHeight;
+      venueDetailSheet.style.transition = 'transform 0.35s cubic-bezier(0.4, 0, 0.2, 1)';
+      venueDetailSheet.style.transform = 'translateY(100%)';
+      venueDetailSheet.addEventListener('transitionend', function handler() {
+        venueDetailSheet.removeEventListener('transitionend', handler);
+        venueDetailSheet.style.transform = '';
+        venueDetailSheet.style.transition = '';
+        venueDetailSheet.style.visibility = '';
+        persistentTabBar.style.display = 'none';
+      }, { once: true });
+    }
+  }
+
+  // Close button
+  document.getElementById('venue-detail-close').addEventListener('click', closeVenueDetail);
+
+  // Sticky nav: show venue name when scrolled past the header
+  (function() {
+    var stickyNav = document.getElementById('vd-sticky-nav');
+    var debug = document.getElementById('vd-scroll-debug');
+    // Threshold: once scrollTop > 0, the user has scrolled and the title should appear.
+    // Use a small threshold to avoid flicker at exactly 0.
+    var SCROLL_THRESHOLD = 10;
+
+    venueDetailScroll.addEventListener('scroll', function() {
+      if (!venueDetailOpen) return;
+      if (debug) debug.textContent = Math.round(venueDetailScroll.scrollTop);
+      if (venueDetailScroll.scrollTop > SCROLL_THRESHOLD) {
+        stickyNav.classList.add('scrolled');
+      } else {
+        stickyNav.classList.remove('scrolled');
+      }
+    }, { passive: true });
+  })();
+
+  // ========== TAB SWITCHING WITH ANIMATED INDICATOR ==========
+  (function() {
+    var tabsContainer = venueDetailEl.querySelector('.vd-tabs');
+    var tabs = venueDetailEl.querySelectorAll('.vd-tab');
+    var indicator = document.getElementById('vd-tab-indicator');
+    var panels = venueDetailEl.querySelectorAll('.vd-panel');
+
+    function moveIndicator(tab, instant) {
+      var rect = tab.getBoundingClientRect();
+      var parentRect = tabsContainer.getBoundingClientRect();
+      var left = rect.left - parentRect.left;
+      if (motionAnimate && !instant) {
+        motionAnimate(indicator, {
+          transform: 'translateX(' + left + 'px)',
+          width: rect.width + 'px'
+        }, iosTabSpring);
+      } else {
+        indicator.style.width = rect.width + 'px';
+        indicator.style.transform = 'translateX(' + left + 'px)';
+      }
+    }
+
+    function activateTab(tab) {
+      var wasPinned = venueDetailScroll.scrollTop >= 320;
+
+      tabs.forEach(function(t) { t.classList.remove('active'); });
+      tab.classList.add('active');
+      moveIndicator(tab);
+      var panelName = tab.dataset.tab;
+      panels.forEach(function(p) {
+        if (p.dataset.panel === panelName) p.classList.add('active');
+        else p.classList.remove('active');
+      });
+
+      if (wasPinned) {
+        venueDetailScroll.scrollTop = 320;
+      }
+
+      // Reset horizontal scroll on all carousels
+      venueDetailEl.querySelectorAll('.vd-hscroll').forEach(function(s) { s.scrollLeft = 0; });
+    }
+
+    tabs.forEach(function(tab) {
+      tab.addEventListener('click', function() { activateTab(tab); });
+    });
+
+    // Expose for external triggers (e.g. "See more" buttons)
+    window.__switchVenueDetailTab = function(tabName) {
+      var tab = Array.prototype.find.call(tabs, function(t) { return t.dataset.tab === tabName; });
+      if (tab) activateTab(tab);
+    };
+
+    // Wire "See more" / "See all" buttons in the Overview's Available today section
+    venueDetailEl.querySelectorAll('.vd-slot-btn, .vd-see-all-card').forEach(function(btn) {
+      var label = (btn.textContent || '').trim().toLowerCase();
+      if (label === 'see more' || label.indexOf('see all') === 0) {
+        btn.addEventListener('click', function(e) {
+          e.stopPropagation();
+          window.__switchVenueDetailTab('schedule');
+        });
+      }
+    });
+
+    // Scroll the venue detail to a specific section id or an offset (number).
+    // Usage: window.__scrollVenueDetailTo('vd-section-promo')  or  window.__scrollVenueDetailTo(420)
+    window.__scrollVenueDetailTo = function(target, offset) {
+      offset = offset || 0;
+      if (typeof target === 'number') {
+        venueDetailScroll.scrollTop = target;
+        return;
+      }
+      var el = typeof target === 'string' ? document.getElementById(target) : target;
+      if (!el) return;
+      // Get position relative to the scroll container's content
+      var top = el.offsetTop + offset;
+      venueDetailScroll.scrollTop = top;
+    };
+
+    // Position indicator on initial load (after the venue detail opens)
+    window.__resetVenueDetailTabs = function() {
+      var firstTab = tabs[0];
+      tabs.forEach(function(t) { t.classList.remove('active'); });
+      firstTab.classList.add('active');
+      panels.forEach(function(p) {
+        if (p.dataset.panel === 'overview') p.classList.add('active');
+        else p.classList.remove('active');
+      });
+      requestAnimationFrame(function() {
+        moveIndicator(firstTab, true); // instant, no spring
+      });
+    };
+  })();
+
+  // ========== SCHEDULE PANEL: DATE PICKER + CLASS LIST ==========
+  (function() {
+    var datePicker = document.getElementById('vd-date-picker');
+    var scheduleList = document.getElementById('vd-schedule-list');
+    if (!datePicker || !scheduleList) return;
+    var DAY_LETTERS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+
+    function renderDatePicker(selectedIdx) {
+      var today = new Date();
+      var dayOfWeek = today.getDay();
+      var html = '';
+      for (var i = 0; i < 7; i++) {
+        var date = new Date(today);
+        date.setDate(today.getDate() - dayOfWeek + i);
+        var isPast = i < dayOfWeek;
+        var isSelected = i === selectedIdx;
+        var classes = 'vd-date-cell';
+        if (isPast && !isSelected) classes += ' past';
+        if (isSelected) classes += ' selected';
+        html += '<div class="' + classes + '" data-day="' + i + '">'
+          + '<div class="vd-date-letter">' + DAY_LETTERS[i] + '</div>'
+          + '<div class="vd-date-day">' + date.getDate() + '</div>'
+          + '</div>';
+      }
+      datePicker.innerHTML = html;
+      datePicker.querySelectorAll('.vd-date-cell').forEach(function(cell) {
+        cell.addEventListener('click', function() {
+          renderDatePicker(parseInt(cell.dataset.day, 10));
+          renderScheduleList();
+        });
+      });
+    }
+
+    var STAR_SVG = '<svg width="14" height="14" viewBox="0 0 20 20" fill="none"><path d="M9.10326 1.81699C9.47008 1.07374 10.5299 1.07374 10.8967 1.81699L12.7063 5.48347C12.8519 5.77862 13.1335 5.98319 13.4592 6.03051L17.5054 6.61846C18.3256 6.73765 18.6531 7.74562 18.0596 8.32416L15.1318 11.1781C14.8961 11.4079 14.7885 11.7389 14.8442 12.0632L15.5353 16.0931C15.6754 16.91 14.818 17.533 14.0844 17.1473L10.4653 15.2446C10.174 15.0915 9.82598 15.0915 9.53466 15.2446L5.91562 17.1473C5.18199 17.533 4.32456 16.91 4.46467 16.0931L5.15585 12.0632C5.21148 11.7389 5.10393 11.4079 4.86825 11.1781L1.94038 8.32416C1.34687 7.74562 1.67438 6.73765 2.4946 6.61846L6.54081 6.03051C6.86652 5.98319 7.14808 5.77862 7.29374 5.48347L9.10326 1.81699Z" fill="#020203"/></svg>';
+
+    var CLASS_NAMES = [
+      'Slow Burn Hot Mat Pilates', 'Power Vinyasa Flow', 'Sculpt & Tone', 'Heated Barre Burn',
+      'Restorative Yoga', 'HIIT Reformer', 'Core Fusion', 'Candlelit Flow',
+      'Full Body Stretch', 'Cardio Kickboxing', 'Yoga Foundations', 'Athletic Conditioning',
+      'Deep Stretch Recovery', 'Sunrise Flow', 'Express Pilates', 'Strength & Balance'
+    ];
+    var INSTRUCTOR_NAMES = [
+      'Sarah M.', 'Chauncie D.', 'Liz K.', 'Marcus J.', 'Priya S.',
+      'Jordan T.', 'Kai N.', 'Emma R.', 'David C.', 'Nina L.'
+    ];
+    var DURATIONS = [45, 50, 60, 75];
+    var PRICES = [20, 25, 28, 30, 32, 35, 38, 40];
+
+    function generateClasses() {
+      var classes = [];
+      // Generate 6-9 classes spread from 10:00 AM to 5:00 PM
+      var count = 6 + Math.floor(Math.random() * 4);
+      // Generate random start times (in minutes from midnight) between 10:00 and 17:00
+      var times = [];
+      for (var i = 0; i < count; i++) {
+        times.push(600 + Math.floor(Math.random() * 420)); // 600=10AM, 1020=5PM
+      }
+      times.sort(function(a, b) { return a - b; });
+      // Round to nearest 15 min
+      times = times.map(function(t) { return Math.round(t / 15) * 15; });
+
+      for (var i = 0; i < times.length; i++) {
+        var h = Math.floor(times[i] / 60);
+        var m = times[i] % 60;
+        var ampm = h >= 12 ? 'PM' : 'AM';
+        var h12 = h > 12 ? h - 12 : (h === 0 ? 12 : h);
+        var timeStr = h12 + ':' + (m < 10 ? '0' : '') + m + ' ' + ampm;
+        var dur = DURATIONS[Math.floor(Math.random() * DURATIONS.length)];
+        var title = CLASS_NAMES[Math.floor(Math.random() * CLASS_NAMES.length)];
+        var instructor = INSTRUCTOR_NAMES[Math.floor(Math.random() * INSTRUCTOR_NAMES.length)];
+        var rating = (4.3 + Math.random() * 0.7).toFixed(1);
+        var reviews = 50 + Math.floor(Math.random() * 400);
+        var price = PRICES[Math.floor(Math.random() * PRICES.length)];
+        var isDisabled = Math.random() < 0.15;
+        var hasIntro = !isDisabled && Math.random() < 0.3;
+        var spotsLeft = isDisabled ? 'No more spots' : (Math.random() < 0.4 ? (1 + Math.floor(Math.random() * 5)) + ' spots left' : '');
+
+        var cls = {
+          time: timeStr + ' · ' + dur + ' min',
+          title: title,
+          instructor: instructor,
+          rating: rating + ' (' + reviews + ')',
+          disabled: isDisabled
+        };
+        if (spotsLeft) cls.spots = spotsLeft;
+        if (hasIntro) {
+          cls.priceLabel = 'Intro offer';
+          cls.strikePrice = '$' + price;
+          cls.finalPrice = '$' + (price - 10);
+        } else {
+          cls.plainPrice = '$' + price;
+        }
+        classes.push(cls);
+      }
+      return classes;
+    }
+
+    function renderScheduleList() {
+      var html = generateClasses().map(function(c) {
+        var priceHtml = '';
+        if (c.finalPrice) {
+          priceHtml = '<div class="vd-schedule-price">'
+            + (c.priceLabel ? '<span class="vd-schedule-price-label">' + c.priceLabel + '</span>' : '')
+            + '<span class="vd-price-strike">' + c.strikePrice + '</span>'
+            + '<span class="vd-price-final">' + c.finalPrice + '</span>'
+            + '</div>';
+        } else if (c.plainPrice) {
+          priceHtml = '<span class="vd-price-plain">' + c.plainPrice + '</span>';
+        }
+        return '<div class="vd-schedule-card' + (c.disabled ? ' disabled' : '') + '">'
+          + '<div class="vd-schedule-top">'
+          +   '<span class="vd-schedule-time">' + c.time + '</span>'
+          +   (c.spots ? '<span class="vd-schedule-spots">' + c.spots + '</span>' : '')
+          + '</div>'
+          + '<div class="vd-schedule-title">' + c.title + '</div>'
+          + '<div class="vd-schedule-instructor">' + c.instructor + '</div>'
+          + '<div class="vd-schedule-bottom">'
+          +   '<div class="vd-schedule-rating">' + STAR_SVG + ' ' + c.rating + '</div>'
+          +   priceHtml
+          + '</div>'
+          + '</div>';
+      }).join('');
+      scheduleList.innerHTML = html;
+    }
+
+    // Initialize on load
+    var today = new Date();
+    renderDatePicker(today.getDay());
+    renderScheduleList();
+  })();
+
+  // ========== REVIEWS PANEL ==========
+  (function() {
+    var STAR_SVG_20 = '<svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M9.10326 1.81699C9.47008 1.07374 10.5299 1.07374 10.8967 1.81699L12.7063 5.48347C12.8519 5.77862 13.1335 5.98319 13.4592 6.03051L17.5054 6.61846C18.3256 6.73765 18.6531 7.74562 18.0596 8.32416L15.1318 11.1781C14.8961 11.4079 14.7885 11.7389 14.8442 12.0632L15.5353 16.0931C15.6754 16.91 14.818 17.533 14.0844 17.1473L10.4653 15.2446C10.174 15.0915 9.82598 15.0915 9.53466 15.2446L5.91562 17.1473C5.18199 17.533 4.32456 16.91 4.46467 16.0931L5.15585 12.0632C5.21148 11.7389 5.10393 11.4079 4.86825 11.1781L1.94038 8.32416C1.34687 7.74562 1.67438 6.73765 2.4946 6.61846L6.54081 6.03051C6.86652 5.98319 7.14808 5.77862 7.29374 5.48347L9.10326 1.81699Z" fill="#FFB54D"/></svg>';
+    var STAR_SVG_16 = '<svg width="16" height="16" viewBox="0 0 20 20" fill="none"><path d="M9.10326 1.81699C9.47008 1.07374 10.5299 1.07374 10.8967 1.81699L12.7063 5.48347C12.8519 5.77862 13.1335 5.98319 13.4592 6.03051L17.5054 6.61846C18.3256 6.73765 18.6531 7.74562 18.0596 8.32416L15.1318 11.1781C14.8961 11.4079 14.7885 11.7389 14.8442 12.0632L15.5353 16.0931C15.6754 16.91 14.818 17.533 14.0844 17.1473L10.4653 15.2446C10.174 15.0915 9.82598 15.0915 9.53466 15.2446L5.91562 17.1473C5.18199 17.533 4.32456 16.91 4.46467 16.0931L5.15585 12.0632C5.21148 11.7389 5.10393 11.4079 4.86825 11.1781L1.94038 8.32416C1.34687 7.74562 1.67438 6.73765 2.4946 6.61846L6.54081 6.03051C6.86652 5.98319 7.14808 5.77862 7.29374 5.48347L9.10326 1.81699Z" fill="#FFB54D"/></svg>';
+
+    var REVIEW_NAMES = ['Sara', 'Natalie', 'Jordan', 'Marcus', 'Priya', 'Emma', 'David', 'Liz', 'Kai', 'Nina'];
+    var REVIEW_CLASSES = [
+      'Sui Power Soul with Chauncie', 'Heated Vinyasa Flow', 'Slow Burn Reformer',
+      'Power Yoga Sculpt', 'Full Body Barre', 'HIIT & Flow', 'Candlelit Yin',
+      'Core Fusion Express', 'Athletic Conditioning'
+    ];
+    var REVIEW_BODIES = [
+      "I really appreciate Chauncie's flows. They're physically challenging, often incorporating ashtanga elements, but never aggressive for the sake of it.",
+      "This class was exactly what I needed. The instructor was so attentive and gave great modifications. The music was perfect and the energy was high.",
+      "Incredible workout! Left feeling so strong and centered. The sequencing was creative and the instructor's cues were super clear throughout.",
+      "Such a welcoming studio. First time here and the instructor made me feel right at home. Will definitely be coming back for more classes.",
+      "The best reformer class I've taken in NYC. Challenging but accessible, with a great playlist that kept the energy up the whole time.",
+      "Love the balance of strength and flexibility work. The instructor really knows their stuff and pushes you in the best way possible."
+    ];
+    var REVIEW_DATES = ['Last week', '2 weeks ago', '3 weeks ago', 'Last month', '2 months ago'];
+    var REVIEW_SOURCES = ['ClassPass', '', '', 'ClassPass', ''];
+
+    var AI_SUMMARIES = [
+      "People love this studio for its upbeat, music-driven workouts and motivating instructors who give clear form cues. Reviews highlight an intense full-body burn in a short time and frequent shout-outs to specific coaches for energy and guidance.",
+      "Reviewers consistently praise the welcoming atmosphere and knowledgeable instructors. The studio is described as clean and well-maintained, with creative class formats that keep regulars coming back week after week.",
+      "Highly rated for its intimate class sizes and personalized attention. Many reviewers mention visible results within weeks and appreciate the variety of class offerings throughout the day."
+    ];
+
+    function starsHTML(count, svg) {
+      var s = '';
+      for (var i = 0; i < count; i++) s += svg;
+      return s;
+    }
+
+    function renderBars(dist) {
+      var max = Math.max.apply(null, dist);
+      var html = '';
+      for (var i = 4; i >= 0; i--) {
+        var pct = max > 0 ? (dist[i] / max) * 100 : 0;
+        html += '<div class="vd-rev-bar-row">'
+          + '<span class="vd-rev-bar-label">' + (i + 1) + '</span>'
+          + '<div class="vd-rev-bar-track"><div class="vd-rev-bar-fill" style="width:' + pct + '%"></div></div>'
+          + '</div>';
+      }
+      return html;
+    }
+
+    function renderReviewCard(review) {
+      var sourceHTML = '';
+      if (review.source) {
+        sourceHTML = '<div class="vd-rev-source-badge">'
+          + '<svg class="vd-rev-source-icon" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M0 10C0 4.47715 4.47715 0 10 0V0C15.5228 0 20 4.47715 20 10V10C20 15.5228 15.5228 20 10 20V20C4.47715 20 0 15.5228 0 10V10Z" fill="#0055FF"/><path d="M11.8559 5.39815C11.733 5.39222 11.1837 5.38899 10.7913 5.38737C10.6637 5.38703 10.5399 5.43088 10.4409 5.51145C10.342 5.59202 10.274 5.70436 10.2484 5.82939L10.0398 6.82717C10.022 6.91422 9.97477 6.99249 9.90606 7.04883C9.83735 7.10518 9.75135 7.13616 9.66249 7.13658L7.70574 7.14521C5.52853 7.14521 3.53027 8.77745 3.53027 11.0636C3.53027 13.1173 5.24391 14.9657 7.70628 14.9657C7.8335 14.9722 8.54828 14.9706 9.0248 14.9722C9.15246 14.9724 9.27624 14.9283 9.3751 14.8475C9.47396 14.7668 9.5418 14.6542 9.56708 14.5291L9.77569 13.5254C9.79331 13.4382 9.84047 13.3597 9.90921 13.3033C9.97795 13.2468 10.0641 13.2158 10.153 13.2154L11.8548 13.2203C14.2595 13.2203 16.0303 11.3719 16.0303 9.29817C16.0303 7.03416 14.0746 5.39653 11.8543 5.39653L11.8559 5.39815ZM11.8446 11.7196L10.1094 11.7233C9.98344 11.7237 9.86149 11.7675 9.76402 11.8472C9.66654 11.9269 9.59947 12.0377 9.57409 12.1611L9.36494 13.1739C9.34712 13.2607 9.29979 13.3386 9.23099 13.3945C9.1622 13.4503 9.07619 13.4805 8.9876 13.4801C8.54828 13.4801 8.30571 13.4661 7.72569 13.4661C6.41041 13.4661 5.0202 12.5891 5.0202 11.0754C5.0202 9.67389 6.26002 8.64592 7.72138 8.64592L9.70076 8.64215C9.82673 8.64201 9.9488 8.59846 10.0464 8.51882C10.144 8.43919 10.2112 8.32835 10.2366 8.20498L10.4473 7.19588C10.4654 7.10919 10.5127 7.03138 10.5815 6.97559C10.6502 6.9198 10.7361 6.88946 10.8247 6.8897C11.1929 6.8897 11.7648 6.89347 11.8429 6.89994C13.2251 6.89994 14.5441 7.84489 14.5441 9.32566C14.5441 10.6808 13.3631 11.7217 11.8435 11.7217" fill="white"/></svg>'
+          + '<span class="vd-rev-source-name">' + review.source + '</span>'
+          + '</div>';
+      }
+      return '<div class="vd-rev-card">'
+        + '<div class="vd-rev-card-header">'
+        +   '<div class="vd-rev-avatar">' + review.name.charAt(0) + '</div>'
+        +   '<div class="vd-rev-card-meta">'
+        +     '<div class="vd-rev-name-row">'
+        +       '<span class="vd-rev-name">' + review.name + '</span>'
+        +       '<div class="vd-rev-card-stars">' + starsHTML(review.stars, STAR_SVG_16) + '</div>'
+        +     '</div>'
+        +     '<div class="vd-rev-date">' + review.date + '</div>'
+        +   '</div>'
+        + '</div>'
+        + '<div class="vd-rev-class-title">' + review.classTitle + '</div>'
+        + '<div class="vd-rev-body">' + review.body + '</div>'
+        + sourceHTML
+        + '</div>';
+    }
+
+    window.__renderReviewsPanel = function(rating, reviewCount) {
+      // Stars
+      var starsEl = document.getElementById('vd-rev-stars');
+      if (starsEl) starsEl.innerHTML = starsHTML(5, STAR_SVG_20);
+
+      // Score & count
+      var scoreEl = document.getElementById('vd-rev-score');
+      if (scoreEl) scoreEl.textContent = rating;
+      var countEl = document.getElementById('vd-rev-count');
+      if (countEl) countEl.textContent = '(' + reviewCount + ')';
+
+      // Rating distribution bars (fake but proportional)
+      var dist = [
+        Math.floor(reviewCount * 0.05),
+        Math.floor(reviewCount * 0.05),
+        Math.floor(reviewCount * 0.12),
+        Math.floor(reviewCount * 0.25),
+        Math.floor(reviewCount * 0.53)
+      ];
+      var barsEl = document.getElementById('vd-rev-bars');
+      if (barsEl) barsEl.innerHTML = renderBars(dist);
+
+      // AI summary
+      var summaryEl = document.getElementById('vd-rev-ai-summary');
+      if (summaryEl) summaryEl.textContent = AI_SUMMARIES[Math.floor(Math.random() * AI_SUMMARIES.length)];
+
+      // Review cards (3-5 random reviews)
+      var count = 3 + Math.floor(Math.random() * 3);
+      var reviews = [];
+      for (var i = 0; i < count; i++) {
+        reviews.push({
+          name: REVIEW_NAMES[Math.floor(Math.random() * REVIEW_NAMES.length)],
+          stars: 4 + Math.floor(Math.random() * 2),
+          date: REVIEW_DATES[Math.floor(Math.random() * REVIEW_DATES.length)],
+          classTitle: REVIEW_CLASSES[Math.floor(Math.random() * REVIEW_CLASSES.length)],
+          body: REVIEW_BODIES[Math.floor(Math.random() * REVIEW_BODIES.length)],
+          source: REVIEW_SOURCES[Math.floor(Math.random() * REVIEW_SOURCES.length)]
+        });
+      }
+      var listEl = document.getElementById('vd-rev-list');
+      if (listEl) listEl.innerHTML = reviews.map(renderReviewCard).join('');
+    };
+
+    // Initial render
+    window.__renderReviewsPanel('4.7', 2500);
+  })();
+
+  // Drag-to-dismiss: works from handle OR when scroll is at top and user drags down
+  (function() {
+    let dragStartY = 0;
+    let dragDelta = 0;
+    let dismissDragging = false;
+
+    function startDismissDrag(y) {
+      dismissDragging = true;
+      dragStartY = y;
+      dragDelta = 0;
+      lastDragY = y;
+      lastDragTime = Date.now();
+      dragVelocity = 0;
+      venueDetailSheet.style.transition = 'none';
+      // Stop any running Motion animation
+      if (motionAnimate) venueDetailSheet.getAnimations().forEach(function(a) { a.cancel(); });
+    }
+    function moveDismissDrag(y) {
+      var now = Date.now();
+      var dt = now - lastDragTime;
+      if (dt > 0) dragVelocity = ((y - lastDragY) / dt) * 1000; // px/s
+      lastDragY = y;
+      lastDragTime = now;
+      dragDelta = Math.max(0, y - dragStartY);
+      venueDetailSheet.style.transform = 'translateY(' + dragDelta + 'px)';
+      var opacity = Math.max(0, 0.15 * (1 - dragDelta / 300));
+      venueDetailEl.style.background = 'rgba(0,0,0,' + opacity + ')';
+    }
+    var lastDragY = 0;
+    var lastDragTime = 0;
+    var dragVelocity = 0;
+
+    function endDismissDrag() {
+      dismissDragging = false;
+      venueDetailEl.style.background = '';
+      // Dismiss if dragged far enough OR fast enough
+      if (dragDelta > 80 || dragVelocity > 500) {
+        closeVenueDetail(dragVelocity / 1000);
+      } else {
+        // Snap back with spring
+        if (motionAnimate) {
+          motionAnimate(venueDetailSheet, { transform: 'translateY(0%)' }, iosSnapSpring);
+        } else {
+          venueDetailSheet.style.transition = '';
+          venueDetailSheet.style.transform = '';
+        }
+      }
+    }
+
+    // Handle: always initiates dismiss drag
+    var handle = venueDetailEl.querySelector('.venue-detail-handle');
+    handle.addEventListener('touchstart', function(e) {
+      startDismissDrag(e.touches[0].clientY);
+    }, { passive: true });
+    handle.addEventListener('mousedown', function(e) {
+      e.preventDefault();
+      startDismissDrag(e.clientY);
+    });
+
+    // Global touch/mouse move/up for handle-initiated drags
+    document.addEventListener('touchmove', function(e) {
+      if (dismissDragging) moveDismissDrag(e.touches[0].clientY);
+    }, { passive: true });
+    document.addEventListener('touchend', function() {
+      if (dismissDragging) endDismissDrag();
+    }, { passive: true });
+    document.addEventListener('mousemove', function(e) {
+      if (dismissDragging) { e.preventDefault(); moveDismissDrag(e.clientY); }
+    });
+    document.addEventListener('mouseup', function() {
+      if (dismissDragging) endDismissDrag();
+    });
+  })();
+
+  // ========== MOUSE DRAG SCROLL (iOS-like for desktop) ==========
+  var activeDragEl = null;
+  var pendingDrag = null; // for direction-detection on carousels
+
+  function addVerticalDragScroll(el) {
+    var startY, startScroll, velocity, lastY, lastTime, raf;
+
+    function momentum() {
+      if (activeDragEl === el) return;
+      velocity *= 0.95;
+      var max = el.scrollHeight - el.clientHeight;
+      var newTop = el.scrollTop - velocity;
+      if (newTop < 0) { el.scrollTop = 0; return; }
+      if (newTop > max) { el.scrollTop = max; return; }
+      el.scrollTop = newTop;
+      if (Math.abs(velocity) > 0.5) raf = requestAnimationFrame(momentum);
+    }
+
+    el.addEventListener('mousedown', function(e) {
+      if (activeDragEl) return;
+      if (e.target.closest('button, a, .venue-action-btn, .vd-action-pill, .vd-slot-btn, .vd-quick-btn, .venue-detail-close, .venue-detail-handle, .vd-sticky-nav')) return;
+      if (e.target.closest('.vd-hscroll')) {
+        pendingDrag = { el: el, x: e.clientX, y: e.clientY, scroll: el.scrollTop, time: Date.now(), hscroll: e.target.closest('.vd-hscroll') };
+        e.preventDefault();
+        return;
+      }
+      e.preventDefault();
+      e.stopPropagation();
+      cancelAnimationFrame(raf);
+      activeDragEl = el;
+      wasDragging = false;
+      startY = e.clientY;
+      startScroll = el.scrollTop;
+      lastY = startY;
+      lastTime = Date.now();
+      velocity = 0;
+    });
+
+    document.addEventListener('mousemove', function(e) {
+      if (pendingDrag && pendingDrag.el === el) {
+        var dx = Math.abs(e.clientX - pendingDrag.x);
+        var dy = Math.abs(e.clientY - pendingDrag.y);
+        if (dx < 5 && dy < 5) return;
+        if (dy >= dx) {
+          activeDragEl = el;
+          wasDragging = true;
+          startY = pendingDrag.y;
+          startScroll = pendingDrag.scroll;
+          lastY = startY;
+          lastTime = pendingDrag.time;
+          velocity = 0;
+          cancelAnimationFrame(raf);
+          pendingDrag = null;
+        } else {
+          var hel = pendingDrag.hscroll;
+          activeDragEl = hel;
+          hel._dragStartX = pendingDrag.x;
+          hel._dragStartScroll = hel.scrollLeft;
+          hel._dragLastX = pendingDrag.x;
+          hel._dragLastTime = pendingDrag.time;
+          hel._dragVelocity = 0;
+          wasDragging = true;
+          pendingDrag = null;
+        }
+      }
+
+      if (activeDragEl !== el) return;
+      e.preventDefault();
+      var y = e.clientY;
+      if (Math.abs(y - startY) > 5) wasDragging = true;
+      var now = Date.now();
+      var dt = now - lastTime;
+      if (dt > 0) velocity = (y - lastY) / dt * 16;
+      lastY = y;
+      lastTime = now;
+      el.scrollTop = startScroll - (y - startY);
+    });
+
+    document.addEventListener('mouseup', function() {
+      if (pendingDrag && pendingDrag.el === el) pendingDrag = null;
+      if (activeDragEl !== el) return;
+      activeDragEl = null;
+      if (Math.abs(velocity) > 0.5) raf = requestAnimationFrame(momentum);
+      if (wasDragging) setTimeout(function() { wasDragging = false; }, 0);
+    });
+  }
+
+  // Horizontal carousel drag
+  document.querySelectorAll('.vd-hscroll').forEach(function(el) {
+    var raf;
+
+    function momentum() {
+      if (activeDragEl === el) return;
+      el._dragVelocity *= 0.95;
+      var max = el.scrollWidth - el.clientWidth;
+      var newLeft = el.scrollLeft - el._dragVelocity;
+      if (newLeft < 0) { el.scrollLeft = 0; return; }
+      if (newLeft > max) { el.scrollLeft = max; return; }
+      el.scrollLeft = newLeft;
+      if (Math.abs(el._dragVelocity) > 0.5) raf = requestAnimationFrame(momentum);
+    }
+
+    document.addEventListener('mousemove', function(e) {
+      if (activeDragEl !== el) return;
+      e.preventDefault();
+      var x = e.clientX;
+      var now = Date.now();
+      var dt = now - el._dragLastTime;
+      if (dt > 0) el._dragVelocity = (x - el._dragLastX) / dt * 16;
+      el._dragLastX = x;
+      el._dragLastTime = now;
+      el.scrollLeft = el._dragStartScroll - (x - el._dragStartX);
+    });
+
+    document.addEventListener('mouseup', function() {
+      if (activeDragEl !== el) return;
+      activeDragEl = null;
+      if (Math.abs(el._dragVelocity || 0) > 0.5) raf = requestAnimationFrame(momentum);
+      if (wasDragging) setTimeout(function() { wasDragging = false; }, 0);
+    });
+
+    // Mouse wheel vertical → horizontal scroll
+    el.addEventListener('wheel', function(e) {
+      if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
+        var max = el.scrollWidth - el.clientWidth;
+        if (max <= 0) return;
+        if ((el.scrollLeft <= 0 && e.deltaY < 0) || (el.scrollLeft >= max && e.deltaY > 0)) return;
+        e.preventDefault();
+        el.scrollLeft += e.deltaY;
+      }
+    }, { passive: false });
+  });
+
+  // Venue detail vertical scroll
+  addVerticalDragScroll(venueDetailScroll);
+
+  // Venue lists
+  document.querySelectorAll('.venue-list').forEach(function(list) {
+    addVerticalDragScroll(list);
+  });
 
   // ========== PREVENT ZOOM ON iOS ==========
   document.querySelectorAll('input').forEach(input => {
