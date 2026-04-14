@@ -181,9 +181,9 @@
         <div class="proto-item">
           <a href="/prototype-6/prototype.html" class="proto-link">Venue Detail UX v1</a>
           <p>Venue detail modal with schedule, reviews, and iOS-like interactions.</p>
-          <ul class="changelog">
+          <!-- <ul class="changelog">
             <li>Venue detail sheet with schedule tab, date picker and reviews</li>
-          </ul>
+          </ul> -->
         </div>
         <div class="proto-item">
           <a href="/prototype-5/prototype.html" class="proto-link">Search UX v3</a>
@@ -234,8 +234,14 @@
         frame.src = link.href;
         panel.classList.add('open');
         closeBtn.style.display = 'flex';
-        hint.classList.remove('fade-out');
-        setTimeout(() => hint.classList.add('fade-out'), 3000);
+        // Only show search hint for search prototypes, not venue detail
+        if (link.href.includes('prototype-6')) {
+          hint.style.display = 'none';
+        } else {
+          hint.style.display = '';
+          hint.classList.remove('fade-out');
+          setTimeout(() => hint.classList.add('fade-out'), 3000);
+        }
       });
     });
 
