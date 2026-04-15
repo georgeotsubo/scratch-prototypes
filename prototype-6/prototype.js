@@ -2805,18 +2805,34 @@
           + (s.spots ? '<div class="cd-time-slot-spots">' + s.spots + '</div>' : '')
           + '</div>';
       }).join('');
-      // Toggle selection — bail if a drag occurred (user was scrolling, not tapping)
+      // Toggle selection — re-tapping a selected chip deselects it.
+      // When no chip is selected, the booking bar slides down off-screen.
       slots.querySelectorAll('.cd-time-slot').forEach(function(slot, idx) {
         slot.addEventListener('click', function() {
           if (wasDragging) return;
-          slots.querySelectorAll('.cd-time-slot').forEach(function(s) { s.classList.remove('selected'); });
-          slot.classList.add('selected');
-          updateBookingBar(data[idx]);
-          scrollPillIntoView(slots, slot);
+          var wasSelected = slot.classList.contains('selected');
+          if (wasSelected) {
+            slot.classList.remove('selected');
+          } else {
+            slots.querySelectorAll('.cd-time-slot').forEach(function(s) { s.classList.remove('selected'); });
+            slot.classList.add('selected');
+            updateBookingBar(data[idx]);
+            scrollPillIntoView(slots, slot);
+          }
+          syncCdBookingBarVisibility();
         });
       });
       // Initial booking bar state reflects the pre-selected first slot
       updateBookingBar(data[0]);
+      syncCdBookingBarVisibility();
+    }
+
+    function syncCdBookingBarVisibility() {
+      var bar = document.getElementById('cd-booking-bar');
+      var slots = document.getElementById('cd-time-slots');
+      if (!bar || !slots) return;
+      var anySelected = !!slots.querySelector('.cd-time-slot.selected');
+      bar.classList.toggle('hidden-no-slot', !anySelected);
     }
 
     function updateBookingBar(slot) {

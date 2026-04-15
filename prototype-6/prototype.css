@@ -2664,11 +2664,19 @@
     gap: 12px;
     z-index: 6;
     pointer-events: auto;
-    transition: transform 0.3s cubic-bezier(.25,.46,.45,.94);
+    transition: transform 0.3s cubic-bezier(.25,.46,.45,.94), opacity 0.25s ease;
   }
   /* Lowered state: when tab bar slides down, booking card glides to where it was */
   .cd-booking-bar.lowered {
     transform: translateY(86px);
+  }
+  /* Hidden state: no time slot selected → card slides down off-screen and fades out.
+     Defined after .lowered so this rule wins when both classes are present. */
+  .cd-booking-bar.hidden-no-slot,
+  .cd-booking-bar.lowered.hidden-no-slot {
+    transform: translateY(260px);
+    opacity: 0;
+    pointer-events: none;
   }
   .cd-booking-info {
     display: flex;
