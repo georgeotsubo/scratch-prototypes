@@ -2504,29 +2504,54 @@
     let dragStartY = 0;
     let dragDelta = 0;
     let dismissDragging = false;
+    let dismissDragInitiated = false; // sheet visual drag has actually started
+    var DOWNWARD_INTENT_THRESHOLD = 6; // px downward to confirm dismiss intent
+    var UPWARD_ABANDON_THRESHOLD = 10; // px upward to abandon (let native scroll take over)
 
     function startDismissDrag(y) {
       if (classDetailOpen) return; // venue drag is disabled while class detail is layered on top
+      // Just record start state — DON'T touch the sheet yet. The visual drag is deferred
+      // until we confirm downward intent in moveDismissDrag, so upward flicks pass cleanly
+      // through to native scroll without disrupting the sheet's transform/transition.
       dismissDragging = true;
+      dismissDragInitiated = false;
       dragStartY = y;
       dragDelta = 0;
       lastDragY = y;
       lastDragTime = Date.now();
       dragVelocity = 0;
-      venueDetailSheet.style.transition = 'none';
-      // Commit current animated position before cancelling to prevent jerk
-      if (motionAnimate) {
-        venueDetailSheet.style.transform = 'translateY(0px)';
-        venueDetailSheet.getAnimations().forEach(function(a) { a.cancel(); });
-      }
     }
     function moveDismissDrag(y) {
+      if (!dismissDragging) return;
       var now = Date.now();
       var dt = now - lastDragTime;
       if (dt > 0) dragVelocity = ((y - lastDragY) / dt) * 1000; // px/s
       lastDragY = y;
       lastDragTime = now;
-      dragDelta = Math.max(0, y - dragStartY);
+      var delta = y - dragStartY;
+      if (!dismissDragInitiated) {
+        // Direction not yet confirmed
+        if (delta < -UPWARD_ABANDON_THRESHOLD) {
+          // User is flicking up — abandon dismiss; native scroll takes the gesture
+          dismissDragging = false;
+          return;
+        }
+        if (delta < DOWNWARD_INTENT_THRESHOLD) {
+          // Still ambiguous — wait
+          return;
+        }
+        // Confirmed downward intent — initiate visual drag now
+        dismissDragInitiated = true;
+        venueDetailSheet.style.transition = 'none';
+        if (motionAnimate) {
+          venueDetailSheet.style.transform = 'translateY(0px)';
+          venueDetailSheet.getAnimations().forEach(function(a) { a.cancel(); });
+        }
+        // Re-anchor start so the sheet doesn't jump by THRESHOLD on first frame
+        dragStartY = y;
+        delta = 0;
+      }
+      dragDelta = Math.max(0, delta);
       venueDetailSheet.style.transform = 'translateY(' + dragDelta + 'px)';
       var opacity = Math.max(0, 0.15 * (1 - dragDelta / 300));
       venueDetailEl.style.background = 'rgba(0,0,0,' + opacity + ')';
@@ -2536,7 +2561,12 @@
     var dragVelocity = 0;
 
     function endDismissDrag() {
+      if (!dismissDragging) return;
       dismissDragging = false;
+      // If the visual drag never actually started (upward flick or no movement),
+      // there's nothing to clean up — native scroll handled the gesture.
+      if (!dismissDragInitiated) return;
+      dismissDragInitiated = false;
       venueDetailEl.style.background = '';
       // Dismiss if dragged far enough OR fast enough
       if (dragDelta > 80 || dragVelocity > 500) {
@@ -2902,7 +2932,6 @@
       document.getElementById('cd-title').textContent = cls.title;
       document.getElementById('cd-sticky-title').textContent = cls.title;
       document.getElementById('cd-sticky-nav').classList.remove('scrolled');
-      document.getElementById('cd-instructor-name').textContent = cls.instructor;
       // rating "4.6 (287)" → split
       var ratingParts = (cls.rating || '4.9 (250)').match(/^([\d.]+)\s*\((\d+)\)$/);
       if (ratingParts) {
@@ -3178,21 +3207,24 @@
     var cdDragStartY = 0;
     var cdDragDelta = 0;
     var cdDismissDragging = false;
+    var cdDismissDragInitiated = false;
     var cdLastDragY = 0;
     var cdLastDragTime = 0;
     var cdDragVelocity = 0;
+    var CD_DOWNWARD_INTENT = 6;
+    var CD_UPWARD_ABANDON = 10;
 
     function cdStartDrag(y) {
       if (!classDetailOpen) return;
+      // Defer visual drag until downward intent is confirmed (see cdMoveDrag).
+      // This lets upward flicks pass through to native scroll cleanly.
       cdDismissDragging = true;
+      cdDismissDragInitiated = false;
       cdDragStartY = y;
       cdDragDelta = 0;
       cdLastDragY = y;
       cdLastDragTime = Date.now();
       cdDragVelocity = 0;
-      classDetailSheet.style.transition = 'none';
-      // While actively dragging, manage venue scale-back via inline transform — disable .stacked transition
-      venueDetailSheet.classList.remove('unstacking');
     }
     function cdMoveDrag(y) {
       if (!cdDismissDragging) return;
@@ -3201,7 +3233,24 @@
       if (dt > 0) cdDragVelocity = ((y - cdLastDragY) / dt) * 1000;
       cdLastDragY = y;
       cdLastDragTime = now;
-      cdDragDelta = Math.max(0, y - cdDragStartY);
+      var delta = y - cdDragStartY;
+      if (!cdDismissDragInitiated) {
+        if (delta < -CD_UPWARD_ABANDON) {
+          // Upward flick — abandon, native scroll takes over
+          cdDismissDragging = false;
+          return;
+        }
+        if (delta < CD_DOWNWARD_INTENT) {
+          return; // still ambiguous
+        }
+        // Confirmed downward intent — initiate visual drag
+        cdDismissDragInitiated = true;
+        classDetailSheet.style.transition = 'none';
+        venueDetailSheet.classList.remove('unstacking');
+        cdDragStartY = y; // re-anchor so sheet doesn't jump
+        delta = 0;
+      }
+      cdDragDelta = Math.max(0, delta);
       classDetailSheet.style.transform = 'translateY(' + cdDragDelta + 'px)';
       // Progressive un-stack: scale venue from 0.95 → 1.0 as user drags down
       var t = Math.min(1, cdDragDelta / classDetailSheet.offsetHeight);
@@ -3216,6 +3265,10 @@
     function cdEndDrag() {
       if (!cdDismissDragging) return;
       cdDismissDragging = false;
+      // If the visual drag never started (upward flick or no movement), let native scroll
+      // own the gesture — nothing to clean up on the sheet.
+      if (!cdDismissDragInitiated) return;
+      cdDismissDragInitiated = false;
       classDetailEl.style.background = '';
       if (cdDragDelta > 80 || cdDragVelocity > 500) {
         // Dismiss — pure CSS-transition pattern (mirrors venue detail's drag-dismiss)
