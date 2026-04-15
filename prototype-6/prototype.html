@@ -311,8 +311,8 @@
             </div>
             <span class="vd-sticky-title" id="vd-sticky-title">Venue</span>
             <div class="vd-actions-pill">
-              <div class="vd-action-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6 19.6294V6C6 4.89543 6.89543 4 8 4H16C17.1046 4 18 4.89543 18 6V19.6294C18 20.1697 17.3673 20.4622 16.9557 20.1123L12.4105 16.2489C12.1738 16.0477 11.8262 16.0477 11.5895 16.2489L7.04434 20.1123C6.63267 20.4622 6 20.1697 6 19.6294Z" stroke="#020203" stroke-width="2"/></svg></div>
-              <div class="vd-action-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4 13V18C4 19.1046 4.89543 20 6 20H18C19.1046 20 20 19.1046 20 18V13" stroke="#020203" stroke-width="2" stroke-linecap="round"/><path d="M12 6L12 15" stroke="#020203" stroke-width="2" stroke-linecap="round"/><path d="M8 8L11.6464 4.35355C11.8417 4.15829 12.1583 4.15829 12.3536 4.35355L16 8" stroke="#020203" stroke-width="2" stroke-linecap="round"/></svg></div>
+              <div class="vd-action-icon vd-bookmark-btn" id="vd-bookmark-btn" aria-label="Save"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6 19.6294V6C6 4.89543 6.89543 4 8 4H16C17.1046 4 18 4.89543 18 6V19.6294C18 20.1697 17.3673 20.4622 16.9557 20.1123L12.4105 16.2489C12.1738 16.0477 11.8262 16.0477 11.5895 16.2489L7.04434 20.1123C6.63267 20.4622 6 20.1697 6 19.6294Z" stroke="#020203" stroke-width="2"/></svg></div>
+              <div class="vd-action-icon" aria-label="Share"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4 13V18C4 19.1046 4.89543 20 6 20H18C19.1046 20 20 19.1046 20 18V13" stroke="#020203" stroke-width="2" stroke-linecap="round"/><path d="M12 6L12 15" stroke="#020203" stroke-width="2" stroke-linecap="round"/><path d="M8 8L11.6464 4.35355C11.8417 4.15829 12.1583 4.15829 12.3536 4.35355L16 8" stroke="#020203" stroke-width="2" stroke-linecap="round"/></svg></div>
             </div>
           </div>
         </div>
@@ -378,8 +378,8 @@
             <h3 class="vd-section-title">Available today</h3>
             <div class="vd-classes-scroll vd-hscroll">
               <div class="vd-class-card">
-                <div class="vd-class-name">Class A</div>
-                <div class="vd-class-instructor">with Instructor name</div>
+                <div class="vd-class-name">Power Vinyasa Flow</div>
+                <div class="vd-class-instructor">with Chauncie D.</div>
                 <div class="vd-class-time">Mon, Mar 24 · 60 min · $25</div>
                 <div class="vd-class-slots">
                   <div class="vd-slot-btn">10:00 AM</div>
@@ -388,8 +388,8 @@
                 </div>
               </div>
               <div class="vd-class-card">
-                <div class="vd-class-name">Class B</div>
-                <div class="vd-class-instructor">with Instructor name</div>
+                <div class="vd-class-name">Slow Burn Hot Mat Pilates</div>
+                <div class="vd-class-instructor">with Sarah M.</div>
                 <div class="vd-class-time">Mon, Mar 24 · 60 min · $25</div>
                 <div class="vd-class-slots">
                   <div class="vd-slot-btn">10:00 AM</div>
@@ -529,6 +529,132 @@
           <div style="height: 94px;"></div>
 
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== CLASS DETAIL MODAL ===== -->
+  <div id="class-detail">
+    <div class="class-detail-sheet">
+      <div class="class-detail-handle"></div>
+
+      <div class="class-detail-scroll">
+
+        <!-- Sticky nav (title fades in on scroll) -->
+        <div class="cd-sticky-nav" id="cd-sticky-nav">
+          <div class="cd-icon-btn" id="class-detail-close" aria-label="Close">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M1 1L13 13M13 1L1 13" stroke="#020203" stroke-width="2" stroke-linecap="round"/></svg>
+          </div>
+          <span class="cd-sticky-title" id="cd-sticky-title">Class</span>
+          <div class="cd-actions-pill">
+            <div class="cd-action-icon cd-bookmark-btn" id="cd-bookmark-btn" aria-label="Save">
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M5.5 16.5V3.5C5.5 2.94772 5.94772 2.5 6.5 2.5H13.5C14.0523 2.5 14.5 2.94772 14.5 3.5V16.5L10 13L5.5 16.5Z" stroke="#020203" stroke-width="1.7" stroke-linejoin="round"/></svg>
+            </div>
+            <div class="cd-action-icon" aria-label="Share">
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M10 13V3M10 3L6 7M10 3L14 7" stroke="#020203" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M3 12V15C3 16.1046 3.89543 17 5 17H15C16.1046 17 17 16.1046 17 15V12" stroke="#020203" stroke-width="2" stroke-linecap="round"/></svg>
+            </div>
+          </div>
+        </div>
+
+        <!-- Content area -->
+        <div class="cd-content">
+
+          <!-- Venue header -->
+          <div class="cd-section cd-header-section">
+            <div class="cd-header">
+              <div class="cd-instructor-photo"></div>
+              <div class="cd-header-text">
+                <h2 class="cd-title" id="cd-title">Slow Burn Hot Mat Pilates</h2>
+                <div class="cd-rating-row">
+                  <span class="cd-rating-num" id="cd-rating-num">4.9</span>
+                  <svg class="cd-rating-star" width="14" height="14" viewBox="0 0 20 20" fill="none"><path d="M9.10326 1.81699C9.47008 1.07374 10.5299 1.07374 10.8967 1.81699L12.7063 5.48347C12.8519 5.77862 13.1335 5.98319 13.4592 6.03051L17.5054 6.61846C18.3256 6.73765 18.6531 7.74562 18.0596 8.32416L15.1318 11.1781C14.8961 11.4079 14.7885 11.7389 14.8442 12.0632L15.5353 16.0931C15.6754 16.91 14.818 17.533 14.0844 17.1473L10.4653 15.2446C10.174 15.0915 9.82598 15.0915 9.53466 15.2446L5.91562 17.1473C5.18199 17.533 4.32456 16.91 4.46467 16.0931L5.15585 12.0632C5.21148 11.7389 5.10393 11.4079 4.86825 11.1781L1.94038 8.32416C1.34687 7.74562 1.67438 6.73765 2.4946 6.61846L6.54081 6.03051C6.86652 5.98319 7.14808 5.77862 7.29374 5.48347L9.10326 1.81699Z" fill="#FFB54D"/></svg>
+                  <span class="cd-rating-count" id="cd-rating-count">(250)</span>
+                </div>
+                <div class="cd-instructor-name" id="cd-instructor-name">Carolyn</div>
+                <div class="cd-venue-link" id="cd-venue-link">
+                  <span id="cd-venue-text">ID Hot Yoga · Lower East Side</span>
+                  <svg width="6" height="11" viewBox="0 0 6 11" fill="none"><path d="M1 1L5 5.5L1 10" stroke="#020203" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Date picker -->
+          <div class="cd-date-picker" id="cd-date-picker"></div>
+
+          <!-- Time slots -->
+          <div class="cd-time-slots" id="cd-time-slots"></div>
+
+          <!-- Tabs -->
+          <div class="cd-tabs" id="cd-tabs">
+            <div class="cd-tab active" data-cdtab="overview">
+              <span class="cd-tab-label">Overview</span>
+              <span class="cd-tab-label-bold">Overview</span>
+            </div>
+            <div class="cd-tab" data-cdtab="reviews">
+              <span class="cd-tab-label">Reviews</span>
+              <span class="cd-tab-label-bold">Reviews</span>
+            </div>
+            <div class="cd-tab-indicator" id="cd-tab-indicator"></div>
+          </div>
+
+          <!-- Overview panel -->
+          <div class="cd-panel active" data-cdpanel="overview">
+            <p class="cd-description"><span id="cd-description-text"></span> <span class="cd-see-more">see more</span></p>
+
+            <!-- Ratings & Reviews -->
+            <div class="cd-section cd-section-reviews">
+              <div class="cd-section-header">
+                <h3 class="cd-section-title">Ratings &amp; Reviews</h3>
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M7.5 4L13.5 10L7.5 16" stroke="#020203" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </div>
+              <div class="cd-rating-summary">
+                <span class="cd-rating-big" id="cd-rating-big">4.7</span>
+                <div class="cd-rating-stars-row">
+                  <div class="cd-stars" id="cd-stars"></div>
+                  <span class="cd-rating-summary-count" id="cd-rating-summary-count">(250)</span>
+                </div>
+              </div>
+              <div class="cd-review-cards vd-hscroll" id="cd-review-cards"></div>
+            </div>
+
+            <!-- How to prepare -->
+            <div class="cd-section">
+              <h3 class="cd-section-title">How to prepare</h3>
+              <p class="cd-section-body"><span id="cd-prep-text"></span> <span class="cd-see-more">see more</span></p>
+            </div>
+
+            <!-- Cancellation policy -->
+            <div class="cd-section">
+              <h3 class="cd-section-title">Cancellation policy</h3>
+              <p class="cd-section-body"><span id="cd-cancel-text"></span> <span class="cd-see-more">see more</span></p>
+            </div>
+          </div>
+
+          <!-- Reviews panel (simple list) -->
+          <div class="cd-panel" data-cdpanel="reviews">
+            <div class="cd-reviews-list" id="cd-reviews-list"></div>
+          </div>
+
+          <!-- Bottom spacer — sized for the lowered booking bar (~164px) plus a bit of breathing room.
+               When the user has scrolled down far enough to see the bottom, the bar is in its
+               lowered state, so this is the only state that matters here. -->
+          <div style="height: 190px;"></div>
+
+        </div>
+      </div>
+
+      <!-- Sticky booking footer -->
+      <div class="cd-booking-bar" id="cd-booking-bar">
+        <div class="cd-booking-info">
+          <div class="cd-booking-spots" id="cd-booking-spots">3 spots left</div>
+          <div class="cd-booking-time" id="cd-booking-time">Tue, Mar 3 · 10:00 AM</div>
+          <div class="cd-booking-bottom">
+            <span class="cd-booking-instructor" id="cd-booking-instructor">Carolyn</span>
+            <div class="cd-booking-price" id="cd-booking-price"></div>
+          </div>
+        </div>
+        <button class="cd-booking-cta" id="cd-booking-cta">Confirm and book</button>
       </div>
     </div>
   </div>

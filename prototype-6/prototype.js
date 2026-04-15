@@ -11,6 +11,7 @@
   let activeTab = 'search';
   let mapPanned = false; // true when user has dragged the map from its original position
   let venueDetailOpen = false;
+  let classDetailOpen = false;
   let currentPins = []; // stores the currently displayed pins for venue detail reference
   let currentSearchLabel = '';
   let currentLocationLabel = '';
@@ -1599,6 +1600,7 @@
       s.style.transition = '';
       s.classList.remove('expanded');
       s.classList.add('collapsed');
+      s.querySelectorAll('.venue-list').forEach(l => { l.scrollTop = 0; });
     });
     allNavBtns.forEach(b => {
       b.classList.add('collapsed');
@@ -1780,6 +1782,12 @@
         // Not far enough — snap back to original state
         snapTo = startOffset;
       }
+      // If a real drag occurred, suppress the synthesized click on any underlying
+      // venue card so it doesn't open the venue detail after release.
+      if (Math.abs(delta) >= 10) {
+        wasDragging = true;
+        setTimeout(function() { wasDragging = false; }, 0);
+      }
       // Re-enable CSS transition for snap animation
       setSheetY(snapTo, true);
       if (snapTo === EXPANDED_Y) {
@@ -1796,6 +1804,10 @@
         sheet.classList.add('collapsed');
         allNavBtns.forEach(b => { b.classList.add('collapsed'); });
         // Don't show "Search this area" on sheet drag — only on map pan
+      }
+      // Reset list scroll when leaving expanded state so dragging the sheet works next time
+      if (snapTo !== EXPANDED_Y) {
+        sheet.querySelectorAll('.venue-list').forEach(l => { l.scrollTop = 0; });
       }
       // After transition ends, clear inline styles so CSS classes are in control
       const cleanup = () => {
@@ -1933,6 +1945,11 @@
   const venueDetailScroll = venueDetailEl.querySelector('.venue-detail-scroll');
   const persistentTabBar = document.getElementById('tab-bar-persistent');
 
+  // ========== CLASS DETAIL MODAL ==========
+  const classDetailEl = document.getElementById('class-detail');
+  const classDetailSheet = classDetailEl.querySelector('.class-detail-sheet');
+  const classDetailScroll = classDetailEl.querySelector('.class-detail-scroll');
+
   // Motion.js helpers — iOS-like spring configs
   var motionAnimate = window.Motion && window.Motion.animate;
   var motionSpring = window.Motion && window.Motion.spring;
@@ -1940,8 +1957,8 @@
   var iosSheetSpring = motionSpring ? { type: motionSpring, stiffness: 400, damping: 35 } : { duration: 0.35 };
   // iOS snap-back spring: stiffer for quick snap
   var iosSnapSpring = motionSpring ? { type: motionSpring, stiffness: 500, damping: 30 } : { duration: 0.25 };
-  // iOS tab indicator spring: fast and crisp
-  var iosTabSpring = motionSpring ? { type: motionSpring, stiffness: 600, damping: 40 } : { duration: 0.3 };
+  // iOS tab indicator spring: fast, no bounce
+  var iosTabSpring = motionSpring ? { type: motionSpring, stiffness: 600, damping: 50 } : { duration: 0.3 };
 
   function openVenueDetail(index) {
     const pin = currentPins[index];
@@ -1983,34 +2000,39 @@
     venueDetailScroll.scrollTop = 0;
     venueDetailEl.querySelectorAll('.vd-hscroll').forEach(function(s) { s.scrollLeft = 0; });
     venueDetailEl.classList.add('venue-detail-visible');
-    // Animate sheet in with iOS spring
+    // Animate sheet in with ease-out
     venueDetailSheet.style.visibility = 'visible';
+    venueDetailSheet.style.transform = 'translateY(100%)';
     if (motionAnimate) {
-      venueDetailSheet.style.transform = 'translateY(100%)';
-      motionAnimate(venueDetailSheet, { transform: 'translateY(0%)' }, iosSheetSpring);
+      motionAnimate(venueDetailSheet, { transform: 'translateY(0%)' }, { duration: 0.3, easing: 'cubic-bezier(.25, .46, .45, .94)' });
+    } else {
+      void venueDetailSheet.offsetHeight;
+      venueDetailSheet.style.transition = 'transform 0.35s cubic-bezier(.25, .46, .45, .94)';
+      venueDetailSheet.style.transform = 'translateY(0%)';
     }
     persistentTabBar.style.display = '';
     venueDetailOpen = true;
     if (window.__resetVenueDetailTabs) {
       // Defer until after the modal becomes visible so layout is correct
-      requestAnimationFrame(function() { window.__resetVenueDetailTabs(); });
+      requestAnimationFrame(function() {
+        window.__resetVenueDetailTabs();
+        // Cache pin offset while scroll is at 0 and layout is stable
+        var tabsEl = venueDetailEl.querySelector('.vd-tabs');
+        var scrollRect = venueDetailScroll.getBoundingClientRect();
+        var tabsRect = tabsEl.getBoundingClientRect();
+        window.__vdPinOffset = tabsRect.top - scrollRect.top - 64;
+      });
     }
   }
 
-  function closeVenueDetail(velocity) {
+  function closeVenueDetail() {
     venueDetailOpen = false;
     venueDetailEl.style.background = '';
     venueDetailEl.classList.remove('venue-detail-visible');
     // Get the sheet height so we can animate to a pixel value (avoids % vs px mismatch)
     var sheetHeight = venueDetailSheet.offsetHeight;
     if (motionAnimate) {
-      var closeSpring = motionSpring ? {
-        type: motionSpring,
-        stiffness: 300,
-        damping: 30,
-        velocity: velocity || 0
-      } : { duration: 0.35 };
-      motionAnimate(venueDetailSheet, { transform: 'translateY(' + sheetHeight + 'px)' }, closeSpring).then(function() {
+      motionAnimate(venueDetailSheet, { transform: 'translateY(' + sheetHeight + 'px)' }, { duration: 0.25, easing: 'cubic-bezier(.25, .46, .45, .94)' }).then(function() {
         venueDetailSheet.style.transform = '';
         venueDetailSheet.style.visibility = '';
         persistentTabBar.style.display = 'none';
@@ -2033,11 +2055,18 @@
   // Close button
   document.getElementById('venue-detail-close').addEventListener('click', closeVenueDetail);
 
+  // Bookmark toggle (venue detail)
+  var vdBookmarkBtn = document.getElementById('vd-bookmark-btn');
+  if (vdBookmarkBtn) {
+    vdBookmarkBtn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      vdBookmarkBtn.classList.toggle('bookmarked');
+    });
+  }
+
   // Sticky nav: show venue name when scrolled past the header
   (function() {
     var stickyNav = document.getElementById('vd-sticky-nav');
-    // Threshold: once scrollTop > 0, the user has scrolled and the title should appear.
-    // Use a small threshold to avoid flicker at exactly 0.
     var SCROLL_THRESHOLD = 10;
 
     venueDetailScroll.addEventListener('scroll', function() {
@@ -2073,7 +2102,9 @@
     }
 
     function activateTab(tab) {
-      var wasPinned = venueDetailScroll.scrollTop >= 320;
+      // Use cached pin offset (measured when venue detail opened at scrollTop=0)
+      var pinOffset = window.__vdPinOffset || 0;
+      var wasPinned = pinOffset > 0 && venueDetailScroll.scrollTop >= pinOffset;
 
       tabs.forEach(function(t) { t.classList.remove('active'); });
       tab.classList.add('active');
@@ -2084,8 +2115,9 @@
         else p.classList.remove('active');
       });
 
+      // When tabs are pinned, snap to pinOffset so each tab's content starts from the top
       if (wasPinned) {
-        venueDetailScroll.scrollTop = 320;
+        venueDetailScroll.scrollTop = pinOffset;
       }
 
       // Reset horizontal scroll on all carousels
@@ -2149,32 +2181,94 @@
     var scheduleList = document.getElementById('vd-schedule-list');
     if (!datePicker || !scheduleList) return;
     var DAY_LETTERS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+    var VD_WEEKS_COUNT = 2; // current week + 1 future (forward-only navigation)
 
-    function renderDatePicker(selectedIdx) {
+    function renderDatePicker(selectedAbsIdx) {
       var today = new Date();
-      var dayOfWeek = today.getDay();
+      var dow = today.getDay();
+      if (selectedAbsIdx == null) selectedAbsIdx = dow;
       var html = '';
-      for (var i = 0; i < 7; i++) {
-        var date = new Date(today);
-        date.setDate(today.getDate() - dayOfWeek + i);
-        var isPast = i < dayOfWeek;
-        var isSelected = i === selectedIdx;
-        var classes = 'vd-date-cell';
-        if (isPast && !isSelected) classes += ' past';
-        if (isSelected) classes += ' selected';
-        html += '<div class="' + classes + '" data-day="' + i + '">'
-          + '<div class="vd-date-letter">' + DAY_LETTERS[i] + '</div>'
-          + '<div class="vd-date-day">' + date.getDate() + '</div>'
-          + '</div>';
+      for (var w = 0; w < VD_WEEKS_COUNT; w++) {
+        html += '<div class="vd-week">';
+        for (var i = 0; i < 7; i++) {
+          var absIdx = w * 7 + i;
+          var date = new Date(today);
+          date.setDate(today.getDate() - dow + absIdx);
+          var classes = 'vd-date-cell';
+          if (absIdx < dow && absIdx !== selectedAbsIdx) classes += ' past';
+          if (absIdx === dow) classes += ' today';
+          if (absIdx === selectedAbsIdx) classes += ' selected';
+          html += '<div class="' + classes + '" data-abs="' + absIdx + '">'
+            + '<div class="vd-date-letter">' + DAY_LETTERS[i] + '</div>'
+            + '<div class="vd-date-day">' + date.getDate() + '</div>'
+            + '</div>';
+        }
+        html += '</div>';
       }
       datePicker.innerHTML = html;
       datePicker.querySelectorAll('.vd-date-cell').forEach(function(cell) {
         cell.addEventListener('click', function() {
-          renderDatePicker(parseInt(cell.dataset.day, 10));
+          if (wasDragging) return;
+          renderDatePicker(parseInt(cell.dataset.abs, 10));
           renderScheduleList();
         });
       });
+      // Scroll to the week that contains the selected day
+      var selectedWeekIdx = Math.floor(selectedAbsIdx / 7);
+      requestAnimationFrame(function() {
+        var weekWidth = datePicker.clientWidth;
+        if (weekWidth) datePicker.scrollLeft = selectedWeekIdx * weekWidth;
+      });
     }
+
+    // ---- Venue date picker carousel snap (mirrors class detail's logic) ----
+    var vdPickerAnimating = false;
+    var vdPickerScrollDebounce = null;
+    var vdPickerStartScrollLeft = 0;
+    var VD_SWIPE_INTENT_THRESHOLD = 20;
+    function vdAnimateScrollLeft(el, target, duration) {
+      var start = el.scrollLeft;
+      var distance = target - start;
+      if (Math.abs(distance) < 1) return;
+      var startTime = performance.now();
+      vdPickerAnimating = true;
+      function step(now) {
+        var t = Math.min(1, (now - startTime) / duration);
+        var eased = 1 - Math.pow(1 - t, 3);
+        el.scrollLeft = start + distance * eased;
+        if (t < 1) requestAnimationFrame(step);
+        else vdPickerAnimating = false;
+      }
+      requestAnimationFrame(step);
+    }
+    function snapVdDatePickerToTarget() {
+      if (vdPickerAnimating) return;
+      var weekWidth = datePicker.clientWidth;
+      if (!weekWidth) return;
+      var current = datePicker.scrollLeft;
+      var distance = current - vdPickerStartScrollLeft;
+      var startWeek = Math.round(vdPickerStartScrollLeft / weekWidth);
+      var nearestWeek = Math.round(current / weekWidth);
+      if (distance > VD_SWIPE_INTENT_THRESHOLD && nearestWeek <= startWeek) {
+        nearestWeek = startWeek + 1;
+      } else if (distance < -VD_SWIPE_INTENT_THRESHOLD && nearestWeek >= startWeek) {
+        nearestWeek = startWeek - 1;
+      }
+      var maxWeek = Math.round((datePicker.scrollWidth - weekWidth) / weekWidth);
+      nearestWeek = Math.max(0, Math.min(maxWeek, nearestWeek));
+      vdAnimateScrollLeft(datePicker, nearestWeek * weekWidth, 400);
+    }
+    datePicker.addEventListener('scroll', function() {
+      if (vdPickerAnimating) return;
+      if (!vdPickerScrollDebounce) vdPickerStartScrollLeft = datePicker.scrollLeft;
+      clearTimeout(vdPickerScrollDebounce);
+      vdPickerScrollDebounce = setTimeout(function() {
+        snapVdDatePickerToTarget();
+        vdPickerScrollDebounce = null;
+      }, 80);
+    }, { passive: true });
+    // Expose for the desktop mouse-drag handler
+    window.__snapVdDatePicker = snapVdDatePickerToTarget;
 
     var STAR_SVG = '<svg width="14" height="14" viewBox="0 0 20 20" fill="none"><path d="M9.10326 1.81699C9.47008 1.07374 10.5299 1.07374 10.8967 1.81699L12.7063 5.48347C12.8519 5.77862 13.1335 5.98319 13.4592 6.03051L17.5054 6.61846C18.3256 6.73765 18.6531 7.74562 18.0596 8.32416L15.1318 11.1781C14.8961 11.4079 14.7885 11.7389 14.8442 12.0632L15.5353 16.0931C15.6754 16.91 14.818 17.533 14.0844 17.1473L10.4653 15.2446C10.174 15.0915 9.82598 15.0915 9.53466 15.2446L5.91562 17.1473C5.18199 17.533 4.32456 16.91 4.46467 16.0931L5.15585 12.0632C5.21148 11.7389 5.10393 11.4079 4.86825 11.1781L1.94038 8.32416C1.34687 7.74562 1.67438 6.73765 2.4946 6.61846L6.54081 6.03051C6.86652 5.98319 7.14808 5.77862 7.29374 5.48347L9.10326 1.81699Z" fill="#020203"/></svg>';
 
@@ -2241,7 +2335,9 @@
     }
 
     function renderScheduleList() {
-      var html = generateClasses().map(function(c) {
+      var classes = generateClasses();
+      window.__lastGeneratedClasses = classes;
+      var html = classes.map(function(c, i) {
         var priceHtml = '';
         if (c.finalPrice) {
           priceHtml = '<div class="vd-schedule-price">'
@@ -2252,7 +2348,7 @@
         } else if (c.plainPrice) {
           priceHtml = '<span class="vd-price-plain">' + c.plainPrice + '</span>';
         }
-        return '<div class="vd-schedule-card' + (c.disabled ? ' disabled' : '') + '">'
+        return '<div class="vd-schedule-card' + (c.disabled ? ' disabled' : '') + '" data-class-idx="' + i + '">'
           + '<div class="vd-schedule-top">'
           +   '<span class="vd-schedule-time">' + c.time + '</span>'
           +   (c.spots ? '<span class="vd-schedule-spots">' + c.spots + '</span>' : '')
@@ -2267,6 +2363,16 @@
       }).join('');
       scheduleList.innerHTML = html;
     }
+
+    // Delegated click handler — open class detail when a non-disabled card is tapped
+    scheduleList.addEventListener('click', function(e) {
+      var card = e.target.closest('.vd-schedule-card');
+      if (!card || card.classList.contains('disabled')) return;
+      if (wasDragging) return;
+      var idx = +card.dataset.classIdx;
+      var cls = window.__lastGeneratedClasses && window.__lastGeneratedClasses[idx];
+      if (cls && typeof window.__openClassDetail === 'function') window.__openClassDetail(cls);
+    });
 
     // Initialize on load
     var today = new Date();
@@ -2400,6 +2506,7 @@
     let dismissDragging = false;
 
     function startDismissDrag(y) {
+      if (classDetailOpen) return; // venue drag is disabled while class detail is layered on top
       dismissDragging = true;
       dragStartY = y;
       dragDelta = 0;
@@ -2407,8 +2514,11 @@
       lastDragTime = Date.now();
       dragVelocity = 0;
       venueDetailSheet.style.transition = 'none';
-      // Stop any running Motion animation
-      if (motionAnimate) venueDetailSheet.getAnimations().forEach(function(a) { a.cancel(); });
+      // Commit current animated position before cancelling to prevent jerk
+      if (motionAnimate) {
+        venueDetailSheet.style.transform = 'translateY(0px)';
+        venueDetailSheet.getAnimations().forEach(function(a) { a.cancel(); });
+      }
     }
     function moveDismissDrag(y) {
       var now = Date.now();
@@ -2430,7 +2540,28 @@
       venueDetailEl.style.background = '';
       // Dismiss if dragged far enough OR fast enough
       if (dragDelta > 80 || dragVelocity > 500) {
-        closeVenueDetail(dragVelocity / 1000);
+        // Animate from current drag position straight down using CSS transition
+        venueDetailOpen = false;
+        venueDetailEl.classList.remove('venue-detail-visible');
+        var sheetHeight = venueDetailSheet.offsetHeight;
+        // Cancel any Motion animations that might interfere
+        if (motionAnimate) {
+          venueDetailSheet.getAnimations().forEach(function(a) { a.cancel(); });
+        }
+        // Pin current transform, then transition to dismiss position
+        venueDetailSheet.style.transition = 'none';
+        venueDetailSheet.style.transform = 'translateY(' + dragDelta + 'px)';
+        // Force reflow so the starting transform is committed
+        void venueDetailSheet.offsetHeight;
+        venueDetailSheet.style.transition = 'transform 0.2s cubic-bezier(.25, .46, .45, .94)';
+        venueDetailSheet.style.transform = 'translateY(' + sheetHeight + 'px)';
+        venueDetailSheet.addEventListener('transitionend', function handler() {
+          venueDetailSheet.removeEventListener('transitionend', handler);
+          venueDetailSheet.style.transform = '';
+          venueDetailSheet.style.transition = '';
+          venueDetailSheet.style.visibility = '';
+          persistentTabBar.style.display = 'none';
+        }, { once: true });
       } else {
         // Snap back with spring (use px to match current inline transform)
         if (motionAnimate) {
@@ -2452,6 +2583,25 @@
       startDismissDrag(e.clientY);
     });
 
+    // Sticky nav top bar: also acts as drag target (bigger hit area).
+    // Skip drags that start on interactive controls; only initiate when
+    // scroll is at top so we don't fight native scroll.
+    var stickyNavEl = venueDetailEl.querySelector('.vd-sticky-nav');
+    function navIsInteractive(target) {
+      return target.closest('.venue-detail-close, .vd-actions-pill, .vd-action-icon, button, a');
+    }
+    stickyNavEl.addEventListener('touchstart', function(e) {
+      if (navIsInteractive(e.target)) return;
+      if (venueDetailScroll.scrollTop > 0) return;
+      startDismissDrag(e.touches[0].clientY);
+    }, { passive: true });
+    stickyNavEl.addEventListener('mousedown', function(e) {
+      if (navIsInteractive(e.target)) return;
+      if (venueDetailScroll.scrollTop > 0) return;
+      e.preventDefault();
+      startDismissDrag(e.clientY);
+    });
+
     // Global touch/mouse move/up for handle-initiated drags
     document.addEventListener('touchmove', function(e) {
       if (dismissDragging) moveDismissDrag(e.touches[0].clientY);
@@ -2464,6 +2614,698 @@
     });
     document.addEventListener('mouseup', function() {
       if (dismissDragging) endDismissDrag();
+    });
+  })();
+
+  // ========== CLASS DETAIL: OPEN / CLOSE / DRAG-TO-DISMISS ==========
+  (function() {
+    var CD_DESCRIPTIONS = [
+      "Open to all levels, this signature class is designed to help take your practice to the next level. The instructor will guide you through vinyasa sequences, each repeated 3 times. The 1st time through the",
+      "A dynamic flow linking breath to movement. Expect sun salutations, standing balances, and a supported cool-down. Heated to 95°F to deepen flexibility and",
+      "Build strength and flexibility through controlled, fluid sequences. All levels welcome — modifications offered throughout. Leave feeling longer, stronger, and",
+      "A high-energy class combining yoga fundamentals with bodyweight strength training. Expect to sweat, breathe, and build serious core stability over"
+    ];
+    var CD_PREP = "All classes are hot. Mats + towels are complimentary on your first visit and always available for a small rental fee after. Water +";
+    var CD_CANCEL = "Lorem ipsum dolor sit amet consectetur. Dolor viverra facilisis lectus nulla ut. Duis quis risus amet iaculis. Nunc purus aenean enim ut sit hac tempor. Rhoncus faucibus ut proin";
+    var CD_VENUE_NAMES = ['ID Hot Yoga', 'Sui Power Yoga', 'Heated Reformer Co.', 'Studio Sweat', 'Mindful Movement'];
+    var CD_NEIGHBORHOODS = ['Lower East Side', 'East Village', 'SoHo', 'Williamsburg', 'West Village'];
+    var CD_INSTRUCTORS = ['Sarah M.', 'Chauncie D.', 'Liz K.', 'Marcus J.', 'Priya S.', 'Jordan T.', 'Kai N.', 'Emma R.', 'David C.', 'Nina L.', 'Carolyn', 'Sarah Ghilardi', 'Marie Wolf'];
+    var CD_REVIEW_NAMES = ['Sara', 'Liz', 'Natalie', 'Jordan', 'Marcus', 'Priya', 'Emma'];
+    var CD_REVIEW_BODIES = [
+      "I really appreciate Chauncie's flows. They're physically challenging, often incorporating ashtanga elements, but never aggressive for the sake of it. He",
+      "This class was exactly what I needed. The instructor was so attentive and gave great modifications. The music was perfect and the energy was high.",
+      "Such a welcoming studio. First time here and the instructor made me feel right at home. Will definitely be coming back for more classes.",
+      "Incredible workout! Left feeling so strong and centered. The sequencing was creative and the instructor's cues were super clear throughout."
+    ];
+    var DAY_LETTERS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+    var STAR_GOLD_20 = '<svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M9.10326 1.81699C9.47008 1.07374 10.5299 1.07374 10.8967 1.81699L12.7063 5.48347C12.8519 5.77862 13.1335 5.98319 13.4592 6.03051L17.5054 6.61846C18.3256 6.73765 18.6531 7.74562 18.0596 8.32416L15.1318 11.1781C14.8961 11.4079 14.7885 11.7389 14.8442 12.0632L15.5353 16.0931C15.6754 16.91 14.818 17.533 14.0844 17.1473L10.4653 15.2446C10.174 15.0915 9.82598 15.0915 9.53466 15.2446L5.91562 17.1473C5.18199 17.533 4.32456 16.91 4.46467 16.0931L5.15585 12.0632C5.21148 11.7389 5.10393 11.4079 4.86825 11.1781L1.94038 8.32416C1.34687 7.74562 1.67438 6.73765 2.4946 6.61846L6.54081 6.03051C6.86652 5.98319 7.14808 5.77862 7.29374 5.48347L9.10326 1.81699Z" fill="#FFB54D"/></svg>';
+    var STAR_GOLD_16 = '<svg width="16" height="16" viewBox="0 0 20 20" fill="none"><path d="M9.10326 1.81699C9.47008 1.07374 10.5299 1.07374 10.8967 1.81699L12.7063 5.48347C12.8519 5.77862 13.1335 5.98319 13.4592 6.03051L17.5054 6.61846C18.3256 6.73765 18.6531 7.74562 18.0596 8.32416L15.1318 11.1781C14.8961 11.4079 14.7885 11.7389 14.8442 12.0632L15.5353 16.0931C15.6754 16.91 14.818 17.533 14.0844 17.1473L10.4653 15.2446C10.174 15.0915 9.82598 15.0915 9.53466 15.2446L5.91562 17.1473C5.18199 17.533 4.32456 16.91 4.46467 16.0931L5.15585 12.0632C5.21148 11.7389 5.10393 11.4079 4.86825 11.1781L1.94038 8.32416C1.34687 7.74562 1.67438 6.73765 2.4946 6.61846L6.54081 6.03051C6.86652 5.98319 7.14808 5.77862 7.29374 5.48347L9.10326 1.81699Z" fill="#FFB54D"/></svg>';
+
+    function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+
+    var CD_WEEKS_COUNT = 2; // current week + 1 future (forward-only navigation)
+    function renderCdDatePicker(selectedAbsIdx) {
+      var picker = document.getElementById('cd-date-picker');
+      var today = new Date();
+      var dow = today.getDay();
+      // selectedAbsIdx is index from start-of-current-week (0..CD_WEEKS_COUNT*7-1)
+      // Default selection: today
+      if (selectedAbsIdx == null) selectedAbsIdx = dow;
+      var html = '';
+      for (var w = 0; w < CD_WEEKS_COUNT; w++) {
+        html += '<div class="cd-week">';
+        for (var i = 0; i < 7; i++) {
+          var absIdx = w * 7 + i;
+          var d = new Date(today);
+          d.setDate(today.getDate() - dow + absIdx);
+          var classes = 'cd-date-cell';
+          if (absIdx < dow && absIdx !== selectedAbsIdx) classes += ' past';
+          if (absIdx === dow) classes += ' today';
+          if (absIdx === selectedAbsIdx) classes += ' selected';
+          html += '<div class="' + classes + '" data-abs="' + absIdx + '">'
+            + '<div class="cd-date-letter">' + DAY_LETTERS[i] + '</div>'
+            + '<div class="cd-date-day">' + d.getDate() + '</div>'
+            + '</div>';
+        }
+        html += '</div>';
+      }
+      picker.innerHTML = html;
+      picker.querySelectorAll('.cd-date-cell').forEach(function(cell) {
+        cell.addEventListener('click', function() {
+          if (wasDragging) return;
+          renderCdDatePicker(parseInt(cell.dataset.abs, 10));
+        });
+      });
+      // Scroll to the week containing the selected day (preserve user's swipe)
+      var selectedWeekIdx = Math.floor(selectedAbsIdx / 7);
+      requestAnimationFrame(function() {
+        var weekWidth = picker.clientWidth;
+        picker.scrollLeft = selectedWeekIdx * weekWidth;
+      });
+    }
+
+    // ---- Date picker carousel snap ----
+    var datePickerAnimating = false;
+    var datePickerScrollDebounce = null;
+    var datePickerStartScrollLeft = 0;
+    var SWIPE_INTENT_THRESHOLD = 20; // px — any movement past this counts as a paginate intent
+    function animateScrollLeft(el, target, duration) {
+      var start = el.scrollLeft;
+      var distance = target - start;
+      if (Math.abs(distance) < 1) return;
+      var startTime = performance.now();
+      datePickerAnimating = true;
+      function step(now) {
+        var t = Math.min(1, (now - startTime) / duration);
+        var eased = 1 - Math.pow(1 - t, 3); // ease-out cubic
+        el.scrollLeft = start + distance * eased;
+        if (t < 1) {
+          requestAnimationFrame(step);
+        } else {
+          datePickerAnimating = false;
+        }
+      }
+      requestAnimationFrame(step);
+    }
+    function snapDatePickerToTarget() {
+      if (datePickerAnimating) return;
+      var picker = document.getElementById('cd-date-picker');
+      if (!picker) return;
+      var weekWidth = picker.clientWidth;
+      if (!weekWidth) return;
+      var current = picker.scrollLeft;
+      var distance = current - datePickerStartScrollLeft;
+      var startWeek = Math.round(datePickerStartScrollLeft / weekWidth);
+      var nearestWeek = Math.round(current / weekWidth);
+      // If user swiped past a small intent threshold but the nearest snap point hasn't
+      // crossed a page boundary yet, force advance by one page in the swipe direction.
+      if (distance > SWIPE_INTENT_THRESHOLD && nearestWeek <= startWeek) {
+        nearestWeek = startWeek + 1;
+      } else if (distance < -SWIPE_INTENT_THRESHOLD && nearestWeek >= startWeek) {
+        nearestWeek = startWeek - 1;
+      }
+      // Clamp to valid week range
+      var maxWeek = Math.round((picker.scrollWidth - weekWidth) / weekWidth);
+      nearestWeek = Math.max(0, Math.min(maxWeek, nearestWeek));
+      animateScrollLeft(picker, nearestWeek * weekWidth, 400);
+    }
+    // Debounced scroll listener — fires after native touch momentum settles.
+    // Captures the scroll position at the start of each new scroll session so we
+    // can determine swipe direction even if the user only moves a small amount.
+    (function() {
+      var picker = document.getElementById('cd-date-picker');
+      if (!picker) return;
+      picker.addEventListener('scroll', function() {
+        if (datePickerAnimating) return;
+        if (!datePickerScrollDebounce) {
+          // First scroll event after rest — record near-start position
+          datePickerStartScrollLeft = picker.scrollLeft;
+        }
+        clearTimeout(datePickerScrollDebounce);
+        datePickerScrollDebounce = setTimeout(function() {
+          snapDatePickerToTarget();
+          datePickerScrollDebounce = null;
+        }, 80);
+      }, { passive: true });
+    })();
+    // Expose for the desktop mouse-drag handler — uses the same intent logic
+    window.__snapDatePicker = snapDatePickerToTarget;
+
+    // Animate a horizontally-scrollable container so the tapped child sits fully in view
+    // (with a small inset on each edge so the pill isn't flush against the container edge).
+    function scrollPillIntoView(container, pill) {
+      var EDGE_INSET = 16;
+      var cRect = container.getBoundingClientRect();
+      var pRect = pill.getBoundingClientRect();
+      var offsetLeftInContent = (pRect.left - cRect.left) + container.scrollLeft;
+      var target = container.scrollLeft;
+      if (pRect.left < cRect.left + EDGE_INSET) {
+        // Pill is clipped on the left → scroll left so it's at the inset
+        target = offsetLeftInContent - EDGE_INSET;
+      } else if (pRect.right > cRect.right - EDGE_INSET) {
+        // Pill is clipped on the right → scroll right so its right edge is at -inset
+        target = offsetLeftInContent + pRect.width - container.clientWidth + EDGE_INSET;
+      } else {
+        return; // already fully in view
+      }
+      target = Math.max(0, Math.min(container.scrollWidth - container.clientWidth, target));
+      animateScrollLeft(container, target, 300);
+    }
+
+    function renderCdTimeSlots(primaryTime, primaryInstructor) {
+      var slots = document.getElementById('cd-time-slots');
+      // Strip the duration off if present (e.g. "10:00 AM · 60 min" → "10:00 AM")
+      var firstTime = primaryTime.split(' · ')[0];
+      var pickInst = function(except) {
+        var n;
+        do { n = pick(CD_INSTRUCTORS); } while (n === except);
+        return n;
+      };
+      // Generate 6-8 slots throughout the day, varied times
+      var BASE_TIMES = ['7:00 AM', '8:30 AM', '10:00 AM', '11:30 AM', '1:30 PM', '3:00 PM', '5:30 PM', '7:00 PM', '8:30 PM'];
+      var count = 6 + Math.floor(Math.random() * 3);
+      var startIdx = Math.floor(Math.random() * (BASE_TIMES.length - count + 1));
+      var times = BASE_TIMES.slice(startIdx, startIdx + count);
+      // Make sure first slot uses the primary class's time + instructor
+      var data = [{ time: firstTime, instructor: primaryInstructor, spots: '3 spots left', selected: true }];
+      var lastInst = primaryInstructor;
+      for (var i = 0; i < times.length; i++) {
+        if (times[i] === firstTime) continue;
+        var inst = pickInst(lastInst);
+        lastInst = inst;
+        var spots = Math.random() < 0.5 ? (1 + Math.floor(Math.random() * 6)) + ' spots left' : '';
+        data.push({ time: times[i], instructor: inst, spots: spots, selected: false });
+      }
+      slots.innerHTML = data.map(function(s) {
+        return '<div class="cd-time-slot' + (s.selected ? ' selected' : '') + '">'
+          + '<div class="cd-time-slot-chip">'
+          +   '<div class="cd-time-slot-time">' + s.time + '</div>'
+          +   '<div class="cd-time-slot-instructor">' + s.instructor + '</div>'
+          + '</div>'
+          + (s.spots ? '<div class="cd-time-slot-spots">' + s.spots + '</div>' : '')
+          + '</div>';
+      }).join('');
+      // Toggle selection — bail if a drag occurred (user was scrolling, not tapping)
+      slots.querySelectorAll('.cd-time-slot').forEach(function(slot, idx) {
+        slot.addEventListener('click', function() {
+          if (wasDragging) return;
+          slots.querySelectorAll('.cd-time-slot').forEach(function(s) { s.classList.remove('selected'); });
+          slot.classList.add('selected');
+          updateBookingBar(data[idx]);
+          scrollPillIntoView(slots, slot);
+        });
+      });
+      // Initial booking bar state reflects the pre-selected first slot
+      updateBookingBar(data[0]);
+    }
+
+    function updateBookingBar(slot) {
+      var spotsEl = document.getElementById('cd-booking-spots');
+      var timeEl = document.getElementById('cd-booking-time');
+      var instructorEl = document.getElementById('cd-booking-instructor');
+      if (spotsEl) {
+        spotsEl.textContent = slot.spots || '';
+        spotsEl.style.display = slot.spots ? '' : 'none';
+      }
+      // Format date as "Tue, Mar 3"
+      var today = new Date();
+      var dayShort = today.toLocaleDateString('en-US', { weekday: 'short' });
+      var monthShort = today.toLocaleDateString('en-US', { month: 'short' });
+      var dateStr = dayShort + ', ' + monthShort + ' ' + today.getDate();
+      if (timeEl) timeEl.textContent = dateStr + ' · ' + slot.time;
+      if (instructorEl) instructorEl.textContent = slot.instructor;
+    }
+
+    function renderCdReviewCards(title) {
+      var container = document.getElementById('cd-review-cards');
+      var count = 3;
+      var html = '';
+      for (var i = 0; i < count; i++) {
+        var stars = '';
+        for (var s = 0; s < 5; s++) stars += STAR_GOLD_16;
+        var name = pick(CD_REVIEW_NAMES);
+        html += '<div class="cd-review-card">'
+          + '<p class="cd-review-card-title">' + title + '</p>'
+          + '<p class="cd-review-card-body">' + pick(CD_REVIEW_BODIES) + '</p>'
+          + '<div class="cd-review-card-footer">'
+          +   '<div class="cd-review-card-author">'
+          +     '<span class="cd-review-card-name">' + name + '</span>'
+          +     '<div class="cd-review-card-stars">' + stars + '</div>'
+          +   '</div>'
+          +   (Math.random() < 0.5 ? '<div class="cd-review-card-source"><svg class="cd-review-card-source-icon" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M0 10C0 4.47715 4.47715 0 10 0V0C15.5228 0 20 4.47715 20 10V10C20 15.5228 15.5228 20 10 20V20C4.47715 20 0 15.5228 0 10V10Z" fill="#0055FF"/><path d="M11.8559 5.39815C11.733 5.39222 11.1837 5.38899 10.7913 5.38737C10.6637 5.38703 10.5399 5.43088 10.4409 5.51145C10.342 5.59202 10.274 5.70436 10.2484 5.82939L10.0398 6.82717C10.022 6.91422 9.97477 6.99249 9.90606 7.04883C9.83735 7.10518 9.75135 7.13616 9.66249 7.13658L7.70574 7.14521C5.52853 7.14521 3.53027 8.77745 3.53027 11.0636C3.53027 13.1173 5.24391 14.9657 7.70628 14.9657C7.8335 14.9722 8.54828 14.9706 9.0248 14.9722C9.15246 14.9724 9.27624 14.9283 9.3751 14.8475C9.47396 14.7668 9.5418 14.6542 9.56708 14.5291L9.77569 13.5254C9.79331 13.4382 9.84047 13.3597 9.90921 13.3033C9.97795 13.2468 10.0641 13.2158 10.153 13.2154L11.8548 13.2203C14.2595 13.2203 16.0303 11.3719 16.0303 9.29817C16.0303 7.03416 14.0746 5.39653 11.8543 5.39653L11.8559 5.39815ZM11.8446 11.7196L10.1094 11.7233C9.98344 11.7237 9.86149 11.7675 9.76402 11.8472C9.66654 11.9269 9.59947 12.0377 9.57409 12.1611L9.36494 13.1739C9.34712 13.2607 9.29979 13.3386 9.23099 13.3945C9.1622 13.4503 9.07619 13.4805 8.9876 13.4801C8.54828 13.4801 8.30571 13.4661 7.72569 13.4661C6.41041 13.4661 5.0202 12.5891 5.0202 11.0754C5.0202 9.67389 6.26002 8.64592 7.72138 8.64592L9.70076 8.64215C9.82673 8.64201 9.9488 8.59846 10.0464 8.51882C10.144 8.43919 10.2112 8.32835 10.2366 8.20498L10.4473 7.19588C10.4654 7.10919 10.5127 7.03138 10.5815 6.97559C10.6502 6.9198 10.7361 6.88946 10.8247 6.8897C11.1929 6.8897 11.7648 6.89347 11.8429 6.89994C13.2251 6.89994 14.5441 7.84489 14.5441 9.32566C14.5441 10.6808 13.3631 11.7217 11.8435 11.7217" fill="white"/></svg><span>ClassPass</span></div>' : '')
+          + '</div>'
+          + '</div>';
+      }
+      container.innerHTML = html;
+    }
+
+    function renderCdReviewsList(title) {
+      var container = document.getElementById('cd-reviews-list');
+      var count = 5;
+      var html = '';
+      for (var i = 0; i < count; i++) {
+        var stars = '';
+        for (var s = 0; s < 5; s++) stars += STAR_GOLD_16;
+        var name = pick(CD_REVIEW_NAMES);
+        html += '<div class="cd-review-card">'
+          + '<p class="cd-review-card-title">' + title + '</p>'
+          + '<p class="cd-review-card-body">' + pick(CD_REVIEW_BODIES) + '</p>'
+          + '<div class="cd-review-card-footer">'
+          +   '<div class="cd-review-card-author">'
+          +     '<span class="cd-review-card-name">' + name + '</span>'
+          +     '<div class="cd-review-card-stars">' + stars + '</div>'
+          +   '</div>'
+          + '</div>'
+          + '</div>';
+      }
+      container.innerHTML = html;
+    }
+
+    function populateClassDetail(cls) {
+      // Header
+      document.getElementById('cd-title').textContent = cls.title;
+      document.getElementById('cd-sticky-title').textContent = cls.title;
+      document.getElementById('cd-sticky-nav').classList.remove('scrolled');
+      document.getElementById('cd-instructor-name').textContent = cls.instructor;
+      // rating "4.6 (287)" → split
+      var ratingParts = (cls.rating || '4.9 (250)').match(/^([\d.]+)\s*\((\d+)\)$/);
+      if (ratingParts) {
+        document.getElementById('cd-rating-num').textContent = ratingParts[1];
+        document.getElementById('cd-rating-count').textContent = '(' + ratingParts[2] + ')';
+        document.getElementById('cd-rating-big').textContent = ratingParts[1];
+        document.getElementById('cd-rating-summary-count').textContent = '(' + ratingParts[2] + ')';
+      }
+      // Venue link — use the venue name if open, fall back to mock
+      var venueName = (currentPins[0] && currentPins[0].name) || pick(CD_VENUE_NAMES);
+      var hood = (currentPins[0] && currentPins[0].locality) || pick(CD_NEIGHBORHOODS);
+      document.getElementById('cd-venue-text').textContent = venueName + ' · ' + hood;
+      // Date/slots
+      var today = new Date();
+      renderCdDatePicker(today.getDay());
+      renderCdTimeSlots(cls.time, cls.instructor);
+      // Description / prep / cancel
+      document.getElementById('cd-description-text').textContent = pick(CD_DESCRIPTIONS);
+      document.getElementById('cd-prep-text').textContent = CD_PREP;
+      document.getElementById('cd-cancel-text').textContent = CD_CANCEL;
+      // Stars in summary
+      var starsRow = '';
+      for (var i = 0; i < 5; i++) starsRow += STAR_GOLD_20;
+      document.getElementById('cd-stars').innerHTML = starsRow;
+      // Reviews
+      renderCdReviewCards(cls.title);
+      renderCdReviewsList(cls.title);
+      // Booking bar price (uses the original class's price info)
+      var priceEl = document.getElementById('cd-booking-price');
+      if (priceEl) {
+        if (cls.finalPrice) {
+          priceEl.innerHTML = '<span class="cd-booking-price-strike">' + cls.strikePrice + '</span>'
+            + '<span class="cd-booking-price-final">' + cls.finalPrice + '</span>';
+        } else {
+          priceEl.innerHTML = '<span class="cd-booking-price-plain">' + (cls.plainPrice || '$25') + '</span>';
+        }
+      }
+      // Reset all scroll positions so the modal always opens fresh
+      classDetailScroll.scrollTop = 0;
+      classDetailEl.querySelectorAll('.cd-review-cards, .cd-time-slots, .cd-date-picker').forEach(function(el) {
+        el.scrollLeft = 0;
+      });
+      // Reset scroll-driven UI state so booking card / tab bar return to raised position
+      var bb = document.getElementById('cd-booking-bar');
+      if (bb) bb.classList.remove('lowered');
+      persistentTabBar.classList.remove('hidden-down');
+    }
+
+    window.__openClassDetail = function(cls) {
+      if (classDetailOpen) return;
+      populateClassDetail(cls);
+      classDetailOpen = true;
+      classDetailEl.classList.add('class-detail-visible');
+      // Stack the venue detail behind (class is used for handle-hide CSS rule)
+      venueDetailSheet.classList.add('stacked');
+      // Reduce venue backdrop dim slightly while class detail is on top
+      venueDetailEl.style.background = 'rgba(0,0,0,0.08)';
+      // Explicitly animate the venue scale-down via Motion so it works regardless
+      // of any inline transform that the open animation may have committed
+      if (motionAnimate) {
+        motionAnimate(venueDetailSheet, {
+          transform: 'scale(0.95) translateY(0px)',
+          borderRadius: '20px 20px 0 0',
+          filter: 'brightness(0.92)'
+        }, { duration: 0.35, easing: 'cubic-bezier(.25,.46,.45,.94)' });
+      } else {
+        venueDetailSheet.style.transition = 'transform 0.35s cubic-bezier(.25,.46,.45,.94), border-radius 0.35s ease, filter 0.35s ease';
+        venueDetailSheet.style.transform = 'scale(0.95) translateY(0px)';
+        venueDetailSheet.style.borderRadius = '20px 20px 0 0';
+        venueDetailSheet.style.filter = 'brightness(0.92)';
+      }
+      // Animate sheet up — inline visibility keeps sheet visible during later close anim
+      classDetailSheet.style.visibility = 'visible';
+      classDetailSheet.style.transition = 'none';
+      classDetailSheet.style.transform = 'translateY(100%)';
+      void classDetailSheet.offsetHeight;
+      if (motionAnimate) {
+        motionAnimate(classDetailSheet, { transform: 'translateY(0%)' }, { duration: 0.35, easing: 'cubic-bezier(.25,.46,.45,.94)' });
+      } else {
+        classDetailSheet.style.transition = 'transform 0.35s cubic-bezier(.25,.46,.45,.94)';
+        classDetailSheet.style.transform = 'translateY(0%)';
+      }
+      // Position the tab indicator after layout settles
+      if (window.__resetClassDetailTabs) {
+        requestAnimationFrame(function() {
+          window.__resetClassDetailTabs();
+          // Cache the scroll offset where the tabs become sticky (top: 60px in CSS).
+          // This is measured while scroll is at 0 and layout is stable.
+          var tabsEl = classDetailEl.querySelector('.cd-tabs');
+          if (tabsEl) {
+            var scrollRect = classDetailScroll.getBoundingClientRect();
+            var tabsRect = tabsEl.getBoundingClientRect();
+            window.__cdPinOffset = tabsRect.top - scrollRect.top - 60;
+          }
+        });
+      }
+    };
+
+    function closeClassDetail() {
+      if (!classDetailOpen) return;
+      classDetailOpen = false;
+      // Class detail's overlay fades out via CSS transition (background 0.3s ease)
+      classDetailEl.classList.remove('class-detail-visible');
+      classDetailEl.style.background = '';
+      // Restore venue's own backdrop dim
+      venueDetailEl.style.background = '';
+      // Reset the venue detail's scroll position so it looks like a fresh default view
+      venueDetailScroll.scrollTop = 0;
+      // Explicitly animate the venue back to identity via inline transform.
+      // Motion picks up the current computed transform (scale 0.95 translateY -12) from .stacked
+      // and animates it to translateY(0%) so the venue sheet stays visible AND scales back to 100%.
+      if (motionAnimate) {
+        motionAnimate(venueDetailSheet, {
+          transform: 'translateY(0%)',
+          borderRadius: '32px 32px 0 0',
+          filter: 'brightness(1)'
+        }, { duration: 0.35, easing: 'cubic-bezier(.25,.46,.45,.94)' }).finished.then(function() {
+          venueDetailSheet.classList.remove('stacked');
+          venueDetailSheet.style.borderRadius = '';
+          venueDetailSheet.style.filter = '';
+          // Keep transform inline at translateY(0%) so the venue stays anchored
+        });
+      } else {
+        venueDetailSheet.style.transition = 'transform 0.35s cubic-bezier(.25,.46,.45,.94), border-radius 0.35s ease, filter 0.35s ease';
+        venueDetailSheet.style.transform = 'translateY(0%)';
+        venueDetailSheet.style.borderRadius = '32px 32px 0 0';
+        venueDetailSheet.style.filter = 'brightness(1)';
+        setTimeout(function() {
+          venueDetailSheet.classList.remove('stacked');
+          venueDetailSheet.style.borderRadius = '';
+          venueDetailSheet.style.filter = '';
+        }, 360);
+      }
+      // Animate class detail sheet down
+      var sheetHeight = classDetailSheet.offsetHeight;
+      if (motionAnimate) {
+        motionAnimate(classDetailSheet, { transform: 'translateY(' + sheetHeight + 'px)' }, { duration: 0.3, easing: 'cubic-bezier(.25,.46,.45,.94)' }).finished.then(function() {
+          classDetailSheet.style.transform = '';
+          classDetailSheet.style.transition = '';
+          classDetailSheet.style.visibility = '';
+          if (venueDetailOpen) persistentTabBar.style.display = '';
+        });
+      } else {
+        classDetailSheet.style.transition = 'transform 0.3s cubic-bezier(.25,.46,.45,.94)';
+        classDetailSheet.style.transform = 'translateY(' + sheetHeight + 'px)';
+        classDetailSheet.addEventListener('transitionend', function handler() {
+          classDetailSheet.removeEventListener('transitionend', handler);
+          classDetailSheet.style.transform = '';
+          classDetailSheet.style.transition = '';
+          classDetailSheet.style.visibility = '';
+          if (venueDetailOpen) persistentTabBar.style.display = '';
+        }, { once: true });
+      }
+    }
+
+    window.__closeClassDetail = closeClassDetail;
+
+    // Close button
+    document.getElementById('class-detail-close').addEventListener('click', closeClassDetail);
+
+    // Tapping the venue link (e.g. "Jetset Pilates · New York ›") dismisses the class detail
+    // and returns the user to the venue detail underneath.
+    var cdVenueLinkEl = document.getElementById('cd-venue-link');
+    if (cdVenueLinkEl) {
+      cdVenueLinkEl.addEventListener('click', function() {
+        if (wasDragging) return;
+        closeClassDetail();
+      });
+    }
+
+    // Bookmark toggle (class detail)
+    var cdBookmarkBtn = document.getElementById('cd-bookmark-btn');
+    if (cdBookmarkBtn) {
+      cdBookmarkBtn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        cdBookmarkBtn.classList.toggle('bookmarked');
+      });
+    }
+
+    // ===== Tabs with animated indicator =====
+    var cdTabsContainer = document.getElementById('cd-tabs');
+    var cdTabs = classDetailEl.querySelectorAll('.cd-tab');
+    var cdTabIndicator = document.getElementById('cd-tab-indicator');
+    var cdPanels = classDetailEl.querySelectorAll('.cd-panel');
+
+    function moveCdIndicator(tab, instant) {
+      var rect = tab.getBoundingClientRect();
+      var parentRect = cdTabsContainer.getBoundingClientRect();
+      var left = rect.left - parentRect.left;
+      if (motionAnimate && !instant) {
+        motionAnimate(cdTabIndicator, {
+          transform: 'translateX(' + left + 'px)',
+          width: rect.width + 'px'
+        }, iosTabSpring);
+      } else {
+        cdTabIndicator.style.width = rect.width + 'px';
+        cdTabIndicator.style.transform = 'translateX(' + left + 'px)';
+      }
+    }
+
+    function activateCdTab(tab) {
+      // If user has scrolled past the point where the tabs become sticky, snap back to that
+      // pinned position so the new tab's content starts from the top of the visible area.
+      var pinOffset = window.__cdPinOffset || 0;
+      var wasPinned = pinOffset > 0 && classDetailScroll.scrollTop >= pinOffset;
+      cdTabs.forEach(function(t) { t.classList.toggle('active', t === tab); });
+      moveCdIndicator(tab);
+      var name = tab.dataset.cdtab;
+      cdPanels.forEach(function(p) { p.classList.toggle('active', p.dataset.cdpanel === name); });
+      if (wasPinned) {
+        classDetailScroll.scrollTop = pinOffset;
+      }
+      // Reset horizontal scroll on review carousels so each tab opens cleanly
+      classDetailEl.querySelectorAll('.cd-review-cards').forEach(function(s) { s.scrollLeft = 0; });
+    }
+
+    cdTabs.forEach(function(tab) {
+      tab.addEventListener('click', function() { activateCdTab(tab); });
+    });
+
+    // Tapping the "Ratings & Reviews" header (or its chevron) jumps to the Reviews tab
+    var cdReviewsHeader = classDetailEl.querySelector('.cd-section-reviews .cd-section-header');
+    if (cdReviewsHeader) {
+      cdReviewsHeader.style.cursor = 'pointer';
+      cdReviewsHeader.addEventListener('click', function() {
+        var reviewsTab = Array.prototype.find.call(cdTabs, function(t) { return t.dataset.cdtab === 'reviews'; });
+        if (reviewsTab) activateCdTab(reviewsTab);
+        classDetailScroll.scrollTop = 0;
+      });
+    }
+
+    // Reset to overview tab + position indicator (called on each open)
+    window.__resetClassDetailTabs = function() {
+      cdTabs.forEach(function(t) { t.classList.toggle('active', t.dataset.cdtab === 'overview'); });
+      cdPanels.forEach(function(p) { p.classList.toggle('active', p.dataset.cdpanel === 'overview'); });
+      requestAnimationFrame(function() {
+        moveCdIndicator(cdTabs[0], true);
+      });
+    };
+
+    // ===== Sticky nav: fade title in on scroll =====
+    // Also: hide the persistent tab bar and lower the booking card when scrolling down,
+    // restore them when scrolling up (or when at the very top).
+    var cdStickyNav = document.getElementById('cd-sticky-nav');
+    var cdBookingBar = document.getElementById('cd-booking-bar');
+    var CD_SCROLL_THRESHOLD = 10;
+    var CD_HIDE_TAB_THRESHOLD = 40;
+    var cdPrevScrollTop = 0;
+    classDetailScroll.addEventListener('scroll', function() {
+      if (!classDetailOpen) return;
+      var st = classDetailScroll.scrollTop;
+      // Sticky nav title fade-in
+      if (st > CD_SCROLL_THRESHOLD) cdStickyNav.classList.add('scrolled');
+      else cdStickyNav.classList.remove('scrolled');
+      // Tab bar / booking card transitions
+      if (st <= CD_SCROLL_THRESHOLD) {
+        // Near top — always show tab bar, raise booking card
+        persistentTabBar.classList.remove('hidden-down');
+        cdBookingBar.classList.remove('lowered');
+      } else if (st > cdPrevScrollTop && st > CD_HIDE_TAB_THRESHOLD) {
+        // Scrolling down past threshold — hide tab bar, lower booking card
+        persistentTabBar.classList.add('hidden-down');
+        cdBookingBar.classList.add('lowered');
+      } else if (st < cdPrevScrollTop) {
+        // Scrolling up — restore
+        persistentTabBar.classList.remove('hidden-down');
+        cdBookingBar.classList.remove('lowered');
+      }
+      cdPrevScrollTop = st;
+    }, { passive: true });
+
+    // ===== Drag-to-dismiss for class detail =====
+    var cdDragStartY = 0;
+    var cdDragDelta = 0;
+    var cdDismissDragging = false;
+    var cdLastDragY = 0;
+    var cdLastDragTime = 0;
+    var cdDragVelocity = 0;
+
+    function cdStartDrag(y) {
+      if (!classDetailOpen) return;
+      cdDismissDragging = true;
+      cdDragStartY = y;
+      cdDragDelta = 0;
+      cdLastDragY = y;
+      cdLastDragTime = Date.now();
+      cdDragVelocity = 0;
+      classDetailSheet.style.transition = 'none';
+      // While actively dragging, manage venue scale-back via inline transform — disable .stacked transition
+      venueDetailSheet.classList.remove('unstacking');
+    }
+    function cdMoveDrag(y) {
+      if (!cdDismissDragging) return;
+      var now = Date.now();
+      var dt = now - cdLastDragTime;
+      if (dt > 0) cdDragVelocity = ((y - cdLastDragY) / dt) * 1000;
+      cdLastDragY = y;
+      cdLastDragTime = now;
+      cdDragDelta = Math.max(0, y - cdDragStartY);
+      classDetailSheet.style.transform = 'translateY(' + cdDragDelta + 'px)';
+      // Progressive un-stack: scale venue from 0.95 → 1.0 as user drags down
+      var t = Math.min(1, cdDragDelta / classDetailSheet.offsetHeight);
+      var scale = 0.95 + 0.05 * t;
+      var ty = 0;
+      venueDetailSheet.style.transition = 'none';
+      venueDetailSheet.style.transform = 'scale(' + scale + ') translateY(' + ty + 'px)';
+      // Backdrop fade
+      var op = Math.max(0, 0.08 * (1 - cdDragDelta / 300));
+      classDetailEl.style.background = 'rgba(0,0,0,' + op + ')';
+    }
+    function cdEndDrag() {
+      if (!cdDismissDragging) return;
+      cdDismissDragging = false;
+      classDetailEl.style.background = '';
+      if (cdDragDelta > 80 || cdDragVelocity > 500) {
+        // Dismiss — pure CSS-transition pattern (mirrors venue detail's drag-dismiss)
+        // to avoid the Motion handoff flicker.
+        var sheetHeight = classDetailSheet.offsetHeight;
+        classDetailOpen = false;
+        classDetailEl.classList.remove('class-detail-visible');
+        venueDetailEl.style.background = '';
+        venueDetailScroll.scrollTop = 0;
+        // Cancel any in-progress Motion animations on either sheet
+        if (motionAnimate) {
+          classDetailSheet.getAnimations().forEach(function(a) { a.cancel(); });
+          venueDetailSheet.getAnimations().forEach(function(a) { a.cancel(); });
+        }
+        // --- Class detail sheet: pin current transform → reflow → CSS transition to dismiss
+        classDetailSheet.style.transition = 'none';
+        classDetailSheet.style.transform = 'translateY(' + cdDragDelta + 'px)';
+        // --- Venue sheet: pin current scale/translate → reflow → CSS transition back to identity
+        var ct = Math.min(1, cdDragDelta / sheetHeight);
+        var curScale = 0.95 + 0.05 * ct;
+        venueDetailSheet.style.transition = 'none';
+        venueDetailSheet.style.transform = 'scale(' + curScale + ') translateY(0px)';
+        // Force reflow so the pinned starting state is committed before transitions
+        void classDetailSheet.offsetHeight;
+        void venueDetailSheet.offsetHeight;
+        // Apply transitions + targets
+        classDetailSheet.style.transition = 'transform 0.25s cubic-bezier(.25, .46, .45, .94)';
+        classDetailSheet.style.transform = 'translateY(' + sheetHeight + 'px)';
+        venueDetailSheet.style.transition = 'transform 0.3s cubic-bezier(.25, .46, .45, .94), border-radius 0.3s ease, filter 0.3s ease';
+        venueDetailSheet.style.transform = 'translateY(0px)';
+        venueDetailSheet.style.borderRadius = '32px 32px 0 0';
+        venueDetailSheet.style.filter = 'brightness(1)';
+        // Cleanup
+        classDetailSheet.addEventListener('transitionend', function handler(e) {
+          if (e.propertyName !== 'transform') return;
+          classDetailSheet.removeEventListener('transitionend', handler);
+          classDetailSheet.style.transform = '';
+          classDetailSheet.style.transition = '';
+          classDetailSheet.style.visibility = '';
+          if (venueDetailOpen) persistentTabBar.style.display = '';
+        });
+        venueDetailSheet.addEventListener('transitionend', function handler(e) {
+          if (e.propertyName !== 'transform') return;
+          venueDetailSheet.removeEventListener('transitionend', handler);
+          venueDetailSheet.classList.remove('stacked');
+          venueDetailSheet.style.borderRadius = '';
+          venueDetailSheet.style.filter = '';
+          venueDetailSheet.style.transition = '';
+          // Keep venueDetailSheet.style.transform = 'translateY(0px)' so the venue stays anchored
+        });
+      } else {
+        // Snap back: sheet to 0, venue back to scale(0.94)
+        if (motionAnimate) {
+          motionAnimate(classDetailSheet, { transform: 'translateY(0px)' }, iosSnapSpring);
+          motionAnimate(venueDetailSheet, { transform: 'scale(0.95) translateY(0px)' }, iosSnapSpring).finished.then(function() {
+            venueDetailSheet.style.transform = '';
+            venueDetailSheet.style.transition = '';
+            venueDetailSheet.classList.add('stacked');
+          });
+        } else {
+          classDetailSheet.style.transition = 'transform 0.25s cubic-bezier(.25,.46,.45,.94)';
+          classDetailSheet.style.transform = 'translateY(0px)';
+          venueDetailSheet.style.transition = 'transform 0.25s cubic-bezier(.25,.46,.45,.94)';
+          venueDetailSheet.style.transform = 'scale(0.95) translateY(0px)';
+          venueDetailSheet.addEventListener('transitionend', function handler() {
+            venueDetailSheet.removeEventListener('transitionend', handler);
+            venueDetailSheet.style.transform = '';
+            venueDetailSheet.style.transition = '';
+            venueDetailSheet.classList.add('stacked');
+          }, { once: true });
+        }
+      }
+    }
+
+    // Handle: always initiates dismiss drag
+    var cdHandle = classDetailEl.querySelector('.class-detail-handle');
+    cdHandle.addEventListener('touchstart', function(e) { cdStartDrag(e.touches[0].clientY); }, { passive: true });
+    cdHandle.addEventListener('mousedown', function(e) { e.preventDefault(); cdStartDrag(e.clientY); });
+
+    // Sticky nav area: also acts as a drag target when scrolled to top (skip interactive controls)
+    function cdNavIsInteractive(target) {
+      return target.closest('.cd-icon-btn, .cd-action-icon, .cd-actions-pill');
+    }
+    cdStickyNav.addEventListener('touchstart', function(e) {
+      if (cdNavIsInteractive(e.target)) return;
+      if (classDetailScroll.scrollTop > 0) return;
+      cdStartDrag(e.touches[0].clientY);
+    }, { passive: true });
+    cdStickyNav.addEventListener('mousedown', function(e) {
+      if (cdNavIsInteractive(e.target)) return;
+      if (classDetailScroll.scrollTop > 0) return;
+      e.preventDefault();
+      cdStartDrag(e.clientY);
+    });
+
+    document.addEventListener('touchmove', function(e) {
+      if (cdDismissDragging) cdMoveDrag(e.touches[0].clientY);
+    }, { passive: true });
+    document.addEventListener('touchend', function() {
+      if (cdDismissDragging) cdEndDrag();
+    }, { passive: true });
+    document.addEventListener('mousemove', function(e) {
+      if (cdDismissDragging) { e.preventDefault(); cdMoveDrag(e.clientY); }
+    });
+    document.addEventListener('mouseup', function() {
+      if (cdDismissDragging) cdEndDrag();
     });
   })();
 
@@ -2487,9 +3329,15 @@
 
     el.addEventListener('mousedown', function(e) {
       if (activeDragEl) return;
-      if (e.target.closest('button, a, .venue-action-btn, .vd-action-pill, .vd-slot-btn, .vd-quick-btn, .venue-detail-close, .venue-detail-handle, .vd-sticky-nav')) return;
-      if (e.target.closest('.vd-hscroll')) {
-        pendingDrag = { el: el, x: e.clientX, y: e.clientY, scroll: el.scrollTop, time: Date.now(), hscroll: e.target.closest('.vd-hscroll') };
+      // Disable drag-scroll on venue lists when the sheet isn't expanded
+      if (el.classList.contains('venue-list')) {
+        var parentSheet = el.closest('.results-sheet');
+        if (parentSheet && !parentSheet.classList.contains('expanded')) return;
+      }
+      if (e.target.closest('button, a, .venue-action-btn, .vd-action-pill, .vd-slot-btn, .vd-quick-btn, .venue-detail-close, .venue-detail-handle, .vd-sticky-nav, .cd-icon-btn, .cd-actions-pill, .class-detail-handle, .cd-sticky-nav, .cd-tab')) return;
+      var hscrollChild = e.target.closest('.vd-hscroll, .vd-date-picker, .cd-date-picker, .cd-time-slots');
+      if (hscrollChild) {
+        pendingDrag = { el: el, x: e.clientX, y: e.clientY, scroll: el.scrollTop, time: Date.now(), hscroll: hscrollChild };
         e.preventDefault();
         return;
       }
@@ -2555,7 +3403,7 @@
   }
 
   // Horizontal carousel drag
-  document.querySelectorAll('.vd-hscroll').forEach(function(el) {
+  document.querySelectorAll('.vd-hscroll, .vd-date-picker, .cd-date-picker, .cd-time-slots').forEach(function(el) {
     var raf;
 
     function momentum() {
@@ -2584,24 +3432,39 @@
     document.addEventListener('mouseup', function() {
       if (activeDragEl !== el) return;
       activeDragEl = null;
-      if (Math.abs(el._dragVelocity || 0) > 0.5) raf = requestAnimationFrame(momentum);
+      // Date picker: paginate to the nearest week with a slow, ease-out carousel feel.
+      // Custom JS animation gives a more deliberate carousel transition than the
+      // browser's default smooth-scroll easing.
+      if (el.classList.contains('cd-date-picker')) {
+        if (typeof window.__snapDatePicker === 'function') window.__snapDatePicker();
+      } else if (el.classList.contains('vd-date-picker')) {
+        if (typeof window.__snapVdDatePicker === 'function') window.__snapVdDatePicker();
+      } else if (Math.abs(el._dragVelocity || 0) > 0.5) {
+        raf = requestAnimationFrame(momentum);
+      }
       if (wasDragging) setTimeout(function() { wasDragging = false; }, 0);
     });
 
-    // Mouse wheel vertical → horizontal scroll
-    el.addEventListener('wheel', function(e) {
-      if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
-        var max = el.scrollWidth - el.clientWidth;
-        if (max <= 0) return;
-        if ((el.scrollLeft <= 0 && e.deltaY < 0) || (el.scrollLeft >= max && e.deltaY > 0)) return;
-        e.preventDefault();
-        el.scrollLeft += e.deltaY;
-      }
-    }, { passive: false });
+    // Mouse wheel vertical → horizontal scroll (only for true hscroll carousels;
+    // skip date picker / time slots so their parent can scroll vertically with the wheel)
+    if (el.classList.contains('vd-hscroll')) {
+      el.addEventListener('wheel', function(e) {
+        if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
+          var max = el.scrollWidth - el.clientWidth;
+          if (max <= 0) return;
+          if ((el.scrollLeft <= 0 && e.deltaY < 0) || (el.scrollLeft >= max && e.deltaY > 0)) return;
+          e.preventDefault();
+          el.scrollLeft += e.deltaY;
+        }
+      }, { passive: false });
+    }
   });
 
   // Venue detail vertical scroll
   addVerticalDragScroll(venueDetailScroll);
+
+  // Class detail vertical scroll
+  addVerticalDragScroll(classDetailScroll);
 
   // Venue lists
   document.querySelectorAll('.venue-list').forEach(function(list) {

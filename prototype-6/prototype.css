@@ -1056,7 +1056,7 @@
   /* Venue list */
   .venue-list {
     flex: 1;
-    overflow-y: auto;
+    overflow-y: hidden;
     padding: 4px 20px 100px;
     display: flex;
     flex-direction: column;
@@ -1064,6 +1064,9 @@
     -webkit-overflow-scrolling: touch;
     -ms-overflow-style: none;
     scrollbar-width: none;
+  }
+  .results-sheet.expanded .venue-list {
+    overflow-y: auto;
   }
   .venue-list::-webkit-scrollbar { display: none; }
 
@@ -1220,11 +1223,36 @@
     display: flex;
     flex-direction: column;
     transform: translateY(100%);
-    will-change: transform;
+    transform-origin: top center;
+    will-change: transform, border-radius, filter;
     visibility: hidden;
   }
   #venue-detail.venue-detail-visible .venue-detail-sheet {
     visibility: visible;
+  }
+  /* iOS-style stacked-sheet effect — applied while class detail is on top.
+     translateY(0) keeps the venue's top edge at the status bar bottom (54px),
+     and the class detail sits 70px from top → 16px visible peek. */
+  .venue-detail-sheet.stacked {
+    transform: scale(0.95) translateY(0px);
+    border-radius: 20px 20px 0 0;
+    filter: brightness(0.92);
+    transition: transform 0.35s cubic-bezier(.25,.46,.45,.94),
+                border-radius 0.35s ease,
+                filter 0.35s ease;
+  }
+  .venue-detail-sheet.unstacking {
+    transition: transform 0.35s cubic-bezier(.25,.46,.45,.94),
+                border-radius 0.35s ease,
+                filter 0.35s ease;
+  }
+  /* Hide venue's drag handle while stacked — class detail's handle takes over */
+  .venue-detail-sheet.stacked .venue-detail-handle {
+    opacity: 0;
+    transition: opacity 0.2s ease;
+  }
+  .venue-detail-sheet .venue-detail-handle {
+    transition: opacity 0.2s ease 0.15s;
   }
 
   /* Persistent tab bar that floats above venue detail */
@@ -1243,17 +1271,32 @@
     padding: 4px;
     z-index: 30;
     pointer-events: auto;
+    transition: transform 0.3s cubic-bezier(.25,.46,.45,.94), opacity 0.3s ease;
+  }
+  /* Hidden state: tab bar slides down off-screen when class detail content is scrolled */
+  .tab-bar-persistent.hidden-down {
+    transform: translateX(-50%) translateY(120px);
+    opacity: 0;
+    pointer-events: none;
   }
 
   .venue-detail-handle {
+    width: 100%;
+    padding: 10px 0 8px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-shrink: 0;
+    cursor: grab;
+    touch-action: none;
+  }
+  .venue-detail-handle::before {
+    content: '';
     width: 56px;
     height: 5px;
     background: #111;
     opacity: 0.3;
     border-radius: 20px;
-    margin: 6px auto 0;
-    flex-shrink: 0;
-    cursor: grab;
   }
 
   /* Top bar: close left, title center, save/share right */
@@ -1336,6 +1379,7 @@
   }
 
   .venue-detail-scroll {
+    position: relative;
     flex: 1;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
@@ -1482,8 +1526,10 @@
   /* ===== SCHEDULE PANEL ===== */
   .vd-date-picker {
     display: flex;
-    gap: 12px;
-    align-items: center;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-x: contain;
     position: sticky;
     top: 109px;
     z-index: 2;
@@ -1491,7 +1537,18 @@
     margin-top: -24px;
     margin-left: -20px;
     margin-right: -20px;
-    padding: 16px 20px 16px;
+    padding-top: 16px;
+    padding-bottom: 16px;
+  }
+  .vd-date-picker::-webkit-scrollbar { display: none; }
+  .vd-week {
+    flex: 0 0 100%;
+    width: 100%;
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    padding: 0 20px;
+    box-sizing: border-box;
   }
   .vd-date-cell {
     flex: 1;
@@ -1524,6 +1581,12 @@
     transition: background 0.2s ease, color 0.2s ease;
   }
   .vd-date-cell.past .vd-date-day { color: #b3b5bc; }
+  /* Today is highlighted with a white circle even when not the selected date */
+  .vd-date-cell.today .vd-date-day {
+    background: #fff;
+    color: #020203;
+  }
+  /* Selected date overrides today with the dark pill */
   .vd-date-cell.selected .vd-date-day {
     background: #020203;
     color: white;
@@ -2052,4 +2115,633 @@
     line-height: 20px;
     color: #020203;
     white-space: nowrap;
+  }
+
+  /* ========== CLASS DETAIL MODAL ========== */
+  #class-detail {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    z-index: 25;
+    pointer-events: none;
+    transition: background 0.3s ease;
+  }
+  #class-detail.class-detail-visible {
+    background: rgba(0,0,0,0.15);
+  }
+  #class-detail.class-detail-visible .class-detail-sheet {
+    pointer-events: auto;
+    visibility: visible;
+  }
+
+  .class-detail-sheet {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: calc(100% - 70px);
+    background: #f1f2f3;
+    border-radius: 32px 32px 0 0;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    transform: translateY(100%);
+    transform-origin: top center;
+    will-change: transform;
+    visibility: hidden;
+  }
+
+  .class-detail-handle {
+    width: 100%;
+    padding: 10px 0 8px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-shrink: 0;
+    cursor: grab;
+    touch-action: none;
+    background: #f1f2f3;
+  }
+  .class-detail-handle::before {
+    content: '';
+    width: 56px;
+    height: 5px;
+    background: #111;
+    opacity: 0.3;
+    border-radius: 20px;
+  }
+
+  .class-detail-scroll {
+    position: relative;
+    flex: 1;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-x: contain;
+  }
+  .class-detail-scroll::-webkit-scrollbar { display: none; }
+
+  /* Sticky nav: X left, fade-in title center, save+share right */
+  .cd-sticky-nav {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 20px;
+    background: #f1f2f3;
+    gap: 12px;
+  }
+  .cd-sticky-title {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%) translateY(6px);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 17px;
+    font-weight: 700;
+    color: #020203;
+    opacity: 0;
+    transition: opacity 0.25s ease, transform 0.25s ease;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: calc(100% - 220px);
+    pointer-events: none;
+  }
+  .cd-sticky-nav.scrolled .cd-sticky-title {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+  .cd-icon-btn {
+    width: 44px;
+    height: 44px;
+    background: #fff;
+    border-radius: 999px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    flex-shrink: 0;
+  }
+  .cd-actions-pill {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 0 4px;
+    background: #fff;
+    border-radius: 999px;
+    height: 44px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    flex-shrink: 0;
+  }
+  .cd-action-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    cursor: pointer;
+  }
+
+  /* Bookmark toggle states (shared selectors for venue + class detail) */
+  .vd-bookmark-btn.bookmarked svg path,
+  .cd-bookmark-btn.bookmarked svg path {
+    fill: #020203;
+    stroke: #020203;
+  }
+
+  /* Content area sits below sticky nav */
+  .cd-content {
+    position: relative;
+    padding: 8px 20px 0;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+
+  /* Venue header section */
+  .cd-header {
+    display: flex;
+    gap: 12px;
+    align-items: stretch;
+  }
+  .cd-instructor-photo {
+    width: 100px;
+    height: 100px;
+    border-radius: 16px;
+    background: #d9dadc;
+    flex-shrink: 0;
+  }
+  .cd-header-text {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+  }
+  .cd-title {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 18px;
+    font-weight: 700;
+    line-height: 24px;
+    color: #020203;
+  }
+  .cd-rating-row {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .cd-rating-num {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 20px;
+    color: #020203;
+  }
+  .cd-rating-star { display: block; }
+  .cd-rating-count {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 20px;
+    color: #020203;
+  }
+  .cd-instructor-name {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 16px;
+    font-weight: 500;
+    line-height: 24px;
+    color: #020203;
+  }
+  .cd-venue-link {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 20px;
+    color: #020203;
+    cursor: pointer;
+  }
+
+  /* Date picker — horizontally paginated by week (carousel)
+     Native scroll-snap is disabled because we drive the snap with a JS ease-out
+     animation in prototype.js for a slower, more deliberate carousel feel. */
+  .cd-date-picker {
+    display: flex;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-x: contain;
+    margin-left: -20px;
+    margin-right: -20px;
+  }
+  .cd-date-picker::-webkit-scrollbar { display: none; }
+  .cd-week {
+    flex: 0 0 100%;
+    width: 100%;
+    display: flex;
+    gap: 12px;
+    padding: 8px 20px;
+    box-sizing: border-box;
+    scroll-snap-align: start;
+  }
+  .cd-date-cell {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding-top: 8px;
+    cursor: pointer;
+  }
+  .cd-date-letter {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 11px;
+    font-weight: 500;
+    line-height: 14px;
+    color: #020203;
+  }
+  .cd-date-day {
+    width: 40px;
+    height: 40px;
+    border-radius: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 16px;
+    font-weight: 500;
+    line-height: 24px;
+    color: #020203;
+    transition: background 0.2s ease, color 0.2s ease;
+  }
+  .cd-date-cell.past .cd-date-day { color: #b3b5bc; }
+  /* Today is highlighted with a white circle even when not the selected date */
+  .cd-date-cell.today .cd-date-day {
+    background: #fff;
+    color: #020203;
+  }
+  /* Selected date overrides today with the dark pill */
+  .cd-date-cell.selected .cd-date-day {
+    background: #020203;
+    color: #fff;
+  }
+
+  /* Time slot chips — single horizontal row, scrollable */
+  .cd-time-slots {
+    display: flex;
+    gap: 8px;
+    align-items: flex-start;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    margin-left: -20px;
+    margin-right: -20px;
+    padding: 0 20px;
+    scroll-padding-left: 20px;
+    scroll-snap-type: x proximity;
+  }
+  .cd-time-slots::-webkit-scrollbar { display: none; }
+  .cd-time-slot {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+  .cd-time-slot-chip {
+    background: #fff;
+    border: 2px solid transparent;
+    border-radius: 12px;
+    padding: 12px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    white-space: nowrap;
+    transition: border-color 0.15s ease;
+  }
+  .cd-time-slot.selected .cd-time-slot-chip {
+    border-color: #161618;
+  }
+  .cd-time-slot-time {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 20px;
+    color: #020203;
+  }
+  .cd-time-slot-instructor {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 20px;
+    color: #90939d;
+  }
+  .cd-time-slot-spots {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 16px;
+    color: #90939d;
+    text-align: center;
+  }
+
+  /* Tabs (sticky below nav, animated indicator) */
+  .cd-tabs {
+    display: flex;
+    gap: 32px;
+    border-bottom: 1px solid #e4e5e7;
+    position: sticky;
+    top: 60px;
+    z-index: 3;
+    background: #f1f2f3;
+    margin-left: -20px;
+    margin-right: -20px;
+    padding-left: 20px;
+    padding-right: 20px;
+  }
+  .cd-tab {
+    padding: 12px 0;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 16px;
+    line-height: 24px;
+    color: #020203;
+    cursor: pointer;
+    white-space: nowrap;
+    position: relative;
+  }
+  .cd-tab-label-bold {
+    font-weight: 700;
+    visibility: hidden;
+  }
+  .cd-tab-label {
+    font-weight: 400;
+    position: absolute;
+    left: 0;
+    right: 0;
+    text-align: center;
+  }
+  .cd-tab.active .cd-tab-label { visibility: hidden; }
+  .cd-tab.active .cd-tab-label-bold { visibility: visible; }
+  .cd-tab-indicator {
+    position: absolute;
+    bottom: -1px;
+    left: 0;
+    height: 3px;
+    background: #020203;
+    border-radius: 2px 2px 0 0;
+    pointer-events: none;
+  }
+
+  /* Panels */
+  .cd-panel { display: none; }
+  .cd-panel.active {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+
+  /* Description */
+  .cd-description {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 16px;
+    font-weight: 400;
+    line-height: 24px;
+    color: #020203;
+    margin: 0;
+  }
+  .cd-see-more {
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  /* Sections */
+  .cd-section {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .cd-section-header {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .cd-section-title {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 20px;
+    font-weight: 900;
+    line-height: 28px;
+    color: #020203;
+  }
+  .cd-section-body {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 16px;
+    font-weight: 400;
+    line-height: 24px;
+    color: #020203;
+    margin: 0;
+  }
+
+  /* Ratings & Reviews */
+  .cd-rating-summary {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .cd-rating-big {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 32px;
+    font-weight: 900;
+    line-height: 40px;
+    color: #020203;
+  }
+  .cd-rating-stars-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .cd-stars { display: flex; gap: 0; }
+  .cd-stars svg { display: block; }
+  .cd-rating-summary-count {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 16px;
+    color: #90939d;
+  }
+  .cd-review-cards {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    margin: 0 -20px;
+    padding: 0 20px;
+    scroll-padding-left: 20px;
+    scroll-snap-type: x proximity;
+  }
+  .cd-review-cards::-webkit-scrollbar { display: none; }
+  .cd-review-card {
+    flex-shrink: 0;
+    width: 286px;
+    background: #fff;
+    border-radius: 24px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .cd-review-card-title {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 24px;
+    color: #020203;
+    margin: 0;
+  }
+  .cd-review-card-body {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 20px;
+    color: #020203;
+    margin: 0;
+  }
+  .cd-review-card-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .cd-review-card-author {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .cd-review-card-name {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 20px;
+    color: #020203;
+  }
+  .cd-review-card-stars { display: flex; }
+  .cd-review-card-source {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 16px;
+    color: #90939d;
+  }
+  .cd-review-card-source-icon {
+    display: block;
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+  }
+
+  /* Reviews panel list */
+  .cd-reviews-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .cd-reviews-list .cd-review-card { width: 100%; }
+
+  /* Sticky booking footer */
+  .cd-booking-bar {
+    position: absolute;
+    bottom: 110px;
+    left: 16px;
+    right: 16px;
+    background: #fff;
+    border-radius: 24px;
+    padding: 16px;
+    box-shadow: 0 6px 16px rgba(0,0,0,0.14);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    z-index: 6;
+    pointer-events: auto;
+    transition: transform 0.3s cubic-bezier(.25,.46,.45,.94);
+  }
+  /* Lowered state: when tab bar slides down, booking card glides to where it was */
+  .cd-booking-bar.lowered {
+    transform: translateY(86px);
+  }
+  .cd-booking-info {
+    display: flex;
+    flex-direction: column;
+  }
+  .cd-booking-spots {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 16px;
+    color: #90939d;
+    margin-bottom: 4px;
+  }
+  .cd-booking-time {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 16px;
+    font-weight: 500;
+    line-height: 24px;
+    color: #020203;
+  }
+  .cd-booking-bottom {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 2px;
+  }
+  .cd-booking-instructor {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 16px;
+    font-weight: 400;
+    line-height: 24px;
+    color: #90939d;
+  }
+  .cd-booking-price {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .cd-booking-price-strike {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 16px;
+    font-weight: 500;
+    line-height: 24px;
+    color: #90939d;
+    text-decoration: line-through;
+  }
+  .cd-booking-price-final {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 24px;
+    color: #41ad75;
+  }
+  .cd-booking-price-plain {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 24px;
+    color: #020203;
+  }
+  .cd-booking-cta {
+    width: 100%;
+    background: #e10e0e;
+    color: #fff;
+    border: none;
+    border-radius: 999px;
+    padding: 12px 24px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 24px;
+    cursor: pointer;
+  }
+  .cd-booking-cta:active {
+    background: #c00b0b;
   }
