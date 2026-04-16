@@ -2362,7 +2362,9 @@
     padding: 8px 12px;
     background: #fff;
     border-radius: 24px;
-    margin-top: 4px;
+    /* Cancel the 2px gap from the parent flex column so the chip sits flush
+       directly under the rating row while other siblings keep their spacing. */
+    margin-top: -2px;
   }
   .cd-intro-chip-icon { display: block; flex-shrink: 0; }
   .cd-intro-chip-label {
