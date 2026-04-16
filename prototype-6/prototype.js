@@ -2981,27 +2981,20 @@
     var cdCurrentTitle = '';
     var cdCurrentHighlight = '';
 
-    function generateCdReviewPool(primaryInstructor) {
+    function generateCdReviewPool() {
       var pool = [];
-      // Seed two extra reviews for the primary instructor so they lead the
-      // list on initial open (the selected slot's instructor shows first).
-      for (var i = 0; i < 2; i++) {
-        pool.push({
-          instructor: primaryInstructor,
-          body: pick(CD_REVIEW_BODIES),
-          name: pick(CD_REVIEW_NAMES),
-          showSource: Math.random() < 0.5
-        });
-      }
-      // One review per instructor so every possible slot instructor has at
-      // least one matching review to surface when their pill is tapped.
+      // Five reviews per instructor so both the Overview carousel (3) and
+      // the Reviews tab list (5) can be fully filled by the selected
+      // slot's instructor once their pill is tapped.
       for (var j = 0; j < CD_INSTRUCTORS.length; j++) {
-        pool.push({
-          instructor: CD_INSTRUCTORS[j],
-          body: pick(CD_REVIEW_BODIES),
-          name: pick(CD_REVIEW_NAMES),
-          showSource: Math.random() < 0.5
-        });
+        for (var k = 0; k < 5; k++) {
+          pool.push({
+            instructor: CD_INSTRUCTORS[j],
+            body: pick(CD_REVIEW_BODIES),
+            name: pick(CD_REVIEW_NAMES),
+            showSource: Math.random() < 0.5
+          });
+        }
       }
       return pool;
     }
@@ -3134,7 +3127,7 @@
       if (revAiEl) revAiEl.textContent = pick(CD_AI_SUMMARIES);
       // Reviews
       cdCurrentTitle = cls.title;
-      cdReviewPool = generateCdReviewPool(cls.instructor);
+      cdReviewPool = generateCdReviewPool();
       rerenderCdReviewsForInstructor(cls.instructor);
       // Booking bar price (uses the original class's price info)
       var priceEl = document.getElementById('cd-booking-price');
