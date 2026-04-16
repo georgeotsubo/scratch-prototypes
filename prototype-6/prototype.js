@@ -326,6 +326,23 @@
     studios.forEach(s => { if (!STUDIO_TAGS[s.name]) STUDIO_TAGS[s.name] = category; });
   }
 
+  // Shorten raw tag labels for UI: drop trailing " and …" phrases and the
+  // trailing " Studio" qualifier so "Gym and Fitness Studio" → "Gym".
+  function formatTag(tag) {
+    if (!tag) return tag;
+    return tag.replace(/\s+and\b.*/i, '').replace(/\s+studio\b/gi, '').trim();
+  }
+
+  // Deterministic per-venue flag: roughly half of venues run an intro offer.
+  // Hash by name so it stays stable across re-renders and sessions.
+  function hasVenueIntroOffer(pin) {
+    if (!pin || !pin.name) return false;
+    var h = 0;
+    for (var i = 0; i < pin.name.length; i++) h = ((h << 5) - h) + pin.name.charCodeAt(i);
+    return (Math.abs(h) % 2) === 0;
+  }
+  window.__hasVenueIntroOffer = hasVenueIntroOffer;
+
   // Average center of the hardcoded NYC studio data
   const STUDIOS_CENTER_LAT = 40.7380, STUDIOS_CENTER_LNG = -73.9855;
 
@@ -510,7 +527,8 @@
 
   function generateVenueCardHTML(pins, search, location) {
     return pins.map((pin, i) => {
-      const tags = search || pin.category || STUDIO_TAGS[pin.name] || 'Fitness';
+      const rawTags = search || pin.category || STUDIO_TAGS[pin.name] || 'Fitness';
+      const tags = formatTag(rawTags);
       const distance = pin.distance != null ? (pin.distance / 1609.34).toFixed(1) : (0.1 + (i * 0.15)).toFixed(1);
       const rating = (4.5 + (i % 5) * 0.1).toFixed(1);
       const reviews = 50 + i * 37;
@@ -523,7 +541,7 @@
             <div class="venue-title">${pin.name}</div>
             <div class="venue-tags">${tags}</div>
             <div class="venue-subtitle">${distance} mi &middot; ${neighborhood}</div>
-            <div class="venue-rating"><svg width="16" height="20" viewBox="0 0 16 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3.93356 15.5117C3.79684 15.4102 3.71285 15.2734 3.6816 15.1016C3.65426 14.9336 3.67965 14.7344 3.75778 14.5039L4.96481 10.9238L1.88864 8.71484C1.68942 8.57422 1.55075 8.42773 1.47262 8.27539C1.3945 8.11914 1.38278 7.95898 1.43746 7.79492C1.49215 7.63477 1.59567 7.51562 1.74801 7.4375C1.90035 7.35547 2.09957 7.31641 2.34567 7.32031L6.11325 7.34375L7.26168 3.74609C7.3359 3.51172 7.43356 3.33398 7.55465 3.21289C7.67965 3.08789 7.82614 3.02539 7.9941 3.02539C8.16598 3.02539 8.31246 3.08789 8.43356 3.21289C8.55856 3.33398 8.65817 3.51172 8.73239 3.74609L9.88082 7.34375L13.6484 7.32031C13.8945 7.31641 14.0937 7.35547 14.2461 7.4375C14.3984 7.51562 14.5019 7.63477 14.5566 7.79492C14.6113 7.95898 14.5996 8.11914 14.5214 8.27539C14.4433 8.42773 14.3047 8.57422 14.1054 8.71484L11.0293 10.9238L12.2363 14.5039C12.3144 14.7344 12.3379 14.9336 12.3066 15.1016C12.2793 15.2734 12.1972 15.4102 12.0605 15.5117C11.9238 15.6211 11.7695 15.6602 11.5976 15.6289C11.4257 15.5977 11.2422 15.5117 11.0468 15.3711L7.9941 13.127L4.94723 15.3711C4.75192 15.5117 4.56832 15.5977 4.39645 15.6289C4.22457 15.6602 4.07028 15.6211 3.93356 15.5117Z" fill="#020203"/></svg> ${rating} (${reviews})</div>
+            <div class="venue-rating"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M7.28261 1.45359C7.57606 0.858991 8.42394 0.858992 8.71739 1.45359L10.165 4.38678C10.2815 4.62289 10.5068 4.78655 10.7674 4.82441L14.0043 5.29477C14.6605 5.39012 14.9225 6.1965 14.4477 6.65933L12.1054 8.9425C11.9169 9.12628 11.8308 9.39108 11.8753 9.6506L12.4283 12.8745C12.5404 13.528 11.8544 14.0264 11.2675 13.7178L8.37227 12.1957C8.13921 12.0732 7.86079 12.0732 7.62773 12.1957L4.73249 13.7178C4.14559 14.0264 3.45965 13.528 3.57174 12.8745L4.12468 9.6506C4.16919 9.39108 4.08315 9.12628 3.8946 8.94249L1.55231 6.65932C1.07749 6.1965 1.3395 5.39012 1.99568 5.29477L5.23265 4.82441C5.49321 4.78655 5.71847 4.62289 5.835 4.38678L7.28261 1.45359Z" fill="#FFB54D"/></svg> ${rating} (${reviews})</div>
           </div>
         </div>
         <div class="venue-desc">${desc}</div>
@@ -1968,9 +1986,16 @@
   function openVenueDetail(index, initialTab) {
     const pin = currentPins[index];
     if (!pin) return;
+    window.__currentVenuePin = pin;
+    // Re-render the Schedule tab so prices reflect this venue's intro-offer flag
+    if (window.__renderVdSchedule) window.__renderVdSchedule();
+    // Toggle the Overview intro-offer promo card based on this venue's flag
+    const promoEl = document.getElementById('vd-section-promo');
+    if (promoEl) promoEl.style.display = hasVenueIntroOffer(pin) ? '' : 'none';
 
     const search = currentSearchLabel;
-    const tags = search || pin.category || STUDIO_TAGS[pin.name] || 'Fitness';
+    const rawTags = search || pin.category || STUDIO_TAGS[pin.name] || 'Fitness';
+    const tags = formatTag(rawTags);
     const distance = pin.distance != null ? (pin.distance / 1609.34).toFixed(1) : (0.1 + (index * 0.15)).toFixed(1);
     const rating = (4.5 + (index % 5) * 0.1).toFixed(1);
     const reviews = 50 + index * 37;
@@ -1992,6 +2017,14 @@
       mapThumb.style.backgroundImage = 'url(' + staticUrl + ')';
       mapThumb.style.backgroundSize = 'cover';
       mapThumb.style.backgroundPosition = 'center';
+    }
+    // Address footer under the map thumbnail
+    const addressEl = document.getElementById('vd-map-address');
+    if (addressEl) {
+      const parts = [];
+      if (pin.address) parts.push(pin.address);
+      if (pin.locality) parts.push(pin.locality + ', NY');
+      addressEl.textContent = parts.length ? parts.join(', ') : neighborhood + ', NY';
     }
 
     document.getElementById('vd-sticky-title').textContent = pin.name;
@@ -2015,7 +2048,6 @@
       venueDetailSheet.style.transition = 'transform 0.35s cubic-bezier(.25, .46, .45, .94)';
       venueDetailSheet.style.transform = 'translateY(0%)';
     }
-    persistentTabBar.style.display = '';
     venueDetailOpen = true;
     if (window.__resetVenueDetailTabs) {
       // Defer until after the modal becomes visible so layout is correct
@@ -2044,7 +2076,6 @@
       motionAnimate(venueDetailSheet, { transform: 'translateY(' + sheetHeight + 'px)' }, { duration: 0.25, easing: 'cubic-bezier(.25, .46, .45, .94)' }).then(function() {
         venueDetailSheet.style.transform = '';
         venueDetailSheet.style.visibility = '';
-        persistentTabBar.style.display = 'none';
       });
     } else {
       venueDetailSheet.style.transition = '';
@@ -2056,7 +2087,6 @@
         venueDetailSheet.style.transform = '';
         venueDetailSheet.style.transition = '';
         venueDetailSheet.style.visibility = '';
-        persistentTabBar.style.display = 'none';
       }, { once: true });
     }
   }
@@ -2113,7 +2143,6 @@
     function activateTab(tab) {
       // Use cached pin offset (measured when venue detail opened at scrollTop=0)
       var pinOffset = window.__vdPinOffset || 0;
-      var wasPinned = pinOffset > 0 && venueDetailScroll.scrollTop >= pinOffset;
 
       tabs.forEach(function(t) { t.classList.remove('active'); });
       tab.classList.add('active');
@@ -2124,9 +2153,10 @@
         else p.classList.remove('active');
       });
 
-      // When tabs are pinned, snap to pinOffset so each tab's content starts from the top
-      if (wasPinned) {
-        venueDetailScroll.scrollTop = pinOffset;
+      // Tapping a tab always snaps the scroll to the pinned position so the tabs
+      // stick to the top and the new panel's content starts from the top of view
+      if (pinOffset > 0) {
+        venueDetailScroll.scrollTo({ top: pinOffset, behavior: 'smooth' });
       }
 
       // Reset horizontal scroll on all carousels
@@ -2143,13 +2173,40 @@
       if (tab) activateTab(tab);
     };
 
-    // Wire "See more" / "See all" buttons in the Overview's Available today section
+    // Wire Available today pills: "See more"/"See all" jump to Schedule tab;
+    // actual time pills open class detail with the clicked time pre-selected.
     venueDetailEl.querySelectorAll('.vd-slot-btn, .vd-see-all-card').forEach(function(btn) {
       var label = (btn.textContent || '').trim().toLowerCase();
       if (label === 'see more' || label.indexOf('see all') === 0) {
         btn.addEventListener('click', function(e) {
           e.stopPropagation();
           window.__switchVenueDetailTab('schedule');
+        });
+      } else if (btn.classList.contains('vd-slot-btn')) {
+        btn.addEventListener('click', function(e) {
+          e.stopPropagation();
+          if (wasDragging) return;
+          var card = btn.closest('.vd-class-card');
+          var titleEl = card && card.querySelector('.vd-class-name');
+          var title = titleEl ? titleEl.textContent.trim() : 'Class';
+          var time = btn.textContent.trim();
+          var venueHasIntro = hasVenueIntroOffer(window.__currentVenuePin);
+          var cls = {
+            time: time + ' \u00b7 60 min',
+            title: title,
+            instructor: 'Carolyn',
+            rating: '4.8 (250)',
+            disabled: false,
+            spots: '3 spots left'
+          };
+          if (venueHasIntro) {
+            cls.priceLabel = 'Intro offer';
+            cls.strikePrice = '$35';
+            cls.finalPrice = '$25';
+          } else {
+            cls.plainPrice = '$25';
+          }
+          if (typeof window.__openClassDetail === 'function') window.__openClassDetail(cls);
         });
       }
     });
@@ -2322,13 +2379,13 @@
         var h12 = h > 12 ? h - 12 : (h === 0 ? 12 : h);
         var timeStr = h12 + ':' + (m < 10 ? '0' : '') + m + ' ' + ampm;
         var dur = DURATIONS[Math.floor(Math.random() * DURATIONS.length)];
-        var title = CLASS_NAMES[Math.floor(Math.random() * CLASS_NAMES.length)];
+        var title = i < 4 ? 'Power Vinyasa Flow' : CLASS_NAMES[Math.floor(Math.random() * CLASS_NAMES.length)];
         var instructor = INSTRUCTOR_NAMES[Math.floor(Math.random() * INSTRUCTOR_NAMES.length)];
         var rating = (4.3 + Math.random() * 0.7).toFixed(1);
         var reviews = 50 + Math.floor(Math.random() * 400);
         var price = PRICES[Math.floor(Math.random() * PRICES.length)];
         var isDisabled = Math.random() < 0.15;
-        var hasIntro = !isDisabled && Math.random() < 0.3;
+        var hasIntro = !isDisabled && hasVenueIntroOffer(window.__currentVenuePin);
         var spotsNum = 1 + Math.floor(Math.random() * 5);
         var spotsLeft = isDisabled ? 'No more spots' : (Math.random() < 0.4 ? spotsNum + (spotsNum === 1 ? ' spot left' : ' spots left') : '');
 
@@ -2342,8 +2399,8 @@
         if (spotsLeft) cls.spots = spotsLeft;
         if (hasIntro) {
           cls.priceLabel = 'Intro offer';
-          cls.strikePrice = '$' + price;
-          cls.finalPrice = '$' + (price - 10);
+          cls.strikePrice = '$35';
+          cls.finalPrice = '$25';
         } else {
           cls.plainPrice = '$' + price;
         }
@@ -2396,6 +2453,9 @@
     var today = new Date();
     renderDatePicker(today.getDay());
     renderScheduleList();
+    // Expose so the schedule re-renders when the user opens a new venue
+    // (intro-offer pricing depends on the currently opened venue).
+    window.__renderVdSchedule = renderScheduleList;
   })();
 
   // ========== REVIEWS PANEL ==========
@@ -2605,7 +2665,6 @@
           venueDetailSheet.style.transform = '';
           venueDetailSheet.style.transition = '';
           venueDetailSheet.style.visibility = '';
-          persistentTabBar.style.display = 'none';
         }, { once: true });
       } else {
         // Snap back with spring (use px to match current inline transform)
@@ -2671,6 +2730,7 @@
       "A high-energy class combining yoga fundamentals with bodyweight strength training. Expect to sweat, breathe, and build serious core stability over"
     ];
     var CD_PREP = "All classes are hot. Mats + towels are complimentary on your first visit and always available for a small rental fee after. Water +";
+    var CD_INTRO_CHIP_SVG = '<svg class="cd-intro-chip-icon" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M5.38223 17.1763C4.62285 17.1763 4.05596 16.9891 3.68154 16.6147C3.30713 16.2403 3.11992 15.6708 3.11992 14.9061V13.2529C3.11992 13.1263 3.0751 13.0156 2.98545 12.9207L1.81475 11.75C1.27158 11.2121 1 10.6795 1 10.1521C1 9.62478 1.27158 9.08953 1.81475 8.54636L2.98545 7.36775C3.0751 7.2781 3.11992 7.17 3.11992 7.04343V5.3823C3.11992 4.61238 3.30449 4.04285 3.67363 3.67371C4.04805 3.30457 4.61758 3.12 5.38223 3.12H7.04336C7.17519 3.12 7.2833 3.07517 7.36768 2.98552L8.54629 1.81482C9.08945 1.27166 9.62207 1.00008 10.1441 1.00008C10.6715 0.994802 11.2067 1.26638 11.7499 1.81482L12.9285 2.98552C13.0182 3.07517 13.1263 3.12 13.2528 3.12H14.914C15.6786 3.12 16.2455 3.3072 16.6146 3.68162C16.9891 4.05603 17.1763 4.62293 17.1763 5.3823V7.04343C17.1763 7.17 17.2237 7.2781 17.3187 7.36775L18.4894 8.54636C19.0272 9.08953 19.2962 9.62478 19.2962 10.1521C19.2962 10.6795 19.0272 11.2121 18.4894 11.75L17.3187 12.9207C17.2237 13.0156 17.1763 13.1263 17.1763 13.2529V14.9061C17.1763 15.6761 16.9891 16.2456 16.6146 16.6147C16.2455 16.9891 15.6786 17.1763 14.914 17.1763H13.2528C13.1263 17.1763 13.0182 17.2212 12.9285 17.3108L11.7499 18.4815C11.212 19.0247 10.6794 19.2963 10.1521 19.2963C9.62471 19.2963 9.08945 19.0247 8.54629 18.4815L7.36768 17.3108C7.2833 17.2212 7.17519 17.1763 7.04336 17.1763H5.38223Z" fill="#379062"/><path d="M7.38359 10.2655C6.85889 10.2655 6.43965 10.0875 6.12588 9.73154C5.81475 9.37295 5.65918 8.87988 5.65918 8.25234C5.65918 7.61689 5.81606 7.12515 6.12983 6.7771C6.4436 6.42905 6.86152 6.25503 7.38359 6.25503C7.9083 6.25503 8.32754 6.42905 8.64131 6.7771C8.95508 7.12251 9.11196 7.61294 9.11196 8.24839C9.11196 8.87593 8.9564 9.36899 8.64526 9.72759C8.33413 10.0862 7.91357 10.2655 7.38359 10.2655ZM7.38359 9.32812C7.55762 9.32812 7.68813 9.23848 7.77515 9.05918C7.86216 8.87988 7.90566 8.61094 7.90566 8.25234C7.90566 7.89902 7.86216 7.63403 7.77515 7.45737C7.68813 7.28071 7.55762 7.19238 7.38359 7.19238C7.21221 7.19238 7.08169 7.28071 6.99204 7.45737C6.90503 7.63403 6.86152 7.89902 6.86152 8.25234C6.86152 8.61094 6.90503 8.87988 6.99204 9.05918C7.08169 9.23848 7.21221 9.32812 7.38359 9.32812ZM12.9167 13.7618C12.3894 13.7618 11.9688 13.5838 11.6551 13.2278C11.3439 12.8719 11.1884 12.3788 11.1884 11.7486C11.1884 11.1132 11.3453 10.6214 11.659 10.2734C11.9728 9.92534 12.392 9.75132 12.9167 9.75132C13.4388 9.75132 13.8567 9.92534 14.1705 10.2734C14.4843 10.6214 14.6412 11.1132 14.6412 11.7486C14.6412 12.3735 14.4856 12.8653 14.1745 13.2239C13.8633 13.5825 13.4441 13.7618 12.9167 13.7618ZM12.9167 12.8284C13.0881 12.8284 13.2173 12.7387 13.3043 12.5594C13.394 12.3775 13.4388 12.1072 13.4388 11.7486C13.4388 11.3927 13.394 11.1277 13.3043 10.9537C13.2173 10.777 13.0881 10.6887 12.9167 10.6887C12.7427 10.6887 12.6122 10.777 12.5252 10.9537C12.4382 11.1303 12.3947 11.3953 12.3947 11.7486C12.3947 12.1072 12.4382 12.3775 12.5252 12.5594C12.6122 12.7387 12.7427 12.8284 12.9167 12.8284ZM7.70395 13.7064C7.56157 13.6247 7.4772 13.5073 7.45083 13.3544C7.42446 13.2015 7.46006 13.0512 7.55762 12.9035L11.8251 6.49629C11.9201 6.35654 12.04 6.26953 12.1851 6.23525C12.3301 6.19834 12.4672 6.2168 12.5964 6.29062C12.7414 6.36973 12.8297 6.48838 12.8614 6.64658C12.893 6.80215 12.8601 6.95376 12.7625 7.10142L8.49497 13.5284C8.40532 13.6629 8.28271 13.7446 8.12715 13.7736C7.97422 13.8053 7.83315 13.7829 7.70395 13.7064Z" fill="white"/></svg>';
     var CD_CANCEL = "You must cancel your reservation at least 12 hours prior to the class start time in order to return the credit to your account with no penalty. Late cancellations with less than 12 hours notice will be assessed a $10 charge to your card. The credit will be returned to your account.";
     var CD_VENUE_NAMES = ['ID Hot Yoga', 'Sui Power Yoga', 'Heated Reformer Co.', 'Studio Sweat', 'Mindful Movement'];
     var CD_NEIGHBORHOODS = ['Lower East Side', 'East Village', 'SoHo', 'Williamsburg', 'West Village'];
@@ -2878,6 +2938,7 @@
             slot.classList.add('selected');
             updateBookingBar(data[idx]);
             scrollPillIntoView(slots, slot);
+            if (window.__rerenderCdReviews) window.__rerenderCdReviews(data[idx].instructor);
           }
           syncCdBookingBarVisibility();
         });
@@ -2888,32 +2949,15 @@
     }
 
     function syncCdBookingBarVisibility() {
-      var bar = document.getElementById('cd-booking-bar');
-      var slots = document.getElementById('cd-time-slots');
       var spacer = document.getElementById('cd-bottom-spacer');
-      if (!bar || !slots) return;
-      var anySelected = !!slots.querySelector('.cd-time-slot.selected');
-      bar.classList.toggle('hidden-no-slot', !anySelected);
-      // When no slot is selected, the booking bar is hidden and tab bar stays,
-      // so only a small spacer is needed. When selected, the larger spacer
-      // accommodates the lowered booking bar.
-      // 190px clears the lowered booking bar; 100px clears the persistent tab bar (62px + 24px bottom + padding)
-      if (spacer) spacer.style.height = anySelected ? '190px' : '100px';
-      // Also ensure tab bar is visible when no slot is selected
-      if (!anySelected) {
-        persistentTabBar.classList.remove('hidden-down');
-        bar.classList.remove('lowered');
-      }
+      // Spacer clears the fixed booking card pinned at bottom: 24px
+      if (spacer) spacer.style.height = '190px';
     }
 
     function updateBookingBar(slot) {
-      var spotsEl = document.getElementById('cd-booking-spots');
       var timeEl = document.getElementById('cd-booking-time');
       var instructorEl = document.getElementById('cd-booking-instructor');
-      if (spotsEl) {
-        spotsEl.textContent = slot.spots || '';
-        spotsEl.style.display = slot.spots ? '' : 'none';
-      }
+      var ctaEl = document.getElementById('cd-booking-cta');
       // Format date as "Tue, Mar 3"
       var today = new Date();
       var dayShort = today.toLocaleDateString('en-US', { weekday: 'short' });
@@ -2921,52 +2965,83 @@
       var dateStr = dayShort + ', ' + monthShort + ' ' + today.getDate();
       if (timeEl) timeEl.textContent = dateStr + ' · ' + slot.time;
       if (instructorEl) instructorEl.textContent = slot.instructor;
+      if (ctaEl) ctaEl.textContent = slot.spots ? 'Book · ' + slot.spots : 'Book';
     }
 
-    function renderCdReviewCards(title) {
+    // Stable review pool generated once per class detail open.
+    // Each entry has its own instructor so the Reviews tab can prioritize
+    // reviews matching the currently selected time slot's instructor.
+    var CD_REVIEW_SOURCE_SVG = '<svg class="cd-review-card-source-icon" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M0 10C0 4.47715 4.47715 0 10 0V0C15.5228 0 20 4.47715 20 10V10C20 15.5228 15.5228 20 10 20V20C4.47715 20 0 15.5228 0 10V10Z" fill="#0055FF"/><path d="M11.8559 5.39815C11.733 5.39222 11.1837 5.38899 10.7913 5.38737C10.6637 5.38703 10.5399 5.43088 10.4409 5.51145C10.342 5.59202 10.274 5.70436 10.2484 5.82939L10.0398 6.82717C10.022 6.91422 9.97477 6.99249 9.90606 7.04883C9.83735 7.10518 9.75135 7.13616 9.66249 7.13658L7.70574 7.14521C5.52853 7.14521 3.53027 8.77745 3.53027 11.0636C3.53027 13.1173 5.24391 14.9657 7.70628 14.9657C7.8335 14.9722 8.54828 14.9706 9.0248 14.9722C9.15246 14.9724 9.27624 14.9283 9.3751 14.8475C9.47396 14.7668 9.5418 14.6542 9.56708 14.5291L9.77569 13.5254C9.79331 13.4382 9.84047 13.3597 9.90921 13.3033C9.97795 13.2468 10.0641 13.2158 10.153 13.2154L11.8548 13.2203C14.2595 13.2203 16.0303 11.3719 16.0303 9.29817C16.0303 7.03416 14.0746 5.39653 11.8543 5.39653L11.8559 5.39815ZM11.8446 11.7196L10.1094 11.7233C9.98344 11.7237 9.86149 11.7675 9.76402 11.8472C9.66654 11.9269 9.59947 12.0377 9.57409 12.1611L9.36494 13.1739C9.34712 13.2607 9.29979 13.3386 9.23099 13.3945C9.1622 13.4503 9.07619 13.4805 8.9876 13.4801C8.54828 13.4801 8.30571 13.4661 7.72569 13.4661C6.41041 13.4661 5.0202 12.5891 5.0202 11.0754C5.0202 9.67389 6.26002 8.64592 7.72138 8.64592L9.70076 8.64215C9.82673 8.64201 9.9488 8.59846 10.0464 8.51882C10.144 8.43919 10.2112 8.32835 10.2366 8.20498L10.4473 7.19588C10.4654 7.10919 10.5127 7.03138 10.5815 6.97559C10.6502 6.9198 10.7361 6.88946 10.8247 6.8897C11.1929 6.8897 11.7648 6.89347 11.8429 6.89994C13.2251 6.89994 14.5441 7.84489 14.5441 9.32566C14.5441 10.6808 13.3631 11.7217 11.8435 11.7217" fill="white"/></svg><span>ClassPass</span>';
+
+    var cdReviewPool = [];
+    var cdCurrentTitle = '';
+    var cdCurrentHighlight = '';
+
+    function generateCdReviewPool(primaryInstructor) {
+      var pool = [];
+      // Seed at least two reviews for the primary instructor so the
+      // selected slot always has matching reviews to surface first.
+      for (var i = 0; i < 2; i++) {
+        pool.push({
+          instructor: primaryInstructor,
+          body: pick(CD_REVIEW_BODIES),
+          name: pick(CD_REVIEW_NAMES),
+          showSource: Math.random() < 0.5
+        });
+      }
+      for (var j = 0; j < 10; j++) {
+        pool.push({
+          instructor: pick(CD_INSTRUCTORS),
+          body: pick(CD_REVIEW_BODIES),
+          name: pick(CD_REVIEW_NAMES),
+          showSource: Math.random() < 0.5
+        });
+      }
+      return pool;
+    }
+
+    function sortedPool(highlight) {
+      return cdReviewPool.slice().sort(function(a, b) {
+        var am = a.instructor === highlight ? 0 : 1;
+        var bm = b.instructor === highlight ? 0 : 1;
+        return am - bm;
+      });
+    }
+
+    function reviewCardHTML(title, review, withSource) {
+      var stars = '';
+      for (var s = 0; s < 5; s++) stars += STAR_GOLD_16;
+      return '<div class="cd-review-card">'
+        + '<p class="cd-review-card-title">' + title + ' with ' + review.instructor + '</p>'
+        + '<p class="cd-review-card-body">' + review.body + '</p>'
+        + '<div class="cd-review-card-footer">'
+        +   '<div class="cd-review-card-author">'
+        +     '<span class="cd-review-card-name">' + review.name + '</span>'
+        +     '<div class="cd-review-card-stars">' + stars + '</div>'
+        +   '</div>'
+        +   (withSource && review.showSource ? '<div class="cd-review-card-source">' + CD_REVIEW_SOURCE_SVG + '</div>' : '')
+        + '</div>'
+        + '</div>';
+    }
+
+    function renderCdReviewCards(title, highlight) {
       var container = document.getElementById('cd-review-cards');
-      var count = 3;
-      var html = '';
-      for (var i = 0; i < count; i++) {
-        var stars = '';
-        for (var s = 0; s < 5; s++) stars += STAR_GOLD_16;
-        var name = pick(CD_REVIEW_NAMES);
-        html += '<div class="cd-review-card">'
-          + '<p class="cd-review-card-title">' + title + '</p>'
-          + '<p class="cd-review-card-body">' + pick(CD_REVIEW_BODIES) + '</p>'
-          + '<div class="cd-review-card-footer">'
-          +   '<div class="cd-review-card-author">'
-          +     '<span class="cd-review-card-name">' + name + '</span>'
-          +     '<div class="cd-review-card-stars">' + stars + '</div>'
-          +   '</div>'
-          +   (Math.random() < 0.5 ? '<div class="cd-review-card-source"><svg class="cd-review-card-source-icon" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M0 10C0 4.47715 4.47715 0 10 0V0C15.5228 0 20 4.47715 20 10V10C20 15.5228 15.5228 20 10 20V20C4.47715 20 0 15.5228 0 10V10Z" fill="#0055FF"/><path d="M11.8559 5.39815C11.733 5.39222 11.1837 5.38899 10.7913 5.38737C10.6637 5.38703 10.5399 5.43088 10.4409 5.51145C10.342 5.59202 10.274 5.70436 10.2484 5.82939L10.0398 6.82717C10.022 6.91422 9.97477 6.99249 9.90606 7.04883C9.83735 7.10518 9.75135 7.13616 9.66249 7.13658L7.70574 7.14521C5.52853 7.14521 3.53027 8.77745 3.53027 11.0636C3.53027 13.1173 5.24391 14.9657 7.70628 14.9657C7.8335 14.9722 8.54828 14.9706 9.0248 14.9722C9.15246 14.9724 9.27624 14.9283 9.3751 14.8475C9.47396 14.7668 9.5418 14.6542 9.56708 14.5291L9.77569 13.5254C9.79331 13.4382 9.84047 13.3597 9.90921 13.3033C9.97795 13.2468 10.0641 13.2158 10.153 13.2154L11.8548 13.2203C14.2595 13.2203 16.0303 11.3719 16.0303 9.29817C16.0303 7.03416 14.0746 5.39653 11.8543 5.39653L11.8559 5.39815ZM11.8446 11.7196L10.1094 11.7233C9.98344 11.7237 9.86149 11.7675 9.76402 11.8472C9.66654 11.9269 9.59947 12.0377 9.57409 12.1611L9.36494 13.1739C9.34712 13.2607 9.29979 13.3386 9.23099 13.3945C9.1622 13.4503 9.07619 13.4805 8.9876 13.4801C8.54828 13.4801 8.30571 13.4661 7.72569 13.4661C6.41041 13.4661 5.0202 12.5891 5.0202 11.0754C5.0202 9.67389 6.26002 8.64592 7.72138 8.64592L9.70076 8.64215C9.82673 8.64201 9.9488 8.59846 10.0464 8.51882C10.144 8.43919 10.2112 8.32835 10.2366 8.20498L10.4473 7.19588C10.4654 7.10919 10.5127 7.03138 10.5815 6.97559C10.6502 6.9198 10.7361 6.88946 10.8247 6.8897C11.1929 6.8897 11.7648 6.89347 11.8429 6.89994C13.2251 6.89994 14.5441 7.84489 14.5441 9.32566C14.5441 10.6808 13.3631 11.7217 11.8435 11.7217" fill="white"/></svg><span>ClassPass</span></div>' : '')
-          + '</div>'
-          + '</div>';
-      }
-      container.innerHTML = html;
+      var list = sortedPool(highlight).slice(0, 3);
+      container.innerHTML = list.map(function(r) { return reviewCardHTML(title, r, true); }).join('');
     }
 
-    function renderCdReviewsList(title) {
+    function renderCdReviewsList(title, highlight) {
       var container = document.getElementById('cd-reviews-list');
-      var count = 5;
-      var html = '';
-      for (var i = 0; i < count; i++) {
-        var stars = '';
-        for (var s = 0; s < 5; s++) stars += STAR_GOLD_16;
-        var name = pick(CD_REVIEW_NAMES);
-        html += '<div class="cd-review-card">'
-          + '<p class="cd-review-card-title">' + title + '</p>'
-          + '<p class="cd-review-card-body">' + pick(CD_REVIEW_BODIES) + '</p>'
-          + '<div class="cd-review-card-footer">'
-          +   '<div class="cd-review-card-author">'
-          +     '<span class="cd-review-card-name">' + name + '</span>'
-          +     '<div class="cd-review-card-stars">' + stars + '</div>'
-          +   '</div>'
-          + '</div>'
-          + '</div>';
-      }
-      container.innerHTML = html;
+      var list = sortedPool(highlight).slice(0, 5);
+      container.innerHTML = list.map(function(r) { return reviewCardHTML(title, r, false); }).join('');
     }
+
+    function rerenderCdReviewsForInstructor(instructor) {
+      cdCurrentHighlight = instructor;
+      renderCdReviewCards(cdCurrentTitle, instructor);
+      renderCdReviewsList(cdCurrentTitle, instructor);
+    }
+    window.__rerenderCdReviews = rerenderCdReviewsForInstructor;
 
     function populateClassDetail(cls) {
       // Header
@@ -2976,15 +3051,29 @@
       // rating "4.6 (287)" → split
       var ratingParts = (cls.rating || '4.9 (250)').match(/^([\d.]+)\s*\((\d+)\)$/);
       if (ratingParts) {
-        document.getElementById('cd-rating-num').textContent = ratingParts[1];
-        document.getElementById('cd-rating-count').textContent = '(' + ratingParts[2] + ')';
         document.getElementById('cd-rating-big').textContent = ratingParts[1];
         document.getElementById('cd-rating-summary-count').textContent = '(' + ratingParts[2] + ')';
+        document.getElementById('cd-header-rating-num').textContent = ratingParts[1];
+        document.getElementById('cd-header-rating-count').textContent = '(' + ratingParts[2] + ')';
       }
       // Venue link — use the venue name if open, fall back to mock
       var venueName = (currentPins[0] && currentPins[0].name) || pick(CD_VENUE_NAMES);
       var hood = (currentPins[0] && currentPins[0].locality) || pick(CD_NEIGHBORHOODS);
       document.getElementById('cd-venue-text').textContent = venueName + ' · ' + hood;
+      // Intro offer chip: intro venues show the pill; others show a plain
+      // price in the same slot (no icon, no strike, no pill background).
+      var introChipEl = document.getElementById('cd-intro-chip');
+      if (introChipEl) {
+        if (hasVenueIntroOffer(window.__currentVenuePin)) {
+          introChipEl.classList.remove('cd-intro-chip--plain');
+          introChipEl.innerHTML = CD_INTRO_CHIP_SVG
+            + '<span class="cd-intro-chip-label">Intro offer \u00b7 $25</span>'
+            + '<span class="cd-intro-chip-strike">$35</span>';
+        } else {
+          introChipEl.classList.add('cd-intro-chip--plain');
+          introChipEl.innerHTML = '<span class="cd-intro-chip-plain">' + (cls.plainPrice || '$25') + '</span>';
+        }
+      }
       // Date/slots
       var today = new Date();
       renderCdDatePicker(today.getDay());
@@ -3038,14 +3127,15 @@
       var revAiEl = document.getElementById('cd-rating-ai-summary-rev');
       if (revAiEl) revAiEl.textContent = pick(CD_AI_SUMMARIES);
       // Reviews
-      renderCdReviewCards(cls.title);
-      renderCdReviewsList(cls.title);
+      cdCurrentTitle = cls.title;
+      cdReviewPool = generateCdReviewPool(cls.instructor);
+      rerenderCdReviewsForInstructor(cls.instructor);
       // Booking bar price (uses the original class's price info)
       var priceEl = document.getElementById('cd-booking-price');
       if (priceEl) {
         if (cls.finalPrice) {
-          priceEl.innerHTML = '<span class="cd-booking-price-strike">' + cls.strikePrice + '</span>'
-            + '<span class="cd-booking-price-final">' + cls.finalPrice + '</span>';
+          priceEl.innerHTML = '<span class="cd-booking-price-final">Intro offer \u00b7 ' + cls.finalPrice + '</span>'
+            + '<span class="cd-booking-price-strike">' + cls.strikePrice + '</span>';
         } else {
           priceEl.innerHTML = '<span class="cd-booking-price-plain">' + (cls.plainPrice || '$25') + '</span>';
         }
@@ -3055,9 +3145,7 @@
       classDetailEl.querySelectorAll('.cd-review-cards, .cd-time-slots, .cd-date-picker').forEach(function(el) {
         el.scrollLeft = 0;
       });
-      // Reset scroll-driven UI state so booking card / tab bar return to raised position
-      var bb = document.getElementById('cd-booking-bar');
-      if (bb) bb.classList.remove('lowered');
+      // Reset scroll-driven tab bar state
       persistentTabBar.classList.remove('hidden-down');
     }
 
@@ -3155,7 +3243,6 @@
           classDetailSheet.style.transform = '';
           classDetailSheet.style.transition = '';
           classDetailSheet.style.visibility = '';
-          if (venueDetailOpen) persistentTabBar.style.display = '';
         });
       } else {
         classDetailSheet.style.transition = 'transform 0.3s cubic-bezier(.25,.46,.45,.94)';
@@ -3165,7 +3252,6 @@
           classDetailSheet.style.transform = '';
           classDetailSheet.style.transition = '';
           classDetailSheet.style.visibility = '';
-          if (venueDetailOpen) persistentTabBar.style.display = '';
         }, { once: true });
       }
     }
@@ -3234,16 +3320,15 @@
     }
 
     function activateCdTab(tab) {
-      // If user has scrolled past the point where the tabs become sticky, snap back to that
-      // pinned position so the new tab's content starts from the top of the visible area.
+      // Tapping a tab always snaps scroll to the pinned position so the tabs
+      // stick to the top and the new panel's content starts from the top of view
       var pinOffset = window.__cdPinOffset || 0;
-      var wasPinned = pinOffset > 0 && classDetailScroll.scrollTop >= pinOffset;
       cdTabs.forEach(function(t) { t.classList.toggle('active', t === tab); });
       moveCdIndicator(tab);
       var name = tab.dataset.cdtab;
       cdPanels.forEach(function(p) { p.classList.toggle('active', p.dataset.cdpanel === name); });
-      if (wasPinned) {
-        classDetailScroll.scrollTop = pinOffset;
+      if (pinOffset > 0) {
+        classDetailScroll.scrollTo({ top: pinOffset, behavior: 'smooth' });
       }
       // Reset horizontal scroll on review carousels so each tab opens cleanly
       classDetailEl.querySelectorAll('.cd-review-cards').forEach(function(s) { s.scrollLeft = 0; });
@@ -3276,7 +3361,6 @@
     // Also: hide the persistent tab bar and lower the booking card when scrolling down,
     // restore them when scrolling up (or when at the very top).
     var cdStickyNav = document.getElementById('cd-sticky-nav');
-    var cdBookingBar = document.getElementById('cd-booking-bar');
     var cdTitleEl = document.getElementById('cd-title');
     var cdTitleScrollThreshold = 0; // computed on open
     var CD_HIDE_TAB_THRESHOLD = 40;
@@ -3297,24 +3381,13 @@
       // Sticky nav title fade-in — only when the class title has scrolled off screen
       if (st > cdTitleScrollThreshold) cdStickyNav.classList.add('scrolled');
       else cdStickyNav.classList.remove('scrolled');
-      // Tab bar / booking card transitions — only when a time slot is selected
-      // (if no slot is selected, the booking bar is already hidden and the tab bar stays visible)
-      var hasSelectedSlot = !!document.querySelector('#cd-time-slots .cd-time-slot.selected');
-      if (!hasSelectedSlot) {
+      // Tab bar hide-on-scroll (tab bar is already behind the sheet, but keep the state in sync)
+      if (st <= 10) {
         persistentTabBar.classList.remove('hidden-down');
-        cdBookingBar.classList.remove('lowered');
-      } else if (st <= 10) {
-        // Near top — always show tab bar, raise booking card
-        persistentTabBar.classList.remove('hidden-down');
-        cdBookingBar.classList.remove('lowered');
       } else if (st > cdPrevScrollTop && st > CD_HIDE_TAB_THRESHOLD) {
-        // Scrolling down past threshold — hide tab bar, lower booking card
         persistentTabBar.classList.add('hidden-down');
-        cdBookingBar.classList.add('lowered');
       } else if (st < cdPrevScrollTop) {
-        // Scrolling up — restore
         persistentTabBar.classList.remove('hidden-down');
-        cdBookingBar.classList.remove('lowered');
       }
       cdPrevScrollTop = st;
     }, { passive: true });
@@ -3424,7 +3497,6 @@
           classDetailSheet.style.transform = '';
           classDetailSheet.style.transition = '';
           classDetailSheet.style.visibility = '';
-          if (venueDetailOpen) persistentTabBar.style.display = '';
         });
         venueDetailSheet.addEventListener('transitionend', function handler(e) {
           if (e.propertyName !== 'transform') return;

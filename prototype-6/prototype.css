@@ -1268,7 +1268,7 @@
     display: flex;
     align-items: center;
     padding: 4px;
-    z-index: 30;
+    z-index: 15;
     pointer-events: auto;
     transition: transform 0.3s cubic-bezier(.25,.46,.45,.94), opacity 0.3s ease;
   }
@@ -1977,11 +1977,16 @@
     white-space: nowrap;
   }
 
-  /* Map thumbnail */
-  .vd-map-thumb {
-    height: 156px;
-    border-radius: 20px;
+  /* Map card: map image stacked on an address footer */
+  .vd-map-card {
+    border-radius: 24px;
     overflow: hidden;
+    background: #fff;
+    display: flex;
+    flex-direction: column;
+  }
+  .vd-map-thumb {
+    height: 168px;
     background: #e8e8e8;
     position: relative;
   }
@@ -1995,6 +2000,15 @@
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
+  }
+  .vd-map-address {
+    padding: 12px 16px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 20px;
+    color: #020203;
+    background: #fff;
   }
 
   /* Description */
@@ -2209,7 +2223,7 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    max-width: calc(100% - 220px);
+    max-width: calc(100% - 260px);
     pointer-events: none;
   }
   .cd-sticky-nav.scrolled .cd-sticky-title {
@@ -2267,17 +2281,30 @@
     gap: 24px;
   }
 
-  /* Hero thumbnail (rounded, inside content padding) */
-  .cd-hero-thumb {
-    width: 100%;
-    height: 300px;
-    background: #d9dadc;
-    border-radius: 16px;
-    flex-shrink: 0;
+  /* Groups venue header + description + date picker + time slots
+     with a tighter gap than the .cd-content default (24px) */
+  .cd-hero-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 0px;
   }
 
-  /* Venue header — stacks vertically */
-  .cd-header {
+  /* Venue header — image on left, info stack on right */
+  .cd-venue-header {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+  }
+  .cd-venue-image {
+    width: 112px;
+    height: 112px;
+    border-radius: 16px;
+    background: #d9dadc;
+    flex-shrink: 0;
+  }
+  .cd-venue-info {
+    flex: 1;
+    min-width: 0;
     display: flex;
     flex-direction: column;
     gap: 4px;
@@ -2287,26 +2314,6 @@
     font-size: 18px;
     font-weight: 700;
     line-height: 24px;
-    color: #020203;
-  }
-  .cd-rating-row {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-  }
-  .cd-rating-num {
-    font-family: 'DM Sans', sans-serif;
-    font-size: 14px;
-    font-weight: 500;
-    line-height: 20px;
-    color: #020203;
-  }
-  .cd-rating-star { display: block; }
-  .cd-rating-count {
-    font-family: 'DM Sans', sans-serif;
-    font-size: 14px;
-    font-weight: 500;
-    line-height: 20px;
     color: #020203;
   }
   .cd-venue-link {
@@ -2319,6 +2326,67 @@
     line-height: 20px;
     color: #020203;
     cursor: pointer;
+    min-width: 0;
+  }
+  .cd-venue-link > span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 0;
+  }
+  .cd-venue-link > svg {
+    flex-shrink: 0;
+  }
+  .cd-header-rating {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 16px;
+    line-height: 24px;
+  }
+  .cd-header-rating svg { display: block; flex-shrink: 0; }
+  .cd-header-rating-num {
+    font-weight: 700;
+    color: #020203;
+  }
+  .cd-header-rating-count {
+    font-weight: 500;
+    color: #90939d;
+  }
+  .cd-intro-chip {
+    align-self: flex-start;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    background: #fff;
+    border-radius: 24px;
+    margin-top: 4px;
+  }
+  .cd-intro-chip-icon { display: block; flex-shrink: 0; }
+  .cd-intro-chip-label {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    line-height: 20px;
+    color: #296b49;
+  }
+  .cd-intro-chip-strike {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    line-height: 20px;
+    color: #b3b5bc;
+    text-decoration: line-through;
+  }
+  /* Plain-price variant: same white pill as the intro chip, price only */
+  .cd-intro-chip-plain {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    line-height: 20px;
+    color: #020203;
   }
 
   /* Date picker — horizontally paginated by week (carousel)
@@ -2394,7 +2462,7 @@
     -webkit-overflow-scrolling: touch;
     margin-left: -20px;
     margin-right: -20px;
-    padding: 0 20px;
+    padding: 16px 20px 0;
     scroll-padding-left: 20px;
     scroll-snap-type: x proximity;
   }
@@ -2535,6 +2603,9 @@
     display: flex;
     flex-direction: column;
     gap: 12px;
+  }
+  .cd-section.cd-header-section {
+    gap: 20px;
   }
   .cd-section-header {
     display: flex;
@@ -2724,10 +2795,10 @@
   }
   .cd-reviews-list .cd-review-card { width: 100%; }
 
-  /* Sticky booking footer */
+  /* Fixed booking footer: pinned 24px above the bottom of the sheet */
   .cd-booking-bar {
     position: absolute;
-    bottom: 110px;
+    bottom: 24px;
     left: 16px;
     right: 16px;
     background: #fff;
@@ -2739,36 +2810,16 @@
     gap: 12px;
     z-index: 6;
     pointer-events: auto;
-    transition: transform 0.3s cubic-bezier(.25,.46,.45,.94), opacity 0.25s ease;
-  }
-  /* Lowered state: when tab bar slides down, booking card glides to where it was */
-  .cd-booking-bar.lowered {
-    transform: translateY(86px);
-  }
-  /* Hidden state: no time slot selected → card slides down off-screen and fades out.
-     Defined after .lowered so this rule wins when both classes are present. */
-  .cd-booking-bar.hidden-no-slot,
-  .cd-booking-bar.lowered.hidden-no-slot {
-    transform: translateY(260px);
-    opacity: 0;
-    pointer-events: none;
   }
   .cd-booking-info {
     display: flex;
     flex-direction: column;
-  }
-  .cd-booking-spots {
-    font-family: 'DM Sans', sans-serif;
-    font-size: 13px;
-    font-weight: 500;
-    line-height: 16px;
-    color: #90939d;
-    margin-bottom: 4px;
+    width: 100%;
   }
   .cd-booking-time {
     font-family: 'DM Sans', sans-serif;
     font-size: 16px;
-    font-weight: 500;
+    font-weight: 700;
     line-height: 24px;
     color: #020203;
   }
@@ -2776,12 +2827,11 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-top: 2px;
   }
   .cd-booking-instructor {
     font-family: 'DM Sans', sans-serif;
     font-size: 16px;
-    font-weight: 400;
+    font-weight: 700;
     line-height: 24px;
     color: #90939d;
   }
@@ -2789,27 +2839,19 @@
     display: flex;
     align-items: center;
     gap: 4px;
-  }
-  .cd-booking-price-strike {
     font-family: 'DM Sans', sans-serif;
     font-size: 16px;
-    font-weight: 500;
+    font-weight: 700;
     line-height: 24px;
-    color: #90939d;
+  }
+  .cd-booking-price-strike {
+    color: #b3b5bc;
     text-decoration: line-through;
   }
   .cd-booking-price-final {
-    font-family: 'DM Sans', sans-serif;
-    font-size: 16px;
-    font-weight: 700;
-    line-height: 24px;
-    color: #41ad75;
+    color: #379062;
   }
   .cd-booking-price-plain {
-    font-family: 'DM Sans', sans-serif;
-    font-size: 16px;
-    font-weight: 700;
-    line-height: 24px;
     color: #020203;
   }
   .cd-booking-cta {
@@ -2820,9 +2862,9 @@
     border-radius: 999px;
     padding: 12px 24px;
     font-family: 'DM Sans', sans-serif;
-    font-size: 16px;
-    font-weight: 600;
-    line-height: 24px;
+    font-size: 18px;
+    font-weight: 500;
+    line-height: 28px;
     cursor: pointer;
   }
   .cd-booking-cta:active {
