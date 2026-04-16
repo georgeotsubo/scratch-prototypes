@@ -3303,7 +3303,7 @@
       if (!hasSelectedSlot) {
         persistentTabBar.classList.remove('hidden-down');
         cdBookingBar.classList.remove('lowered');
-      } else if (st <= CD_SCROLL_THRESHOLD) {
+      } else if (st <= 10) {
         // Near top — always show tab bar, raise booking card
         persistentTabBar.classList.remove('hidden-down');
         cdBookingBar.classList.remove('lowered');
