@@ -2147,16 +2147,19 @@
     visibility: hidden;
   }
 
+  /* Handle floats absolutely at the top of the sheet so the scroll content
+     (including the hero image) can scroll behind it. */
   .class-detail-handle {
-    width: 100%;
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    z-index: 6;
     padding: 10px 0 4px;
     display: flex;
     justify-content: center;
     align-items: center;
-    flex-shrink: 0;
     cursor: grab;
     touch-action: none;
-    background: #f1f2f3;
+    pointer-events: auto;
   }
   .class-detail-handle::before {
     content: '';
@@ -2167,9 +2170,10 @@
     border-radius: 20px;
   }
 
+  /* Scroll container fills the entire sheet so the hero scrolls edge-to-edge */
   .class-detail-scroll {
-    position: relative;
-    flex: 1;
+    position: absolute;
+    inset: 0;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
     overscroll-behavior-x: contain;
@@ -2184,9 +2188,13 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 8px 20px;
-    background: #f1f2f3;
+    padding: 28px 20px 8px;
+    background: transparent;
     gap: 12px;
+    transition: background 0.25s ease;
+  }
+  .cd-sticky-nav.scrolled {
+    background: #f1f2f3;
   }
   .cd-sticky-title {
     position: absolute;
@@ -2223,22 +2231,25 @@
   .cd-actions-pill {
     display: flex;
     align-items: center;
-    gap: 4px;
-    padding: 0 4px;
+    gap: 8px;
+    padding-left: 4px;
+    padding-right: 4px;
     background: #fff;
     border-radius: 999px;
     height: 44px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
     flex-shrink: 0;
   }
   .cd-action-icon {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 40px;
-    height: 40px;
+    width: 44px;
+    height: 44px;
     cursor: pointer;
   }
+  .cd-action-icon svg { width: 24px; height: 24px; }
 
   /* Bookmark toggle states (shared selectors for venue + class detail) */
   .vd-bookmark-btn.bookmarked svg path,
@@ -2439,7 +2450,7 @@
     gap: 32px;
     border-bottom: 1px solid #e4e5e7;
     position: sticky;
-    top: 60px;
+    top: 80px;
     z-index: 3;
     background: #f1f2f3;
     margin-left: -20px;
@@ -2546,8 +2557,22 @@
     margin: 0;
   }
 
-  /* Ratings & Reviews */
+  /* Ratings & Reviews — inline summary (Overview tab) */
   .cd-rating-summary {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  /* Ratings & Reviews — full summary card (Reviews tab) */
+  .cd-rating-card {
+    background: #fff;
+    border-radius: 24px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .cd-rating-card-top {
     display: flex;
     align-items: center;
     gap: 12px;
@@ -2572,6 +2597,53 @@
     font-weight: 500;
     line-height: 16px;
     color: #90939d;
+  }
+  .cd-rating-source {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 400;
+    line-height: 20px;
+    color: #90939d;
+  }
+  .cd-rating-bars {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .cd-rating-bar-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .cd-rating-bar-label {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 16px;
+    color: #020203;
+    width: 12px;
+    text-align: right;
+  }
+  .cd-rating-bar-track {
+    flex: 1;
+    height: 8px;
+    background: #e4e5e7;
+    border-radius: 4px;
+    overflow: hidden;
+  }
+  .cd-rating-bar-fill {
+    height: 100%;
+    background: #FFB54D;
+    border-radius: 4px;
+  }
+  .cd-rating-ai-summary {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 16px;
+    font-weight: 400;
+    font-style: italic;
+    line-height: 24px;
+    color: #020203;
+    margin: 0;
   }
   .cd-review-cards {
     display: flex;

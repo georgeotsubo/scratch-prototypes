@@ -2154,6 +2154,14 @@
       }
     });
 
+    // Tapping "Ratings & Reviews" chevron in Overview → switch to Reviews tab
+    var vdReviewsHeader = venueDetailEl.querySelector('.vd-reviews-header');
+    if (vdReviewsHeader) {
+      vdReviewsHeader.addEventListener('click', function() {
+        window.__switchVenueDetailTab('reviews');
+      });
+    }
+
     // Scroll the venue detail to a specific section id or an offset (number).
     // Usage: window.__scrollVenueDetailTo('vd-section-promo')  or  window.__scrollVenueDetailTo(420)
     window.__scrollVenueDetailTo = function(target, offset) {
@@ -2889,7 +2897,8 @@
       // When no slot is selected, the booking bar is hidden and tab bar stays,
       // so only a small spacer is needed. When selected, the larger spacer
       // accommodates the lowered booking bar.
-      if (spacer) spacer.style.height = anySelected ? '190px' : '40px';
+      // 190px clears the lowered booking bar; 100px clears the persistent tab bar (62px + 24px bottom + padding)
+      if (spacer) spacer.style.height = anySelected ? '190px' : '100px';
       // Also ensure tab bar is visible when no slot is selected
       if (!anySelected) {
         persistentTabBar.classList.remove('hidden-down');
@@ -2995,6 +3004,39 @@
       var starsRow = '';
       for (var i = 0; i < 5; i++) starsRow += STAR_GOLD_20;
       document.getElementById('cd-stars').innerHTML = starsRow;
+      // Populate Reviews tab summary card
+      var reviewCount = ratingParts ? parseInt(ratingParts[2], 10) : 250;
+      var dist = [
+        Math.floor(reviewCount * 0.03),
+        Math.floor(reviewCount * 0.05),
+        Math.floor(reviewCount * 0.12),
+        Math.floor(reviewCount * 0.25),
+        Math.floor(reviewCount * 0.55)
+      ];
+      var maxDist = Math.max.apply(null, dist);
+      var barsHtml = '';
+      for (var b = 4; b >= 0; b--) {
+        var pct = maxDist > 0 ? (dist[b] / maxDist) * 100 : 0;
+        barsHtml += '<div class="cd-rating-bar-row">'
+          + '<span class="cd-rating-bar-label">' + (b + 1) + '</span>'
+          + '<div class="cd-rating-bar-track"><div class="cd-rating-bar-fill" style="width:' + pct + '%"></div></div>'
+          + '</div>';
+      }
+      var CD_AI_SUMMARIES = [
+        "Highly rated for its intimate class sizes and personalized attention. Many reviewers mention visible results within weeks and appreciate the variety of class offerings throughout the day.",
+        "People love this studio for its upbeat, music-driven workouts and motivating instructors who give clear form cues. Reviews highlight an intense full-body burn in a short time.",
+        "Reviewers consistently praise the welcoming atmosphere and knowledgeable instructors. The studio is described as clean and well-maintained, with creative class formats."
+      ];
+      var revBigEl = document.getElementById('cd-rating-big-rev');
+      if (revBigEl) revBigEl.textContent = ratingParts ? ratingParts[1] : '4.7';
+      var revCountEl = document.getElementById('cd-rating-summary-count-rev');
+      if (revCountEl) revCountEl.textContent = '(' + reviewCount + ')';
+      var revStarsEl = document.getElementById('cd-stars-rev');
+      if (revStarsEl) revStarsEl.innerHTML = starsRow;
+      var revBarsEl = document.getElementById('cd-rating-bars-rev');
+      if (revBarsEl) revBarsEl.innerHTML = barsHtml;
+      var revAiEl = document.getElementById('cd-rating-ai-summary-rev');
+      if (revAiEl) revAiEl.textContent = pick(CD_AI_SUMMARIES);
       // Reviews
       renderCdReviewCards(cls.title);
       renderCdReviewsList(cls.title);
@@ -3063,8 +3105,10 @@
           if (tabsEl) {
             var scrollRect = classDetailScroll.getBoundingClientRect();
             var tabsRect = tabsEl.getBoundingClientRect();
-            window.__cdPinOffset = tabsRect.top - scrollRect.top - 60;
+            window.__cdPinOffset = tabsRect.top - scrollRect.top - 80;
           }
+          // Cache the scroll offset where the class title leaves the viewport
+          if (window.__cacheCdTitleThreshold) window.__cacheCdTitleThreshold();
         });
       }
     };
@@ -3216,7 +3260,6 @@
       cdReviewsHeader.addEventListener('click', function() {
         var reviewsTab = Array.prototype.find.call(cdTabs, function(t) { return t.dataset.cdtab === 'reviews'; });
         if (reviewsTab) activateCdTab(reviewsTab);
-        classDetailScroll.scrollTop = 0;
       });
     }
 
@@ -3234,14 +3277,25 @@
     // restore them when scrolling up (or when at the very top).
     var cdStickyNav = document.getElementById('cd-sticky-nav');
     var cdBookingBar = document.getElementById('cd-booking-bar');
-    var CD_SCROLL_THRESHOLD = 10;
+    var cdTitleEl = document.getElementById('cd-title');
+    var cdTitleScrollThreshold = 0; // computed on open
     var CD_HIDE_TAB_THRESHOLD = 40;
     var cdPrevScrollTop = 0;
+
+    // Cache the scroll offset where the class title leaves the viewport.
+    // Called after layout settles on each open.
+    window.__cacheCdTitleThreshold = function() {
+      if (!cdTitleEl) return;
+      var scrollRect = classDetailScroll.getBoundingClientRect();
+      var titleRect = cdTitleEl.getBoundingClientRect();
+      cdTitleScrollThreshold = (titleRect.bottom - scrollRect.top) + classDetailScroll.scrollTop;
+    };
+
     classDetailScroll.addEventListener('scroll', function() {
       if (!classDetailOpen) return;
       var st = classDetailScroll.scrollTop;
-      // Sticky nav title fade-in
-      if (st > CD_SCROLL_THRESHOLD) cdStickyNav.classList.add('scrolled');
+      // Sticky nav title fade-in — only when the class title has scrolled off screen
+      if (st > cdTitleScrollThreshold) cdStickyNav.classList.add('scrolled');
       else cdStickyNav.classList.remove('scrolled');
       // Tab bar / booking card transitions — only when a time slot is selected
       // (if no slot is selected, the booking bar is already hidden and the tab bar stays visible)
