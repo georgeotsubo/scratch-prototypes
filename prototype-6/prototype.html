@@ -540,7 +540,7 @@
 
       <div class="class-detail-scroll">
 
-        <!-- Sticky nav (title fades in on scroll) -->
+        <!-- Sticky nav: X left, title center (fades in), save+share right -->
         <div class="cd-sticky-nav" id="cd-sticky-nav">
           <div class="cd-icon-btn" id="class-detail-close" aria-label="Close">
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M1 1L13 13M13 1L1 13" stroke="#020203" stroke-width="2" stroke-linecap="round"/></svg>
@@ -559,22 +559,26 @@
         <!-- Content area -->
         <div class="cd-content">
 
-          <!-- Venue header -->
+          <!-- Hero thumbnail (rounded, inside content) -->
+          <div class="cd-hero-thumb"></div>
+
+          <!-- Venue header + description -->
           <div class="cd-section cd-header-section">
             <div class="cd-header">
-              <div class="cd-instructor-photo"></div>
-              <div class="cd-header-text">
-                <h2 class="cd-title" id="cd-title">Slow Burn Hot Mat Pilates</h2>
-                <div class="cd-rating-row">
-                  <span class="cd-rating-num" id="cd-rating-num">4.9</span>
-                  <svg class="cd-rating-star" width="14" height="14" viewBox="0 0 20 20" fill="none"><path d="M9.10326 1.81699C9.47008 1.07374 10.5299 1.07374 10.8967 1.81699L12.7063 5.48347C12.8519 5.77862 13.1335 5.98319 13.4592 6.03051L17.5054 6.61846C18.3256 6.73765 18.6531 7.74562 18.0596 8.32416L15.1318 11.1781C14.8961 11.4079 14.7885 11.7389 14.8442 12.0632L15.5353 16.0931C15.6754 16.91 14.818 17.533 14.0844 17.1473L10.4653 15.2446C10.174 15.0915 9.82598 15.0915 9.53466 15.2446L5.91562 17.1473C5.18199 17.533 4.32456 16.91 4.46467 16.0931L5.15585 12.0632C5.21148 11.7389 5.10393 11.4079 4.86825 11.1781L1.94038 8.32416C1.34687 7.74562 1.67438 6.73765 2.4946 6.61846L6.54081 6.03051C6.86652 5.98319 7.14808 5.77862 7.29374 5.48347L9.10326 1.81699Z" fill="#FFB54D"/></svg>
-                  <span class="cd-rating-count" id="cd-rating-count">(250)</span>
-                </div>
-                <div class="cd-venue-link" id="cd-venue-link">
-                  <span id="cd-venue-text">ID Hot Yoga · Lower East Side</span>
-                  <svg width="6" height="11" viewBox="0 0 6 11" fill="none"><path d="M1 1L5 5.5L1 10" stroke="#020203" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                </div>
+              <h2 class="cd-title" id="cd-title">Slow Burn Hot Mat Pilates</h2>
+              <div class="cd-rating-row">
+                <span class="cd-rating-num" id="cd-rating-num">4.9</span>
+                <svg class="cd-rating-star" width="14" height="14" viewBox="0 0 20 20" fill="none"><path d="M9.10326 1.81699C9.47008 1.07374 10.5299 1.07374 10.8967 1.81699L12.7063 5.48347C12.8519 5.77862 13.1335 5.98319 13.4592 6.03051L17.5054 6.61846C18.3256 6.73765 18.6531 7.74562 18.0596 8.32416L15.1318 11.1781C14.8961 11.4079 14.7885 11.7389 14.8442 12.0632L15.5353 16.0931C15.6754 16.91 14.818 17.533 14.0844 17.1473L10.4653 15.2446C10.174 15.0915 9.82598 15.0915 9.53466 15.2446L5.91562 17.1473C5.18199 17.533 4.32456 16.91 4.46467 16.0931L5.15585 12.0632C5.21148 11.7389 5.10393 11.4079 4.86825 11.1781L1.94038 8.32416C1.34687 7.74562 1.67438 6.73765 2.4946 6.61846L6.54081 6.03051C6.86652 5.98319 7.14808 5.77862 7.29374 5.48347L9.10326 1.81699Z" fill="#FFB54D"/></svg>
+                <span class="cd-rating-count" id="cd-rating-count">(250)</span>
               </div>
+              <div class="cd-venue-link" id="cd-venue-link">
+                <span id="cd-venue-text">ID Hot Yoga · Lower East Side</span>
+                <svg width="6" height="11" viewBox="0 0 6 11" fill="none"><path d="M1 1L5 5.5L1 10" stroke="#020203" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </div>
+            </div>
+            <div class="cd-collapsible" id="cd-description-collapsible">
+              <p class="cd-description" id="cd-description-body"></p>
+              <span class="cd-see-more" data-collapsed-text="see more" data-expanded-text="see less">see more</span>
             </div>
           </div>
 
@@ -599,7 +603,6 @@
 
           <!-- Overview panel -->
           <div class="cd-panel active" data-cdpanel="overview">
-            <p class="cd-description"><span id="cd-description-text"></span> <span class="cd-see-more">see more</span></p>
 
             <!-- Ratings & Reviews -->
             <div class="cd-section cd-section-reviews">
@@ -620,13 +623,16 @@
             <!-- How to prepare -->
             <div class="cd-section">
               <h3 class="cd-section-title">How to prepare</h3>
-              <p class="cd-section-body"><span id="cd-prep-text"></span> <span class="cd-see-more">see more</span></p>
+              <div class="cd-collapsible" id="cd-prep-collapsible">
+                <p class="cd-section-body" id="cd-prep-body"></p>
+                <span class="cd-see-more" data-collapsed-text="see more" data-expanded-text="see less">see more</span>
+              </div>
             </div>
 
             <!-- Cancellation policy -->
             <div class="cd-section">
               <h3 class="cd-section-title">Cancellation policy</h3>
-              <p class="cd-section-body"><span id="cd-cancel-text"></span> <span class="cd-see-more">see more</span></p>
+              <p class="cd-section-body" id="cd-cancel-body"></p>
             </div>
           </div>
 
@@ -635,10 +641,8 @@
             <div class="cd-reviews-list" id="cd-reviews-list"></div>
           </div>
 
-          <!-- Bottom spacer — sized for the lowered booking bar (~164px) plus a bit of breathing room.
-               When the user has scrolled down far enough to see the bottom, the bar is in its
-               lowered state, so this is the only state that matters here. -->
-          <div style="height: 190px;"></div>
+          <!-- Bottom spacer — dynamically sized via JS based on whether a time slot is selected -->
+          <div class="cd-bottom-spacer" id="cd-bottom-spacer" style="height: 190px;"></div>
 
         </div>
       </div>

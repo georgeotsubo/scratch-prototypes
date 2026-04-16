@@ -549,10 +549,15 @@
         el.innerHTML = generateVenueCardHTML(pins, search, location);
         el.querySelectorAll('.venue-card').forEach(card => {
           card.style.cursor = 'pointer';
-          card.addEventListener('click', function() {
+          card.addEventListener('click', function(e) {
             if (wasDragging) return;
             const idx = parseInt(this.dataset.venueIndex, 10);
-            openVenueDetail(idx);
+            // If the tap was on the Schedule action button, open directly to the schedule tab
+            if (e.target.closest('.venue-action-btn') && e.target.closest('.venue-action-btn').textContent.trim().includes('Schedule')) {
+              openVenueDetail(idx, 'schedule');
+            } else {
+              openVenueDetail(idx);
+            }
           });
         });
       }
@@ -1960,7 +1965,7 @@
   // iOS tab indicator spring: fast, no bounce
   var iosTabSpring = motionSpring ? { type: motionSpring, stiffness: 600, damping: 50 } : { duration: 0.3 };
 
-  function openVenueDetail(index) {
+  function openVenueDetail(index, initialTab) {
     const pin = currentPins[index];
     if (!pin) return;
 
@@ -2021,6 +2026,10 @@
         var scrollRect = venueDetailScroll.getBoundingClientRect();
         var tabsRect = tabsEl.getBoundingClientRect();
         window.__vdPinOffset = tabsRect.top - scrollRect.top - 64;
+        // If an initial tab was requested (e.g. "schedule"), switch to it after layout settles
+        if (initialTab && window.__switchVenueDetailTab) {
+          window.__switchVenueDetailTab(initialTab);
+        }
       });
     }
   }
@@ -2312,7 +2321,8 @@
         var price = PRICES[Math.floor(Math.random() * PRICES.length)];
         var isDisabled = Math.random() < 0.15;
         var hasIntro = !isDisabled && Math.random() < 0.3;
-        var spotsLeft = isDisabled ? 'No more spots' : (Math.random() < 0.4 ? (1 + Math.floor(Math.random() * 5)) + ' spots left' : '');
+        var spotsNum = 1 + Math.floor(Math.random() * 5);
+        var spotsLeft = isDisabled ? 'No more spots' : (Math.random() < 0.4 ? spotsNum + (spotsNum === 1 ? ' spot left' : ' spots left') : '');
 
         var cls = {
           time: timeStr + ' · ' + dur + ' min',
@@ -2553,8 +2563,6 @@
       }
       dragDelta = Math.max(0, delta);
       venueDetailSheet.style.transform = 'translateY(' + dragDelta + 'px)';
-      var opacity = Math.max(0, 0.15 * (1 - dragDelta / 300));
-      venueDetailEl.style.background = 'rgba(0,0,0,' + opacity + ')';
     }
     var lastDragY = 0;
     var lastDragTime = 0;
@@ -2567,7 +2575,6 @@
       // there's nothing to clean up — native scroll handled the gesture.
       if (!dismissDragInitiated) return;
       dismissDragInitiated = false;
-      venueDetailEl.style.background = '';
       // Dismiss if dragged far enough OR fast enough
       if (dragDelta > 80 || dragVelocity > 500) {
         // Animate from current drag position straight down using CSS transition
@@ -2656,7 +2663,7 @@
       "A high-energy class combining yoga fundamentals with bodyweight strength training. Expect to sweat, breathe, and build serious core stability over"
     ];
     var CD_PREP = "All classes are hot. Mats + towels are complimentary on your first visit and always available for a small rental fee after. Water +";
-    var CD_CANCEL = "Lorem ipsum dolor sit amet consectetur. Dolor viverra facilisis lectus nulla ut. Duis quis risus amet iaculis. Nunc purus aenean enim ut sit hac tempor. Rhoncus faucibus ut proin";
+    var CD_CANCEL = "You must cancel your reservation at least 12 hours prior to the class start time in order to return the credit to your account with no penalty. Late cancellations with less than 12 hours notice will be assessed a $10 charge to your card. The credit will be returned to your account.";
     var CD_VENUE_NAMES = ['ID Hot Yoga', 'Sui Power Yoga', 'Heated Reformer Co.', 'Studio Sweat', 'Mindful Movement'];
     var CD_NEIGHBORHOODS = ['Lower East Side', 'East Village', 'SoHo', 'Williamsburg', 'West Village'];
     var CD_INSTRUCTORS = ['Sarah M.', 'Chauncie D.', 'Liz K.', 'Marcus J.', 'Priya S.', 'Jordan T.', 'Kai N.', 'Emma R.', 'David C.', 'Nina L.', 'Carolyn', 'Sarah Ghilardi', 'Marie Wolf'];
@@ -2704,6 +2711,9 @@
         cell.addEventListener('click', function() {
           if (wasDragging) return;
           renderCdDatePicker(parseInt(cell.dataset.abs, 10));
+          // Smoothly scroll the time chips back to the start so a new day opens at the first slot
+          var slotsEl = document.getElementById('cd-time-slots');
+          if (slotsEl && slotsEl.scrollLeft > 0) animateScrollLeft(slotsEl, 0, 350);
         });
       });
       // Scroll to the week containing the selected day (preserve user's swipe)
@@ -2802,29 +2812,41 @@
       animateScrollLeft(container, target, 300);
     }
 
+    // Convert "1:30 PM" → minutes from midnight for sorting
+    function timeToMinutes(str) {
+      var parts = str.match(/^(\d+):(\d+)\s*(AM|PM)$/i);
+      if (!parts) return 0;
+      var h = parseInt(parts[1], 10);
+      var m = parseInt(parts[2], 10);
+      var ampm = parts[3].toUpperCase();
+      if (ampm === 'PM' && h !== 12) h += 12;
+      if (ampm === 'AM' && h === 12) h = 0;
+      return h * 60 + m;
+    }
+
     function renderCdTimeSlots(primaryTime, primaryInstructor) {
       var slots = document.getElementById('cd-time-slots');
       // Strip the duration off if present (e.g. "10:00 AM · 60 min" → "10:00 AM")
       var firstTime = primaryTime.split(' · ')[0];
+      var primaryMinutes = timeToMinutes(firstTime);
       var pickInst = function(except) {
         var n;
         do { n = pick(CD_INSTRUCTORS); } while (n === except);
         return n;
       };
-      // Generate 6-8 slots throughout the day, varied times
+      // Build the selected primary slot first, then add later time slots from BASE_TIMES
       var BASE_TIMES = ['7:00 AM', '8:30 AM', '10:00 AM', '11:30 AM', '1:30 PM', '3:00 PM', '5:30 PM', '7:00 PM', '8:30 PM'];
-      var count = 6 + Math.floor(Math.random() * 3);
-      var startIdx = Math.floor(Math.random() * (BASE_TIMES.length - count + 1));
-      var times = BASE_TIMES.slice(startIdx, startIdx + count);
-      // Make sure first slot uses the primary class's time + instructor
+      // Start with the primary slot
       var data = [{ time: firstTime, instructor: primaryInstructor, spots: '3 spots left', selected: true }];
+      // Add BASE_TIMES that are strictly AFTER the primary time
       var lastInst = primaryInstructor;
-      for (var i = 0; i < times.length; i++) {
-        if (times[i] === firstTime) continue;
+      for (var i = 0; i < BASE_TIMES.length; i++) {
+        if (timeToMinutes(BASE_TIMES[i]) <= primaryMinutes) continue;
         var inst = pickInst(lastInst);
         lastInst = inst;
-        var spots = Math.random() < 0.5 ? (1 + Math.floor(Math.random() * 6)) + ' spots left' : '';
-        data.push({ time: times[i], instructor: inst, spots: spots, selected: false });
+        var spotsN = 1 + Math.floor(Math.random() * 6);
+        var spots = Math.random() < 0.5 ? spotsN + (spotsN === 1 ? ' spot left' : ' spots left') : '';
+        data.push({ time: BASE_TIMES[i], instructor: inst, spots: spots, selected: false });
       }
       slots.innerHTML = data.map(function(s) {
         return '<div class="cd-time-slot' + (s.selected ? ' selected' : '') + '">'
@@ -2860,9 +2882,19 @@
     function syncCdBookingBarVisibility() {
       var bar = document.getElementById('cd-booking-bar');
       var slots = document.getElementById('cd-time-slots');
+      var spacer = document.getElementById('cd-bottom-spacer');
       if (!bar || !slots) return;
       var anySelected = !!slots.querySelector('.cd-time-slot.selected');
       bar.classList.toggle('hidden-no-slot', !anySelected);
+      // When no slot is selected, the booking bar is hidden and tab bar stays,
+      // so only a small spacer is needed. When selected, the larger spacer
+      // accommodates the lowered booking bar.
+      if (spacer) spacer.style.height = anySelected ? '190px' : '40px';
+      // Also ensure tab bar is visible when no slot is selected
+      if (!anySelected) {
+        persistentTabBar.classList.remove('hidden-down');
+        bar.classList.remove('lowered');
+      }
     }
 
     function updateBookingBar(slot) {
@@ -2949,9 +2981,16 @@
       renderCdDatePicker(today.getDay());
       renderCdTimeSlots(cls.time, cls.instructor);
       // Description / prep / cancel
-      document.getElementById('cd-description-text').textContent = pick(CD_DESCRIPTIONS);
-      document.getElementById('cd-prep-text').textContent = CD_PREP;
-      document.getElementById('cd-cancel-text').textContent = CD_CANCEL;
+      document.getElementById('cd-description-body').textContent = pick(CD_DESCRIPTIONS);
+      document.getElementById('cd-prep-body').textContent = CD_PREP;
+      document.getElementById('cd-cancel-body').textContent = CD_CANCEL;
+      // Reset all collapsibles to collapsed state
+      classDetailEl.querySelectorAll('.cd-collapsible').forEach(function(c) {
+        c.classList.add('collapsed');
+        c.classList.remove('expanded');
+        var toggle = c.querySelector('.cd-see-more');
+        if (toggle) toggle.textContent = toggle.dataset.collapsedText || 'see more';
+      });
       // Stars in summary
       var starsRow = '';
       for (var i = 0; i < 5; i++) starsRow += STAR_GOLD_20;
@@ -3111,6 +3150,24 @@
       });
     }
 
+    // "See more / see less" toggle for collapsible sections
+    classDetailEl.querySelectorAll('.cd-see-more').forEach(function(toggle) {
+      toggle.addEventListener('click', function() {
+        var collapsible = toggle.closest('.cd-collapsible');
+        if (!collapsible) return;
+        var isCollapsed = collapsible.classList.contains('collapsed');
+        if (isCollapsed) {
+          collapsible.classList.remove('collapsed');
+          collapsible.classList.add('expanded');
+          toggle.textContent = toggle.dataset.expandedText || 'see less';
+        } else {
+          collapsible.classList.remove('expanded');
+          collapsible.classList.add('collapsed');
+          toggle.textContent = toggle.dataset.collapsedText || 'see more';
+        }
+      });
+    });
+
     // ===== Tabs with animated indicator =====
     var cdTabsContainer = document.getElementById('cd-tabs');
     var cdTabs = classDetailEl.querySelectorAll('.cd-tab');
@@ -3186,8 +3243,13 @@
       // Sticky nav title fade-in
       if (st > CD_SCROLL_THRESHOLD) cdStickyNav.classList.add('scrolled');
       else cdStickyNav.classList.remove('scrolled');
-      // Tab bar / booking card transitions
-      if (st <= CD_SCROLL_THRESHOLD) {
+      // Tab bar / booking card transitions — only when a time slot is selected
+      // (if no slot is selected, the booking bar is already hidden and the tab bar stays visible)
+      var hasSelectedSlot = !!document.querySelector('#cd-time-slots .cd-time-slot.selected');
+      if (!hasSelectedSlot) {
+        persistentTabBar.classList.remove('hidden-down');
+        cdBookingBar.classList.remove('lowered');
+      } else if (st <= CD_SCROLL_THRESHOLD) {
         // Near top — always show tab bar, raise booking card
         persistentTabBar.classList.remove('hidden-down');
         cdBookingBar.classList.remove('lowered');
