@@ -1078,6 +1078,30 @@
     flex-direction: column;
     gap: 12px;
   }
+  .venue-intro-badge {
+    align-self: flex-start;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    background: #edfaf3;
+    border-radius: 24px;
+  }
+  .venue-intro-badge svg { display: block; flex-shrink: 0; }
+  .venue-intro-badge-label {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    line-height: 20px;
+    color: #020203;
+  }
+  .venue-intro-badge-save {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    line-height: 20px;
+    color: #296b49;
+  }
   .venue-header {
     display: flex;
     gap: 12px;
@@ -2275,7 +2299,7 @@
   /* Content area */
   .cd-content {
     position: relative;
-    padding: 8px 20px 0;
+    padding: 24px 20px 0;
     display: flex;
     flex-direction: column;
     gap: 24px;
