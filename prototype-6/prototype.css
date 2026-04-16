@@ -1906,7 +1906,7 @@
   .vd-section-header {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 0px;
   }
 
   /* Classes scroll */
@@ -2539,7 +2539,7 @@
   .cd-section-header {
     display: flex;
     align-items: center;
-    gap: 4px;
+    gap: 0px;
   }
   .cd-section-title {
     font-family: 'DM Sans', sans-serif;
