@@ -2638,10 +2638,9 @@
   }
   .cd-rating-ai-summary {
     font-family: 'DM Sans', sans-serif;
-    font-size: 16px;
-    font-weight: 400;
-    font-style: italic;
-    line-height: 24px;
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 20px;
     color: #020203;
     margin: 0;
   }

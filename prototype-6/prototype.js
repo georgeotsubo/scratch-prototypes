@@ -98,9 +98,9 @@
       sort: 'DISTANCE',
     });
     params.set('query', query || 'gym fitness yoga pilates');
-    const isLocal = location.hostname === 'localhost' || location.hostname === '127.0.0.1' || location.protocol === 'file:';
+    const isFileProtocol = location.protocol === 'file:';
     const baseUrl = `https://places-api.foursquare.com/places/search?${params}`;
-    const url = isLocal ? `https://corsproxy.io/?url=${encodeURIComponent(baseUrl)}` : `/api/foursquare/places/search?${params}`;
+    const url = isFileProtocol ? `https://corsproxy.io/?url=${encodeURIComponent(baseUrl)}` : `/api/foursquare/places/search?${params}`;
     try {
       const res = await fetch(url, {
         headers: {
