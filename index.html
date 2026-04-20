@@ -173,11 +173,15 @@
 </head>
 <body>
   <div class="page">
-    <h1>Playlist</h1>
+    <h1>Playlist App</h1>
     <p class="subtitle">Scratch prototypes built with Claude Code.</p>
    <div class="list">
       <div class="item">
         <h2>Prototypes</h2>
+        <!-- <div class="proto-item">
+          <a href="/prototype-7/prototype.html" class="proto-link">Venue + Class Detail UX v3</a>
+          <p>Fork of v2 for exploring a new design direction.</p>
+        </div>
         <div class="proto-item">
           <a href="/prototype-6/prototype.html" class="proto-link">Venue + Class Detail UX v2</a>
           <p>Venue detail modal with schedule, reviews, and class detail modal for booking flow.</p>
@@ -191,7 +195,7 @@
             <li>Toggleable bookmark icon for both venue and class detail</li>
             <li>Drag-to-dismiss with progressive un-stack of the venue underneath</li> -->
           </ul>
-        </div>
+        </div> -->
         <div class="proto-item">
           <a href="/prototype-5/prototype.html" class="proto-link">Search UX v3</a>
           <p>Added a global X button to clear results in the main search bar.</p>
@@ -242,7 +246,7 @@
         panel.classList.add('open');
         closeBtn.style.display = 'flex';
         // Only show search hint for search prototypes, not venue detail
-        if (link.href.includes('prototype-6')) {
+        if (link.href.includes('prototype-6') || link.href.includes('prototype-7')) {
           hint.style.display = 'none';
         } else {
           hint.style.display = '';
