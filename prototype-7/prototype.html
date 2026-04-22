@@ -466,6 +466,10 @@
                   </div>
                 </div>
               </div>
+              <div class="vd-review-see-all" id="vd-review-see-all">
+                <span>See all</span>
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M8 4L13.6742 10.147C13.8562 10.3442 13.8501 10.6499 13.6603 10.8397L8 16.5" stroke="#020203" stroke-width="2" stroke-linecap="round"/></svg>
+              </div>
             </div>
           </div>
 
@@ -473,7 +477,7 @@
           <div class="vd-section vd-about" id="vd-section-about">
             <h3 class="vd-section-title">About</h3>
             <div class="vd-about-text" id="vd-about-text">
-              All of our yoga classes are infrared heated and thoughtfully sequenced to support balance, strength, and restoration. Each of our studios offers a unique experience:
+              All of our yoga classes are infrared heated and thoughtfully sequenced to support balance, strength, and restoration. Each of our studios offers a unique experience shaped by the community that practices there and the teachers who lead it.
               <span class="vd-see-more">see more</span>
             </div>
           </div>
@@ -621,6 +625,7 @@
                 <h3 class="cd-section-title">Ratings &amp; Reviews</h3>
                 <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M8 4L13.6742 10.147C13.8562 10.3442 13.8501 10.6499 13.6603 10.8397L8 16.5" stroke="#020203" stroke-width="2" stroke-linecap="round"/></svg>
               </div>
+              <p class="cd-section-subtitle" id="cd-reviews-subtitle">Reviews for this class</p>
               <div class="cd-rating-summary">
                 <span class="cd-rating-big" id="cd-rating-big">4.7</span>
                 <div class="cd-rating-stars-row">
@@ -688,6 +693,45 @@
       </div>
     </div>
     <button class="cd-booking-cta" id="cd-booking-cta">Book</button>
+  </div>
+
+  <!-- Checkout scrim + sheet — sibling of booking bar so it anchors to the
+       same bottom/left/right and morphs from the booking card's bounds. -->
+  <div class="cd-checkout-scrim" id="cd-checkout-scrim"></div>
+  <div class="cd-checkout-sheet" id="cd-checkout-sheet" aria-hidden="true">
+    <div class="cd-checkout-header">
+      <h2 class="cd-checkout-title">Review and pay</h2>
+      <button class="cd-checkout-close" id="cd-checkout-close" aria-label="Close">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M5 5l10 10M15 5l-10 10" stroke="#020203" stroke-width="2" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+    <div class="cd-checkout-body">
+      <div class="cd-checkout-info">
+        <div class="cd-checkout-class-title" id="cd-checkout-class-title">Slow Burn Hot Mat Pilates</div>
+        <div class="cd-checkout-time" id="cd-checkout-time">Tue, Mar 3 &middot; 1:00 PM</div>
+        <div class="cd-checkout-instructor" id="cd-checkout-instructor">Carolyn</div>
+        <div class="cd-checkout-venue" id="cd-checkout-venue">ID Hot Yoga &middot; Lower East Side</div>
+      </div>
+      <div class="cd-checkout-cancellation">
+        <div class="cd-checkout-cancellation-title">Cancellation policy</div>
+        <div class="cd-checkout-cancellation-body">You must cancel your reservation at least 12 hours prior to the class start time in order to return the credit to your account with no penalty. Late cancellations with less than 12 hours notice will be assessed a $10 charge to your card. The credit will be returned to your account.</div>
+      </div>
+      <div class="cd-checkout-lines">
+        <div class="cd-checkout-line"><span>Subtotal</span><span id="cd-checkout-subtotal">$30.00</span></div>
+        <div class="cd-checkout-line"><span>Sales tax</span><span>$0.00</span></div>
+        <div class="cd-checkout-line cd-checkout-line--total"><span>Total</span><span id="cd-checkout-total">$30.00</span></div>
+      </div>
+      <div class="cd-checkout-payment">
+        <span class="cd-checkout-payment-label">Payment method</span>
+        <span class="cd-checkout-payment-value">
+          <span class="cd-checkout-applepay-mark" aria-label="Apple Pay">
+            <svg width="32" height="20" viewBox="0 0 32 20" fill="none" xmlns="http://www.w3.org/2000/svg"><g clip-path="url(#clip0_3436_5591)"><path d="M28.443 0H2.79775C2.69094 0 2.58394 0 2.47732 0.000622847C2.3872 0.00126457 2.29728 0.0022649 2.20736 0.00471853C2.01126 0.0100222 1.81348 0.021592 1.61983 0.0563959C1.42309 0.0918038 1.24001 0.149559 1.0614 0.240494C0.885815 0.329788 0.725064 0.446581 0.585756 0.585948C0.446388 0.725314 0.329595 0.885801 0.24032 1.06158C0.149365 1.24018 0.0915728 1.42332 0.0564103 1.62021C0.0214195 1.81392 0.00977227 2.01166 0.00448752 2.20756C0.00207163 2.29747 0.00103544 2.38739 0.00044845 2.47729C-0.000174397 2.58413 3.32185e-05 2.6909 3.32185e-05 2.79794V17.2023C3.32185e-05 17.3093 -0.000174397 17.4159 0.00044845 17.5229C0.00103544 17.6128 0.00207163 17.7028 0.00448752 17.7927C0.00977227 17.9884 0.0214195 18.1861 0.0564103 18.3798C0.0915728 18.5768 0.149365 18.7598 0.24032 18.9384C0.329595 19.1142 0.446388 19.2749 0.585756 19.4141C0.725064 19.5537 0.885815 19.6704 1.0614 19.7595C1.24001 19.8507 1.42309 19.9085 1.61983 19.9438C1.81348 19.9784 2.01126 19.9902 2.20736 19.9955C2.29728 19.9975 2.3872 19.9988 2.47732 19.9992C2.58394 20 2.69094 20 2.79775 20H28.443C28.5496 20 28.6566 20 28.7632 19.9992C28.8531 19.9988 28.943 19.9975 29.0333 19.9955C29.229 19.9902 29.4268 19.9784 29.6209 19.9438C29.8174 19.9085 30.0005 19.8507 30.1791 19.7595C30.3549 19.6704 30.5152 19.5537 30.6548 19.4141C30.7939 19.2749 30.9107 19.1142 31.0002 18.9384C31.0914 18.7598 31.1491 18.5768 31.1841 18.3798C31.2191 18.1861 31.2305 17.9884 31.2358 17.7927C31.2382 17.7028 31.2394 17.6128 31.2398 17.5229C31.2407 17.4159 31.2407 17.3093 31.2407 17.2023V2.79794C31.2407 2.6909 31.2407 2.58413 31.2398 2.47729C31.2394 2.38739 31.2382 2.29747 31.2358 2.20756C31.2305 2.01166 31.2191 1.81392 31.1841 1.62021C31.1491 1.42332 31.0914 1.24018 31.0002 1.06158C30.9107 0.885801 30.7939 0.725314 30.6548 0.585948C30.5152 0.446581 30.3549 0.329788 30.1791 0.240494C30.0005 0.149559 29.8174 0.0918038 29.6209 0.0563959C29.4268 0.021592 29.229 0.0100222 29.0333 0.00471853C28.943 0.0022649 28.8531 0.00126457 28.7632 0.000622847C28.6566 0 28.5496 0 28.443 0Z" fill="black"/><path d="M28.4433 0.666634L28.7588 0.667238C28.8442 0.667842 28.9297 0.668766 29.0156 0.671107C29.1651 0.675146 29.34 0.683243 29.503 0.71246C29.6447 0.737978 29.7635 0.776783 29.8776 0.83484C29.9901 0.892047 30.0933 0.967015 30.1834 1.05695C30.2738 1.14749 30.3488 1.25081 30.4068 1.36464C30.4645 1.47779 30.5031 1.59605 30.5284 1.73878C30.5576 1.9 30.5656 2.07534 30.5697 2.22575C30.572 2.31065 30.5732 2.39554 30.5736 2.48246C30.5744 2.58757 30.5744 2.69262 30.5744 2.79794V17.2023C30.5744 17.3076 30.5744 17.4124 30.5736 17.5198C30.5732 17.6047 30.572 17.6896 30.5697 17.7746C30.5656 17.9248 30.5576 18.1001 30.5281 18.2632C30.5031 18.4039 30.4645 18.5222 30.4065 18.6359C30.3487 18.7495 30.2737 18.8527 30.1837 18.9427C30.0932 19.0333 29.9903 19.108 29.8764 19.1657C29.7632 19.2235 29.6446 19.2623 29.5043 19.2875C29.338 19.3172 29.1558 19.3253 29.0186 19.329C28.9323 19.331 28.8464 19.3322 28.7584 19.3326C28.6535 19.3334 28.5482 19.3334 28.4433 19.3334H2.79809C2.79669 19.3334 2.79533 19.3334 2.79392 19.3334C2.69022 19.3334 2.58632 19.3334 2.48074 19.3326C2.39466 19.3322 2.30876 19.331 2.22571 19.3291C2.08536 19.3253 1.90306 19.3172 1.73812 19.2877C1.59662 19.2623 1.478 19.2235 1.36332 19.165C1.25047 19.1078 1.14774 19.0331 1.05712 18.9423C0.967204 18.8526 0.892482 18.7497 0.834708 18.636C0.776877 18.5224 0.738185 18.4037 0.712745 18.2613C0.683337 18.0985 0.675259 17.9239 0.671222 17.7748C0.668917 17.6894 0.667955 17.604 0.667407 17.5191L0.666992 17.2684L0.667011 17.2023V2.79794L0.666992 2.73177L0.667389 2.48167C0.667955 2.39626 0.668917 2.31087 0.671222 2.22554C0.675259 2.07623 0.683337 1.90161 0.712988 1.73744C0.738204 1.59628 0.776877 1.47764 0.83501 1.36347C0.892331 1.25062 0.967185 1.1476 1.05758 1.05723C1.14761 0.967167 1.25067 0.892293 1.36424 0.834538C1.47769 0.776764 1.59654 0.737978 1.73804 0.712517C1.90108 0.683224 2.07606 0.675146 2.22592 0.671088C2.31135 0.668766 2.39677 0.667842 2.48155 0.667256L2.79809 0.666634H28.4433" fill="white"/><path d="M8.52831 6.72684C8.79581 6.39226 8.97732 5.94303 8.92945 5.48396C8.53788 5.50343 8.06004 5.7423 7.7834 6.07713C7.535 6.36387 7.31515 6.83191 7.37247 7.27173C7.81202 7.30986 8.25118 7.05202 8.52831 6.72684Z" fill="black"/><path d="M8.92453 7.35761C8.28619 7.31959 7.74344 7.7199 7.4386 7.7199C7.13359 7.7199 6.66677 7.37677 6.16188 7.38602C5.50472 7.39567 4.89496 7.76723 4.56148 8.35819C3.87558 9.54039 4.38047 11.294 5.04748 12.2568C5.37139 12.7332 5.76177 13.2577 6.27614 13.2388C6.76214 13.2198 6.95263 12.9241 7.54338 12.9241C8.1337 12.9241 8.30529 13.2388 8.81975 13.2293C9.35325 13.2198 9.68679 12.7527 10.0107 12.2759C10.3823 11.7329 10.5344 11.2086 10.544 11.1798C10.5344 11.1703 9.51523 10.7793 9.50577 9.60691C9.49615 8.62526 10.3059 8.15834 10.3441 8.12938C9.88676 7.45303 9.17224 7.37677 8.92453 7.35761Z" fill="black"/><path d="M14.4826 6.02911C15.87 6.02911 16.8361 6.98548 16.8361 8.37788C16.8361 9.77525 15.8501 10.7366 14.4478 10.7366H12.9116V13.1795H11.8018V6.02911H14.4826V6.02911ZM12.9116 9.80497H14.1851C15.1514 9.80497 15.7014 9.28473 15.7014 8.38285C15.7014 7.48105 15.1514 6.96569 14.1901 6.96569H12.9116V9.80497V9.80497Z" fill="black"/><path d="M17.126 11.6979C17.126 10.7861 17.8247 10.2262 19.0636 10.1568L20.4906 10.0726V9.67126C20.4906 9.09147 20.0991 8.74461 19.4451 8.74461C18.8256 8.74461 18.439 9.04187 18.345 9.50772H17.3341C17.3936 8.56617 18.1963 7.87245 19.4847 7.87245C20.7482 7.87245 21.5559 8.54141 21.5559 9.58696V13.1795H20.5301V12.3222H20.5055C20.2033 12.902 19.5441 13.2687 18.8604 13.2687C17.8396 13.2687 17.126 12.6344 17.126 11.6979ZM20.4906 11.2272V10.8159L19.2071 10.8952C18.5679 10.9398 18.2062 11.2222 18.2062 11.6682C18.2062 12.124 18.5828 12.4214 19.1576 12.4214C19.9058 12.4214 20.4906 11.906 20.4906 11.2272Z" fill="black"/><path d="M22.5242 15.0972V14.23C22.6033 14.2498 22.7816 14.2498 22.8709 14.2498C23.3664 14.2498 23.634 14.0417 23.7975 13.5066C23.7975 13.4966 23.8917 13.1894 23.8917 13.1845L22.0088 7.96659H23.1682L24.4864 12.2083H24.5061L25.8243 7.96659H26.9541L25.0016 13.452C24.5558 14.7156 24.0404 15.122 22.9602 15.122C22.8709 15.122 22.6033 15.112 22.5242 15.0972Z" fill="black"/></g><defs><clipPath id="clip0_3436_5591"><rect width="31.2407" height="20" fill="white"/></clipPath></defs></svg>
+          </span>
+          <span>Apple pay</span>
+        </span>
+      </div>
+    </div>
+    <button class="cd-checkout-cta" id="cd-checkout-cta">Book</button>
   </div>
 
   <!-- Persistent tab bar: always on top of venue detail -->

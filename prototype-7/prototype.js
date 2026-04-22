@@ -2016,15 +2016,17 @@
   const classDetailScroll = classDetailEl.querySelector('.class-detail-scroll');
   const cdBookingBar = document.getElementById('cd-booking-bar');
 
-  // Motion.js helpers — iOS-like spring configs
+  // Motion.js helpers — iOS-like spring configs.
+  // Motion's UMD bundle recognizes `type: "spring"` as a string literal, NOT
+  // a function reference (internally it checks `type === "spring"`). Using
+  // the function form silently falls through to a slow default tween.
   var motionAnimate = window.Motion && window.Motion.animate;
-  var motionSpring = window.Motion && window.Motion.spring;
   // iOS sheet spring: slightly underdamped for that bouncy feel
-  var iosSheetSpring = motionSpring ? { type: motionSpring, stiffness: 400, damping: 35 } : { duration: 0.35 };
+  var iosSheetSpring = { type: 'spring', stiffness: 400, damping: 35 };
   // iOS snap-back spring: stiffer for quick snap
-  var iosSnapSpring = motionSpring ? { type: motionSpring, stiffness: 500, damping: 30 } : { duration: 0.25 };
+  var iosSnapSpring = { type: 'spring', stiffness: 500, damping: 30 };
   // iOS tab indicator spring: fast, no bounce
-  var iosTabSpring = motionSpring ? { type: motionSpring, stiffness: 600, damping: 50 } : { duration: 0.3 };
+  var iosTabSpring = { type: 'spring', stiffness: 600, damping: 50 };
 
   function openVenueDetail(index, initialTab) {
     const pin = currentPins[index];
@@ -2112,8 +2114,11 @@
     classDetailEl.style.background = '';
     classDetailSheet.style.transform = '';
     classDetailSheet.style.visibility = '';
-    cdBookingBar.style.transition = 'none';
+    // Snap the booking bar back to its hidden resting state — no animation.
+    if (motionAnimate) cdBookingBar.getAnimations().forEach(function(a) { a.cancel(); });
     cdBookingBar.classList.remove('cd-booking-visible');
+    cdBookingBar.style.transform = '';
+    cdBookingBar.style.visibility = '';
     venueDetailEl.classList.add('venue-detail-visible');
     // Animate sheet in with ease-out
     venueDetailSheet.style.visibility = 'visible';
@@ -2304,6 +2309,15 @@
     var vdReviewsHeader = venueDetailEl.querySelector('.vd-reviews-header');
     if (vdReviewsHeader) {
       vdReviewsHeader.addEventListener('click', function() {
+        if (wasDragging) return;
+        window.__switchVenueDetailTab('reviews');
+      });
+    }
+
+    // "See all" card at end of reviews carousel → switch to Reviews tab
+    var vdReviewSeeAll = venueDetailEl.querySelector('#vd-review-see-all');
+    if (vdReviewSeeAll) {
+      vdReviewSeeAll.addEventListener('click', function() {
         window.__switchVenueDetailTab('reviews');
       });
     }
@@ -2433,7 +2447,7 @@
     // Expose for the desktop mouse-drag handler
     window.__snapVdDatePicker = snapVdDatePickerToTarget;
 
-    var STAR_SVG = '<svg width="14" height="14" viewBox="0 0 20 20" fill="none"><path d="M9.10326 1.81699C9.47008 1.07374 10.5299 1.07374 10.8967 1.81699L12.7063 5.48347C12.8519 5.77862 13.1335 5.98319 13.4592 6.03051L17.5054 6.61846C18.3256 6.73765 18.6531 7.74562 18.0596 8.32416L15.1318 11.1781C14.8961 11.4079 14.7885 11.7389 14.8442 12.0632L15.5353 16.0931C15.6754 16.91 14.818 17.533 14.0844 17.1473L10.4653 15.2446C10.174 15.0915 9.82598 15.0915 9.53466 15.2446L5.91562 17.1473C5.18199 17.533 4.32456 16.91 4.46467 16.0931L5.15585 12.0632C5.21148 11.7389 5.10393 11.4079 4.86825 11.1781L1.94038 8.32416C1.34687 7.74562 1.67438 6.73765 2.4946 6.61846L6.54081 6.03051C6.86652 5.98319 7.14808 5.77862 7.29374 5.48347L9.10326 1.81699Z" fill="#020203"/></svg>';
+    var STAR_SVG = '<svg width="16" height="16" viewBox="0 0 20 20" fill="none"><path d="M9.10326 1.81699C9.47008 1.07374 10.5299 1.07374 10.8967 1.81699L12.7063 5.48347C12.8519 5.77862 13.1335 5.98319 13.4592 6.03051L17.5054 6.61846C18.3256 6.73765 18.6531 7.74562 18.0596 8.32416L15.1318 11.1781C14.8961 11.4079 14.7885 11.7389 14.8442 12.0632L15.5353 16.0931C15.6754 16.91 14.818 17.533 14.0844 17.1473L10.4653 15.2446C10.174 15.0915 9.82598 15.0915 9.53466 15.2446L5.91562 17.1473C5.18199 17.533 4.32456 16.91 4.46467 16.0931L5.15585 12.0632C5.21148 11.7389 5.10393 11.4079 4.86825 11.1781L1.94038 8.32416C1.34687 7.74562 1.67438 6.73765 2.4946 6.61846L6.54081 6.03051C6.86652 5.98319 7.14808 5.77862 7.29374 5.48347L9.10326 1.81699Z" fill="#FFB54D"/></svg>';
 
     var CLASS_NAMES = [
       'Slow Burn Hot Mat Pilates', 'Power Vinyasa Flow', 'Sculpt & Tone', 'Heated Barre Burn',
@@ -2821,12 +2835,12 @@
   // ========== CLASS DETAIL: OPEN / CLOSE / DRAG-TO-DISMISS ==========
   (function() {
     var CD_DESCRIPTIONS = [
-      "Open to all levels, this signature class is designed to help take your practice to the next level. The instructor will guide you through vinyasa sequences, each repeated 3 times. The 1st time through the",
-      "A dynamic flow linking breath to movement. Expect sun salutations, standing balances, and a supported cool-down. Heated to 95°F to deepen flexibility and",
-      "Build strength and flexibility through controlled, fluid sequences. All levels welcome — modifications offered throughout. Leave feeling longer, stronger, and",
-      "A high-energy class combining yoga fundamentals with bodyweight strength training. Expect to sweat, breathe, and build serious core stability over"
+      "Open to all levels, this signature class is designed to help take your practice to the next level. The instructor will guide you through vinyasa sequences, each repeated 3 times. The 1st time through the sequence focuses on form and alignment, the 2nd adds pace, and the 3rd brings it all together in a full-body flow. Expect to leave feeling open, strong, and grounded.",
+      "A dynamic flow linking breath to movement. Expect sun salutations, standing balances, and a supported cool-down. Heated to 95°F to deepen flexibility and release tension. Modifications are offered throughout so every body can find its edge safely.",
+      "Build strength and flexibility through controlled, fluid sequences. All levels welcome — modifications offered throughout. Leave feeling longer, stronger, and more centered. Props are provided and the instructor cues breath throughout the class.",
+      "A high-energy class combining yoga fundamentals with bodyweight strength training. Expect to sweat, breathe, and build serious core stability over the course of 50 intense minutes. Modifications are offered, but expect to work hard from start to finish."
     ];
-    var CD_PREP = "All classes are hot. Mats + towels are complimentary on your first visit and always available for a small rental fee after. Water +";
+    var CD_PREP = "All classes are hot. Mats + towels are complimentary on your first visit and always available for a small rental fee after. Water + electrolytes are available for purchase at the front desk. Arrive 10 minutes early to check in and settle your mat.";
     var CD_INTRO_CHIP_SVG = '<svg class="cd-intro-chip-icon" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M5.38223 17.1763C4.62285 17.1763 4.05596 16.9891 3.68154 16.6147C3.30713 16.2403 3.11992 15.6708 3.11992 14.9061V13.2529C3.11992 13.1263 3.0751 13.0156 2.98545 12.9207L1.81475 11.75C1.27158 11.2121 1 10.6795 1 10.1521C1 9.62478 1.27158 9.08953 1.81475 8.54636L2.98545 7.36775C3.0751 7.2781 3.11992 7.17 3.11992 7.04343V5.3823C3.11992 4.61238 3.30449 4.04285 3.67363 3.67371C4.04805 3.30457 4.61758 3.12 5.38223 3.12H7.04336C7.17519 3.12 7.2833 3.07517 7.36768 2.98552L8.54629 1.81482C9.08945 1.27166 9.62207 1.00008 10.1441 1.00008C10.6715 0.994802 11.2067 1.26638 11.7499 1.81482L12.9285 2.98552C13.0182 3.07517 13.1263 3.12 13.2528 3.12H14.914C15.6786 3.12 16.2455 3.3072 16.6146 3.68162C16.9891 4.05603 17.1763 4.62293 17.1763 5.3823V7.04343C17.1763 7.17 17.2237 7.2781 17.3187 7.36775L18.4894 8.54636C19.0272 9.08953 19.2962 9.62478 19.2962 10.1521C19.2962 10.6795 19.0272 11.2121 18.4894 11.75L17.3187 12.9207C17.2237 13.0156 17.1763 13.1263 17.1763 13.2529V14.9061C17.1763 15.6761 16.9891 16.2456 16.6146 16.6147C16.2455 16.9891 15.6786 17.1763 14.914 17.1763H13.2528C13.1263 17.1763 13.0182 17.2212 12.9285 17.3108L11.7499 18.4815C11.212 19.0247 10.6794 19.2963 10.1521 19.2963C9.62471 19.2963 9.08945 19.0247 8.54629 18.4815L7.36768 17.3108C7.2833 17.2212 7.17519 17.1763 7.04336 17.1763H5.38223Z" fill="#379062"/><path d="M7.38359 10.2655C6.85889 10.2655 6.43965 10.0875 6.12588 9.73154C5.81475 9.37295 5.65918 8.87988 5.65918 8.25234C5.65918 7.61689 5.81606 7.12515 6.12983 6.7771C6.4436 6.42905 6.86152 6.25503 7.38359 6.25503C7.9083 6.25503 8.32754 6.42905 8.64131 6.7771C8.95508 7.12251 9.11196 7.61294 9.11196 8.24839C9.11196 8.87593 8.9564 9.36899 8.64526 9.72759C8.33413 10.0862 7.91357 10.2655 7.38359 10.2655ZM7.38359 9.32812C7.55762 9.32812 7.68813 9.23848 7.77515 9.05918C7.86216 8.87988 7.90566 8.61094 7.90566 8.25234C7.90566 7.89902 7.86216 7.63403 7.77515 7.45737C7.68813 7.28071 7.55762 7.19238 7.38359 7.19238C7.21221 7.19238 7.08169 7.28071 6.99204 7.45737C6.90503 7.63403 6.86152 7.89902 6.86152 8.25234C6.86152 8.61094 6.90503 8.87988 6.99204 9.05918C7.08169 9.23848 7.21221 9.32812 7.38359 9.32812ZM12.9167 13.7618C12.3894 13.7618 11.9688 13.5838 11.6551 13.2278C11.3439 12.8719 11.1884 12.3788 11.1884 11.7486C11.1884 11.1132 11.3453 10.6214 11.659 10.2734C11.9728 9.92534 12.392 9.75132 12.9167 9.75132C13.4388 9.75132 13.8567 9.92534 14.1705 10.2734C14.4843 10.6214 14.6412 11.1132 14.6412 11.7486C14.6412 12.3735 14.4856 12.8653 14.1745 13.2239C13.8633 13.5825 13.4441 13.7618 12.9167 13.7618ZM12.9167 12.8284C13.0881 12.8284 13.2173 12.7387 13.3043 12.5594C13.394 12.3775 13.4388 12.1072 13.4388 11.7486C13.4388 11.3927 13.394 11.1277 13.3043 10.9537C13.2173 10.777 13.0881 10.6887 12.9167 10.6887C12.7427 10.6887 12.6122 10.777 12.5252 10.9537C12.4382 11.1303 12.3947 11.3953 12.3947 11.7486C12.3947 12.1072 12.4382 12.3775 12.5252 12.5594C12.6122 12.7387 12.7427 12.8284 12.9167 12.8284ZM7.70395 13.7064C7.56157 13.6247 7.4772 13.5073 7.45083 13.3544C7.42446 13.2015 7.46006 13.0512 7.55762 12.9035L11.8251 6.49629C11.9201 6.35654 12.04 6.26953 12.1851 6.23525C12.3301 6.19834 12.4672 6.2168 12.5964 6.29062C12.7414 6.36973 12.8297 6.48838 12.8614 6.64658C12.893 6.80215 12.8601 6.95376 12.7625 7.10142L8.49497 13.5284C8.40532 13.6629 8.28271 13.7446 8.12715 13.7736C7.97422 13.8053 7.83315 13.7829 7.70395 13.7064Z" fill="white"/></svg>';
     var CD_CANCEL = "You must cancel your reservation at least 12 hours prior to the class start time in order to return the credit to your account with no penalty. Late cancellations with less than 12 hours notice will be assessed a $10 charge to your card. The credit will be returned to your account.";
     var CD_VENUE_NAMES = ['ID Hot Yoga', 'Sui Power Yoga', 'Heated Reformer Co.', 'Studio Sweat', 'Mindful Movement'];
@@ -2834,7 +2848,7 @@
     var CD_INSTRUCTORS = ['Sarah M.', 'Chauncie D.', 'Liz K.', 'Marcus J.', 'Priya S.', 'Jordan T.', 'Kai N.', 'Emma R.', 'David C.', 'Nina L.', 'Carolyn', 'Sarah Ghilardi', 'Marie Wolf'];
     var CD_REVIEW_NAMES = ['Sara', 'Liz', 'Natalie', 'Jordan', 'Marcus', 'Priya', 'Emma'];
     var CD_REVIEW_BODIES = [
-      "I really appreciate Chauncie's flows. They're physically challenging, often incorporating ashtanga elements, but never aggressive for the sake of it. He",
+      "I really appreciate Chauncie's flows. They're physically challenging, often incorporating ashtanga elements, but never aggressive for the sake of it. He creates space for everyone to practice at their own pace.",
       "This class was exactly what I needed. The instructor was so attentive and gave great modifications. The music was perfect and the energy was high.",
       "Such a welcoming studio. First time here and the instructor made me feel right at home. Will definitely be coming back for more classes.",
       "Incredible workout! Left feeling so strong and centered. The sequencing was creative and the instructor's cues were super clear throughout."
@@ -3045,19 +3059,54 @@
       syncCdBookingBarVisibility();
     }
 
+    var cdBookingEnterPending = false;
+    // Hidden-state translation: computed in pixels at animate time so Motion's
+    // keyframe pipeline gets a clean numeric interpolation. calc() expressions
+    // have been flaky in this bundle and tend to collapse to step/ease-out.
+    var CD_BOOKING_VISIBLE_Y = 'translateY(0px)';
+    function cdBookingHiddenY() {
+      // 24px = bottom offset from .cd-booking-bar CSS; ensures the bar clears
+      // the viewport including its own box-shadow.
+      return 'translateY(' + (cdBookingBar.offsetHeight + 24) + 'px)';
+    }
     function syncCdBookingBarVisibility() {
       var spacer = document.getElementById('cd-bottom-spacer');
       var hasSelected = !!classDetailEl.querySelector('.cd-time-slot.selected');
       // Spacer clears the fixed booking card when it's visible; collapse when it's gone
       if (spacer) spacer.style.height = hasSelected ? '190px' : '24px';
-      // Only show the bar when class detail is open AND a slot is picked.
-      // Transition (including delayed visibility flip on the way out) is
-      // authored in CSS — avoid inline transition here so it doesn't clobber it.
-      cdBookingBar.style.transition = '';
-      if (classDetailOpen && hasSelected) {
+      var shouldShow = classDetailOpen && hasSelected;
+      var isShown = cdBookingBar.classList.contains('cd-booking-visible');
+      // No-op when the target state matches the current state — otherwise
+      // re-selecting a different pill would restart the slide-up every time.
+      if (shouldShow === isShown) return;
+      // Cancel any in-flight WAAPI animations so a prior frame's keyframes
+      // can't fight the CSS transition we're about to install.
+      if (cdBookingBar.getAnimations) cdBookingBar.getAnimations().forEach(function(a) { a.cancel(); });
+      if (shouldShow) {
         cdBookingBar.classList.add('cd-booking-visible');
+        cdBookingBar.style.visibility = 'visible';
+        // First reveal after class-detail open gets a delay so the bar slides
+        // up after the sheet lands. Later toggles animate immediately.
+        // Uses a plain CSS transition with an overshoot cubic-bezier because
+        // Motion's keyframe pipeline silently flattens the bounce in this bundle.
+        var delay = cdBookingEnterPending ? 0.5 : 0;
+        cdBookingEnterPending = false;
+        cdBookingBar.style.transition = 'none';
+        cdBookingBar.style.transform = cdBookingHiddenY();
+        void cdBookingBar.offsetHeight;
+        cdBookingBar.style.transition =
+          'transform 0.3s cubic-bezier(.25,.46,.45,.94) ' + delay + 's';
+        cdBookingBar.style.transform = CD_BOOKING_VISIBLE_Y;
       } else {
         cdBookingBar.classList.remove('cd-booking-visible');
+        // Exit: standard ease-out — a bounce on the way out feels wrong.
+        cdBookingBar.style.transition = 'transform 0.3s cubic-bezier(.25,.46,.45,.94)';
+        cdBookingBar.style.transform = cdBookingHiddenY();
+        setTimeout(function() {
+          if (!cdBookingBar.classList.contains('cd-booking-visible')) {
+            cdBookingBar.style.visibility = 'hidden';
+          }
+        }, 300);
       }
     }
 
@@ -3126,10 +3175,22 @@
         + '</div>';
     }
 
+    var CD_REVIEW_SEE_ALL_HTML = '<div class="cd-review-see-all" id="cd-review-see-all">'
+      + '<span>See all</span>'
+      + '<svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M8 4L13.6742 10.147C13.8562 10.3442 13.8501 10.6499 13.6603 10.8397L8 16.5" stroke="#020203" stroke-width="2" stroke-linecap="round"/></svg>'
+      + '</div>';
+
     function renderCdReviewCards(title, highlight) {
       var container = document.getElementById('cd-review-cards');
       var list = sortedPool(highlight).slice(0, 3);
-      container.innerHTML = list.map(function(r) { return reviewCardHTML(title, r, true); }).join('');
+      container.innerHTML = list.map(function(r) { return reviewCardHTML(title, r, true); }).join('') + CD_REVIEW_SEE_ALL_HTML;
+      var seeAll = document.getElementById('cd-review-see-all');
+      if (seeAll) {
+        seeAll.addEventListener('click', function() {
+          if (wasDragging) return;
+          if (typeof window.__cdActivateReviewsTab === 'function') window.__cdActivateReviewsTab();
+        });
+      }
     }
 
     function renderCdReviewsList(title, highlight) {
@@ -3174,7 +3235,8 @@
         if (hasVenueIntroOffer(window.__currentVenuePin)) {
           introChipEl.classList.remove('cd-intro-chip--plain');
           introChipEl.innerHTML = CD_INTRO_CHIP_SVG
-            + '<span class="cd-intro-chip-label">Intro offer \u00b7 ' + cdFormatPrice(cls.finalPrice || '$25') + '</span>'
+            + '<span class="cd-intro-chip-label">Intro offer \u00b7</span>'
+            + '<span class="cd-intro-chip-price">' + cdFormatPrice(cls.finalPrice || '$25') + '</span>'
             + '<span class="cd-intro-chip-strike">' + cdFormatPrice(cls.strikePrice || '$35') + '</span>';
         } else {
           introChipEl.classList.add('cd-intro-chip--plain');
@@ -3235,6 +3297,8 @@
       if (revAiEl) revAiEl.textContent = pick(CD_AI_SUMMARIES);
       // Reviews
       cdCurrentTitle = cls.title;
+      var revSubtitleEl = document.getElementById('cd-reviews-subtitle');
+      if (revSubtitleEl) revSubtitleEl.textContent = 'Reviews for ' + cls.title;
       cdReviewPool = generateCdReviewPool();
       rerenderCdReviewsForInstructor(cls.instructor);
       // Booking bar price + intro-offer label (uses the original class's price info)
@@ -3262,8 +3326,11 @@
       if (classDetailOpen) return;
       // Mark open BEFORE populate so syncCdBookingBarVisibility (called from
       // renderCdTimeSlots during populate) can reveal the booking bar when
-      // the default first slot is pre-selected.
+      // the default first slot is pre-selected. The pending flag tells the
+      // sync to apply the entrance-delay so the bar slides up after the
+      // sheet has landed.
       classDetailOpen = true;
+      cdBookingEnterPending = true;
       populateClassDetail(cls);
       classDetailEl.classList.add('class-detail-visible');
       // Stack the venue detail behind (class is used for handle-hide CSS rule)
@@ -3299,9 +3366,9 @@
         classDetailSheet.style.transition = 'transform 0.35s cubic-bezier(.25,.46,.45,.94)';
         classDetailSheet.style.transform = 'translateY(0%)';
       }
-      // Booking bar visibility is driven by syncCdBookingBarVisibility()
-      // (called from renderCdTimeSlots) based on the selected-slot state.
-      // Transition is authored in CSS.
+      // Booking bar visibility + animation are driven by Motion inside
+      // syncCdBookingBarVisibility() (called from renderCdTimeSlots) based
+      // on the selected-slot state. The entrance delay flag is set above.
       // Position the tab indicator after layout settles
       if (window.__resetClassDetailTabs) {
         requestAnimationFrame(function() {
@@ -3322,6 +3389,7 @@
 
     function closeClassDetail() {
       if (!classDetailOpen) return;
+      if (window.__closeCheckoutIfOpen) window.__closeCheckoutIfOpen();
       classDetailOpen = false;
       // Class detail's overlay fades out via CSS transition (background 0.3s ease)
       classDetailEl.classList.remove('class-detail-visible');
@@ -3330,6 +3398,17 @@
       venueDetailEl.style.background = '';
       // Reset the venue detail's scroll position so it looks like a fresh default view
       venueDetailScroll.scrollTop = 0;
+      // Remove .scrolled synchronously so the sticky title starts fading out
+      // immediately instead of waiting for the async scroll event from
+      // scrollTop = 0 to fire and process.
+      var vdStickyNav = document.getElementById('vd-sticky-nav');
+      if (vdStickyNav) vdStickyNav.classList.remove('scrolled');
+      // Force the venue handle to start fading back in NOW rather than waiting
+      // for .stacked to be removed at Motion-finish (350ms later). The inline
+      // opacity:1 overrides the `.stacked .venue-detail-handle { opacity: 0 }`
+      // rule and its own 0.2s transition runs in parallel with the scale-back.
+      var vdHandle = venueDetailSheet.querySelector('.venue-detail-handle');
+      if (vdHandle) vdHandle.style.opacity = '1';
       // Explicitly animate the venue back to identity via inline transform.
       // Motion picks up the current computed transform (scale 0.95 translateY -12) from .stacked
       // and animates it to translateY(0%) so the venue sheet stays visible AND scales back to 100%.
@@ -3342,6 +3421,7 @@
           venueDetailSheet.classList.remove('stacked');
           venueDetailSheet.style.borderRadius = '';
           venueDetailSheet.style.filter = '';
+          if (vdHandle) vdHandle.style.opacity = '';
           // Keep transform inline at translateY(0%) so the venue stays anchored
         });
       } else {
@@ -3353,11 +3433,21 @@
           venueDetailSheet.classList.remove('stacked');
           venueDetailSheet.style.borderRadius = '';
           venueDetailSheet.style.filter = '';
+          if (vdHandle) vdHandle.style.opacity = '';
         }, 360);
       }
-      // Booking bar: slide back down alongside the sheet (transition in CSS).
-      cdBookingBar.style.transition = '';
+      // Booking bar: slide back down alongside the sheet dismissal.
       cdBookingBar.classList.remove('cd-booking-visible');
+      if (motionAnimate) {
+        cdBookingBar.getAnimations().forEach(function(a) { a.cancel(); });
+        motionAnimate(cdBookingBar, {
+          transform: [CD_BOOKING_VISIBLE_Y, cdBookingHiddenY()]
+        }, { duration: 0.3, easing: 'cubic-bezier(.25,.46,.45,.94)' }).finished.then(function() {
+          if (!cdBookingBar.classList.contains('cd-booking-visible')) {
+            cdBookingBar.style.visibility = 'hidden';
+          }
+        });
+      }
       // Animate class detail sheet down
       var sheetHeight = classDetailSheet.offsetHeight;
       if (motionAnimate) {
@@ -3379,6 +3469,106 @@
     }
 
     window.__closeClassDetail = closeClassDetail;
+
+    // === Checkout sheet: morph-in-place from the booking bar ===
+    var cdCheckoutSheet = document.getElementById('cd-checkout-sheet');
+    var cdCheckoutScrim = document.getElementById('cd-checkout-scrim');
+    var cdCheckoutCloseBtn = document.getElementById('cd-checkout-close');
+    var cdBookingCta = document.getElementById('cd-booking-cta');
+    var cdCheckoutOpen = false;
+
+    function populateCheckout() {
+      var instructor = document.getElementById('cd-booking-instructor').textContent;
+      var time = document.getElementById('cd-booking-time').textContent;
+      var titleEl = document.getElementById('cd-title');
+      var classTitle = titleEl ? titleEl.textContent : '';
+      var venueText = document.getElementById('cd-venue-text');
+      var venueStr = venueText ? venueText.textContent : '';
+      document.getElementById('cd-checkout-class-title').textContent = classTitle;
+      document.getElementById('cd-checkout-time').textContent = time;
+      document.getElementById('cd-checkout-instructor').textContent = instructor;
+      document.getElementById('cd-checkout-venue').textContent = venueStr;
+      // Price: prefer the intro-offer final price, else the plain price.
+      var priceFinalEl = document.querySelector('.cd-booking-price-final, .cd-booking-price-plain');
+      var priceText = priceFinalEl ? priceFinalEl.textContent.trim() : '$30.00';
+      document.getElementById('cd-checkout-subtotal').textContent = priceText;
+      document.getElementById('cd-checkout-total').textContent = priceText;
+    }
+
+    // Pure CSS-driven morph: every animated property (height, left, right,
+    // bottom, border-radius, background, shadow, backdrop-filter) uses the
+    // same CSS transition rule so they all land on the same frame — no
+    // Motion/CSS timing mismatch, no jitter on close.
+    var cdCheckoutEndHandler = null;
+
+    function openCheckout() {
+      if (cdCheckoutOpen) return;
+      cdCheckoutOpen = true;
+      populateCheckout();
+      // Clear any lingering transitionend listener from a cancelled close.
+      if (cdCheckoutEndHandler) {
+        cdCheckoutSheet.removeEventListener('transitionend', cdCheckoutEndHandler);
+        cdCheckoutEndHandler = null;
+      }
+      // Measure the sheet's natural content height while still hidden. The
+      // sheet uses border-box + extra padding when open, so we briefly add
+      // is-open (with transitions disabled) to get the true open-state
+      // content height, then revert for the animated open.
+      var startH = cdBookingBar.getBoundingClientRect().height;
+      cdCheckoutSheet.style.transition = 'none';
+      cdCheckoutSheet.classList.add('is-open');
+      cdCheckoutSheet.style.height = 'auto';
+      var naturalH = cdCheckoutSheet.getBoundingClientRect().height;
+      cdCheckoutSheet.classList.remove('is-open');
+      cdCheckoutSheet.style.height = startH + 'px';
+      // Commit the reverted closed state before re-enabling transitions so
+      // the animated open below transitions from this committed baseline.
+      void cdCheckoutSheet.offsetHeight;
+      cdCheckoutSheet.style.transition = '';
+      var viewportH = cdCheckoutSheet.parentElement.getBoundingClientRect().height
+        || window.innerHeight;
+      var maxH = viewportH - 60;
+      var targetH = Math.min(naturalH, maxH);
+      cdCheckoutSheet.style.visibility = 'visible';
+      cdCheckoutSheet.setAttribute('aria-hidden', 'false');
+      cdBookingBar.classList.add('is-under-checkout');
+      cdCheckoutScrim.classList.add('is-visible');
+      // Add is-open to trigger the coordinated CSS transitions.
+      cdCheckoutSheet.classList.add('is-open');
+      cdCheckoutSheet.style.height = targetH + 'px';
+    }
+
+    function closeCheckout() {
+      if (!cdCheckoutOpen) return;
+      cdCheckoutOpen = false;
+      var targetH = cdBookingBar.getBoundingClientRect().height || 130;
+      cdCheckoutSheet.classList.remove('is-open');
+      cdCheckoutScrim.classList.remove('is-visible');
+      cdCheckoutSheet.style.height = targetH + 'px';
+      // Use transitionend on `height` as the single source of truth for
+      // "animation complete" — all properties share the same 0.36s curve.
+      if (cdCheckoutEndHandler) {
+        cdCheckoutSheet.removeEventListener('transitionend', cdCheckoutEndHandler);
+      }
+      cdCheckoutEndHandler = function(ev) {
+        if (ev.target !== cdCheckoutSheet || ev.propertyName !== 'height') return;
+        cdCheckoutSheet.removeEventListener('transitionend', cdCheckoutEndHandler);
+        cdCheckoutEndHandler = null;
+        cdCheckoutSheet.style.visibility = 'hidden';
+        cdCheckoutSheet.style.height = '';
+        cdCheckoutSheet.setAttribute('aria-hidden', 'true');
+        cdBookingBar.classList.remove('is-under-checkout');
+      };
+      cdCheckoutSheet.addEventListener('transitionend', cdCheckoutEndHandler);
+    }
+
+    if (cdBookingCta) cdBookingCta.addEventListener('click', openCheckout);
+    if (cdCheckoutCloseBtn) cdCheckoutCloseBtn.addEventListener('click', closeCheckout);
+    if (cdCheckoutScrim) cdCheckoutScrim.addEventListener('click', closeCheckout);
+    // If class detail closes while checkout is open, dismiss checkout too.
+    window.__closeCheckoutIfOpen = function() {
+      if (cdCheckoutOpen) closeCheckout();
+    };
 
     // Close button
     document.getElementById('class-detail-close').addEventListener('click', closeClassDetail);
@@ -3460,11 +3650,22 @@
       tab.addEventListener('click', function() { activateCdTab(tab); });
     });
 
+    // Expose a helper to activate the Reviews tab — used by the Overview's
+    // "See all" review card which renders before this block but needs to
+    // route users to the Reviews tab.
+    window.__cdActivateReviewsTab = function() {
+      var reviewsTab = Array.prototype.find.call(cdTabs, function(t) { return t.dataset.cdtab === 'reviews'; });
+      if (reviewsTab) activateCdTab(reviewsTab);
+    };
+
     // Tapping the "Ratings & Reviews" header (or its chevron) jumps to the Reviews tab
     var cdReviewsHeader = classDetailEl.querySelector('.cd-section-reviews .cd-section-header');
     if (cdReviewsHeader) {
       cdReviewsHeader.style.cursor = 'pointer';
       cdReviewsHeader.addEventListener('click', function() {
+        // Ignore taps that came from a scroll/drag gesture so users don't
+        // jump to Reviews when they're just trying to scroll through Overview.
+        if (wasDragging) return;
         var reviewsTab = Array.prototype.find.call(cdTabs, function(t) { return t.dataset.cdtab === 'reviews'; });
         if (reviewsTab) activateCdTab(reviewsTab);
       });
@@ -3583,9 +3784,18 @@
           classDetailSheet.getAnimations().forEach(function(a) { a.cancel(); });
           venueDetailSheet.getAnimations().forEach(function(a) { a.cancel(); });
         }
-        // Booking bar: slide back down alongside the sheet dismiss (transition in CSS).
-        cdBookingBar.style.transition = '';
+        // Booking bar: slide back down alongside the drag-dismiss.
         cdBookingBar.classList.remove('cd-booking-visible');
+        if (motionAnimate) {
+          cdBookingBar.getAnimations().forEach(function(a) { a.cancel(); });
+          motionAnimate(cdBookingBar, {
+            transform: [CD_BOOKING_VISIBLE_Y, cdBookingHiddenY()]
+          }, { duration: 0.25, easing: 'cubic-bezier(.25,.46,.45,.94)' }).finished.then(function() {
+            if (!cdBookingBar.classList.contains('cd-booking-visible')) {
+              cdBookingBar.style.visibility = 'hidden';
+            }
+          });
+        }
         // --- Class detail sheet: pin current transform → reflow → CSS transition to dismiss
         classDetailSheet.style.transition = 'none';
         classDetailSheet.style.transform = 'translateY(' + cdDragDelta + 'px)';

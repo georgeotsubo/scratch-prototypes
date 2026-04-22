@@ -1269,13 +1269,15 @@
                 border-radius 0.35s ease,
                 filter 0.35s ease;
   }
-  /* Hide venue's drag handle while stacked — class detail's handle takes over */
+  /* Hide venue's drag handle while stacked — class detail's handle takes over.
+     Fade back in immediately when unstacking so there's no perceived lag
+     between the sheet scaling back and the handle reappearing. */
   .venue-detail-sheet.stacked .venue-detail-handle {
     opacity: 0;
     transition: opacity 0.2s ease;
   }
   .venue-detail-sheet .venue-detail-handle {
-    transition: opacity 0.2s ease 0.15s;
+    transition: opacity 0.2s ease;
   }
 
   /* Persistent tab bar that floats above venue detail */
@@ -2127,7 +2129,7 @@
   .vd-review-body {
     font-family: 'DM Sans', sans-serif;
     font-size: 14px;
-    font-weight: 500;
+    font-weight: 400;
     line-height: 20px;
     color: #020203;
   }
@@ -2145,6 +2147,26 @@
     color: #020203;
   }
   .vd-review-stars { display: flex; gap: 0; }
+
+  /* "See all" card at the end of the reviews carousel */
+  .vd-review-see-all {
+    flex-shrink: 0;
+    align-self: stretch;
+    background: white;
+    border-radius: 24px;
+    padding: 16px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 24px;
+    color: #020203;
+    white-space: nowrap;
+  }
 
   /* About */
   .vd-about-text {
@@ -2440,6 +2462,13 @@
     line-height: 20px;
     color: #379062;
   }
+  .cd-intro-chip-price {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 16px;
+    font-weight: 500;
+    line-height: 20px;
+    color: #020203;
+  }
   .cd-intro-chip-strike {
     font-family: 'DM Sans', sans-serif;
     font-size: 16px;
@@ -2450,9 +2479,9 @@
   }
   .cd-intro-chip-plain {
     font-family: 'DM Sans', sans-serif;
-    font-size: 16px;
+    font-size: 18px;
     font-weight: 600;
-    line-height: 20px;
+    line-height: 24px;
     color: #020203;
   }
 
@@ -2494,8 +2523,8 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 4px;
-    padding-top: 8px;
+    gap: 2px;
+    padding-top: 4px;
     cursor: pointer;
   }
   .cd-date-letter {
@@ -2506,9 +2535,9 @@
     color: #020203;
   }
   .cd-date-day {
-    width: 40px;
-    height: 40px;
-    border-radius: 32px;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -2540,7 +2569,8 @@
     -webkit-overflow-scrolling: touch;
     margin-left: -20px;
     margin-right: -20px;
-    padding: 16px 20px 16px;
+    /* Bottom 4px + cd-tab's padding-top 12px = 16px gap to the tabs */
+    padding: 16px 20px 4px;
     scroll-padding-left: 20px;
     scroll-snap-type: x proximity;
   }
@@ -2705,6 +2735,18 @@
     color: #020203;
     margin: 0;
   }
+  .cd-section-subtitle {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 16px;
+    font-weight: 500;
+    line-height: 24px;
+    color: #4f5159;
+    margin: -4px 0 0;
+  }
+  #cd-reviews-subtitle {
+    font-size: 14px;
+    line-height: 20px;
+  }
 
   /* Ratings & Reviews — inline summary (Overview tab) */
   .cd-rating-summary {
@@ -2788,7 +2830,7 @@
   .cd-rating-ai-summary {
     font-family: 'DM Sans', sans-serif;
     font-size: 14px;
-    font-weight: 500;
+    font-weight: 400;
     line-height: 20px;
     color: #020203;
     margin: 0;
@@ -2825,7 +2867,7 @@
   .cd-review-card-body {
     font-family: 'DM Sans', sans-serif;
     font-size: 14px;
-    font-weight: 500;
+    font-weight: 400;
     line-height: 20px;
     color: #020203;
     margin: 0;
@@ -2864,6 +2906,24 @@
     height: 20px;
     flex-shrink: 0;
   }
+  .cd-review-see-all {
+    flex-shrink: 0;
+    align-self: stretch;
+    background: #fff;
+    border-radius: 24px;
+    padding: 16px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 24px;
+    color: #020203;
+    white-space: nowrap;
+  }
 
   /* Reviews panel list */
   .cd-reviews-list {
@@ -2876,15 +2936,22 @@
   /* Fixed booking footer: pinned to the device frame so it can sit above the
      persistent tab bar. Hidden offscreen by default; `.cd-booking-visible`
      adds the reveal transform so JS can animate it in when class detail opens. */
+  /* Slide + visibility flip are driven by Motion in JS. CSS only defines the
+     hidden resting state so first paint (before JS hydrates) doesn't flash
+     the bar onscreen. The `.cd-booking-visible` class is a state marker only
+     — no CSS rules tied to it beyond pointer-events. */
   .cd-booking-bar {
     position: absolute;
-    bottom: 24px;
-    left: 16px;
-    right: 16px;
-    background: #fff;
+    bottom: 8px;
+    left: 8px;
+    right: 8px;
+    background: rgba(255, 255, 255, 0.72);
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
+    backdrop-filter: saturate(180%) blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.6);
     border-radius: 24px;
     padding: 16px;
-    box-shadow: 0 6px 16px rgba(0,0,0,0.14);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.10);
     display: flex;
     flex-direction: column;
     gap: 12px;
@@ -2893,17 +2960,9 @@
     visibility: hidden;
     transform: translateY(calc(100% + 24px));
     will-change: transform;
-    /* Delay visibility flip until the slide-down finishes so the bar stays
-       rendered while it animates off-screen; no delay on the way in. */
-    transition: transform 0.3s cubic-bezier(.25,.46,.45,.94),
-                visibility 0s linear 0.3s;
   }
   .cd-booking-bar.cd-booking-visible {
     pointer-events: auto;
-    visibility: visible;
-    transform: translateY(0);
-    transition: transform 0.3s cubic-bezier(.25,.46,.45,.94),
-                visibility 0s linear 0s;
   }
   .cd-booking-info {
     display: flex;
@@ -2975,4 +3034,272 @@
   }
   .cd-booking-cta:active {
     background: #c00b0b;
+  }
+
+  /* Checkout: morph-in-place from the booking bar. Shares the same
+     bottom/left/right/border-radius geometry as .cd-booking-bar so the
+     seam is invisible when the sheet first appears; then grows upward
+     while its background transitions from glass → solid white. */
+  .cd-checkout-scrim {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.32);
+    opacity: 0;
+    pointer-events: none;
+    z-index: 35;
+    transition: opacity 0.25s ease;
+  }
+  .cd-checkout-scrim.is-visible {
+    opacity: 1;
+    pointer-events: auto;
+  }
+  .cd-checkout-sheet {
+    position: absolute;
+    left: 8px;
+    right: 8px;
+    bottom: 8px;
+    /* Height is controlled by JS; CSS default keeps it invisible offscreen. */
+    height: 130px;
+    border-radius: 24px;
+    /* Closed: 8px edge gap + 16px padding = 24px to button.
+       Open: 0px edge gap + 24px padding = 24px to button.
+       Padding animates 16 → 24 to keep the Book button pinned in place while
+       the sheet grows out to flush edges. Bottom padding reserves CTA space
+       (52px button + 16px offset + 16px breathing room above the button) so
+       absolutely-positioned CTA doesn't overlap the flex content above it. */
+    padding: 16px 16px 84px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    overflow: hidden;
+    visibility: hidden;
+    z-index: 36;
+    /* Closed (glass) state — matches .cd-booking-bar exactly. */
+    background: rgba(255, 255, 255, 0.72);
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
+    backdrop-filter: saturate(180%) blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.6);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.10);
+    transition:
+      background 0.44s cubic-bezier(.32,.72,0,1),
+      box-shadow 0.44s cubic-bezier(.32,.72,0,1),
+      backdrop-filter 0.44s cubic-bezier(.32,.72,0,1),
+      -webkit-backdrop-filter 0.44s cubic-bezier(.32,.72,0,1),
+      border-color 0.44s cubic-bezier(.32,.72,0,1),
+      left 0.44s cubic-bezier(.32,.72,0,1),
+      right 0.44s cubic-bezier(.32,.72,0,1),
+      bottom 0.44s cubic-bezier(.32,.72,0,1),
+      border-radius 0.44s cubic-bezier(.32,.72,0,1),
+      padding 0.44s cubic-bezier(.32,.72,0,1),
+      height 0.44s cubic-bezier(.32,.72,0,1);
+  }
+  .cd-checkout-sheet.is-open {
+    left: 0;
+    right: 0;
+    bottom: 0;
+    padding: 24px 24px 92px 24px;
+    border-radius: 24px 24px 0 0;
+    background: #fff;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    border-color: rgba(255, 255, 255, 0);
+    box-shadow: 0 -2px 16px rgba(0, 0, 0, 0.12);
+  }
+  .cd-checkout-sheet .cd-checkout-header,
+  .cd-checkout-sheet .cd-checkout-body {
+    opacity: 0;
+    transition: opacity 0.22s ease;
+  }
+  .cd-checkout-sheet.is-open .cd-checkout-header,
+  .cd-checkout-sheet.is-open .cd-checkout-body {
+    opacity: 1;
+    transition: opacity 0.22s ease 0.18s;
+  }
+  .cd-checkout-header {
+    position: relative;
+    width: 100%;
+    height: 44px;
+    flex-shrink: 0;
+  }
+  .cd-checkout-title {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    margin: 0;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 20px;
+    font-weight: 900;
+    line-height: 28px;
+    color: #020203;
+    white-space: nowrap;
+  }
+  .cd-checkout-close {
+    position: absolute;
+    right: 0;
+    top: 0;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+    border: none;
+    cursor: pointer;
+    display: grid;
+    place-items: center;
+    padding: 0;
+  }
+  .cd-checkout-close:active {
+    background: #f4f4f6;
+  }
+  .cd-checkout-body {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    flex: 1 1 auto;
+    overflow: hidden;
+    min-height: 0;
+  }
+  .cd-checkout-info {
+    display: flex;
+    flex-direction: column;
+  }
+  .cd-checkout-class-title {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 18px;
+    font-weight: 700;
+    line-height: 24px;
+    color: #020203;
+  }
+  .cd-checkout-time {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 16px;
+    font-weight: 500;
+    line-height: 24px;
+    color: #020203;
+  }
+  .cd-checkout-instructor {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 20px;
+    color: #4f5159;
+  }
+  .cd-checkout-venue {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 20px;
+    color: #020203;
+  }
+  .cd-checkout-cancellation {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 16px 0;
+  }
+  .cd-checkout-cancellation-title {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 20px;
+    color: #020203;
+  }
+  .cd-checkout-cancellation-body {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 16px;
+    color: #4f5159;
+  }
+  .cd-checkout-lines {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .cd-checkout-line {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 20px;
+    color: #4f5159;
+  }
+  .cd-checkout-line--total {
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 20px;
+    color: #020203;
+  }
+  .cd-checkout-payment {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .cd-checkout-payment-label {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 20px;
+    color: #020203;
+  }
+  .cd-checkout-payment-value {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 16px;
+    color: #020203;
+  }
+  .cd-checkout-applepay-mark {
+    display: inline-flex;
+    width: 32px;
+    height: 20px;
+  }
+  .cd-checkout-applepay-mark svg {
+    width: 100%;
+    height: 100%;
+  }
+  .cd-checkout-cta {
+    /* Absolute-positioned so the button's device-relative position stays
+       fixed during the morph regardless of the flex flow above it. Without
+       this, when the sheet is at closed (130px) height its flex body can't
+       shrink enough and the CTA overflows ~30px past the sheet bottom,
+       causing the visible "bounce down" on open/close. */
+    position: absolute;
+    left: 16px;
+    right: 16px;
+    bottom: 16px;
+    background: #e10e0e;
+    color: #fff;
+    border: none;
+    border-radius: 999px;
+    padding: 12px 24px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 18px;
+    font-weight: 500;
+    line-height: 28px;
+    cursor: pointer;
+    transition:
+      left 0.44s cubic-bezier(.32,.72,0,1),
+      right 0.44s cubic-bezier(.32,.72,0,1),
+      bottom 0.44s cubic-bezier(.32,.72,0,1);
+  }
+  .cd-checkout-sheet.is-open .cd-checkout-cta {
+    left: 24px;
+    right: 24px;
+    bottom: 24px;
+  }
+  .cd-checkout-cta:active {
+    background: #c00b0b;
+  }
+  /* Hide original booking card while the sheet replaces it visually. */
+  .cd-booking-bar.is-under-checkout {
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.18s ease;
   }
