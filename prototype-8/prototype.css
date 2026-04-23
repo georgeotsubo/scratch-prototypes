@@ -1373,10 +1373,9 @@
     display: flex;
     align-items: center;
     gap: 8px;
-    padding-left: 4px;
-    padding-right: 4px;
     background: white;
     border-radius: 999px;
+    width: 44px;
     height: 44px;
     overflow: hidden;
     flex-shrink: 0;
@@ -1442,13 +1441,6 @@
     gap: 24px;
     margin-top: 0;
     box-sizing: border-box;
-    min-height: calc(100% - 64px);
-  }
-  .venue-detail-content > .vd-panel.active {
-    flex: 1;
-  }
-  .venue-detail-content > .vd-panel.active > :last-child {
-    margin-top: auto;
   }
   .vd-header-group {
     display: flex;
@@ -1606,6 +1598,9 @@
   }
   .vd-panel-schedule {
     gap: 0;
+  }
+  .vd-panel-classes {
+    gap: 12px;
   }
   .vd-panel.active {
     display: flex;
@@ -1782,6 +1777,66 @@
   }
   .vd-schedule-card.disabled .vd-price-final,
   .vd-schedule-card.disabled .vd-price-plain { color: #b3b5bc; }
+
+  /* ===== CLASSES PANEL ===== */
+  .vd-class-summary-card {
+    background: #fff;
+    border-radius: 24px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  .vd-class-summary-text {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+    width: 100%;
+  }
+  .vd-class-summary-title {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 24px;
+    color: #020203;
+  }
+  .vd-class-summary-desc {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 20px;
+    color: #020203;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .vd-class-summary-seemore {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    line-height: 20px;
+    color: #020203;
+    cursor: pointer;
+  }
+  .vd-class-summary-btn {
+    background: transparent;
+    border: 1px solid #e4e5e7;
+    border-radius: 999px;
+    padding: 8px 12px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 20px;
+    color: #020203;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .vd-class-summary-btn:active {
+    background: #f1f2f3;
+  }
 
   /* ===== REVIEWS PANEL ===== */
   .vd-panel-reviews { gap: 16px; }
@@ -2378,12 +2433,11 @@
     display: flex;
     align-items: center;
     gap: 8px;
-    padding-left: 4px;
-    padding-right: 4px;
     background: rgba(255, 255, 255, 0.55);
     -webkit-backdrop-filter: blur(14px);
     backdrop-filter: blur(14px);
     border-radius: 999px;
+    width: 44px;
     height: 44px;
     overflow: hidden;
     flex-shrink: 0;

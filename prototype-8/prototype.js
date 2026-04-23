@@ -584,7 +584,6 @@
         ${introBadge}
         <div class="venue-desc">${desc}</div>
         <div class="venue-actions">
-          <div class="venue-action-btn"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M5.53906 19.2969C5.14323 19.2969 4.82552 19.1667 4.58594 18.9062C4.34635 18.651 4.22656 18.3099 4.22656 17.8828V4.14062C4.22656 3.30729 4.44792 2.66927 4.89062 2.22656C5.33854 1.77865 5.97656 1.55469 6.80469 1.55469H13.1953C14.0182 1.55469 14.651 1.77865 15.0938 2.22656C15.5417 2.66927 15.7656 3.30729 15.7656 4.14062V17.8828C15.7656 18.3099 15.6458 18.651 15.4062 18.9062C15.1667 19.1667 14.849 19.2969 14.4531 19.2969C14.2031 19.2969 13.9792 19.2344 13.7812 19.1094C13.5833 18.9844 13.3281 18.7708 13.0156 18.4688L10.0625 15.5234C10.0208 15.4818 9.97917 15.4818 9.9375 15.5234L6.98438 18.4688C6.67708 18.7708 6.41927 18.9844 6.21094 19.1094C6.00781 19.2344 5.78385 19.2969 5.53906 19.2969ZM6.46094 16.0078L9.32031 13.2344C9.54948 13.0156 9.77604 12.9062 10 12.9062C10.224 12.9062 10.4505 13.0156 10.6797 13.2344L13.5391 16.0078C13.5911 16.0547 13.6406 16.0703 13.6875 16.0547C13.7344 16.0391 13.7578 15.9974 13.7578 15.9297V4.34375C13.7578 4.07292 13.6927 3.875 13.5625 3.75C13.4375 3.625 13.2396 3.5625 12.9688 3.5625H7.03125C6.75521 3.5625 6.55469 3.625 6.42969 3.75C6.30469 3.875 6.24219 4.07292 6.24219 4.34375V15.9297C6.24219 15.9974 6.26562 16.0391 6.3125 16.0547C6.35938 16.0703 6.40885 16.0547 6.46094 16.0078Z" fill="#020203"/></svg> Save</div>
           <div class="venue-action-btn"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4.86719 17.7031C3.20312 17.7031 2.29688 16.8047 2.29688 15.1484V6.19531C2.29688 4.53906 3.20312 3.64844 4.86719 3.64844H15.1328C16.7969 3.64844 17.6953 4.54688 17.6953 6.19531V15.1484C17.6953 16.8047 16.7969 17.7031 15.1328 17.7031H4.86719ZM4.96875 15.8984H15.0234C15.5859 15.8984 15.8984 15.6172 15.8984 15.0234V8.39062C15.8984 7.78906 15.5859 7.51562 15.0234 7.51562H4.96875C4.40625 7.51562 4.10156 7.78906 4.10156 8.39062V15.0234C4.10156 15.6172 4.40625 15.8984 4.96875 15.8984ZM8.60156 9.95312C8.33594 9.95312 8.24219 9.86719 8.24219 9.59375V9.16406C8.24219 8.89062 8.33594 8.8125 8.60156 8.8125H9.03906C9.30469 8.8125 9.39844 8.89062 9.39844 9.16406V9.59375C9.39844 9.86719 9.30469 9.95312 9.03906 9.95312H8.60156ZM10.9688 9.95312C10.6953 9.95312 10.6016 9.86719 10.6016 9.59375V9.16406C10.6016 8.89062 10.6953 8.8125 10.9688 8.8125H11.3984C11.6719 8.8125 11.7656 8.89062 11.7656 9.16406V9.59375C11.7656 9.86719 11.6719 9.95312 11.3984 9.95312H10.9688ZM13.3359 9.95312C13.0625 9.95312 12.9688 9.86719 12.9688 9.59375V9.16406C12.9688 8.89062 13.0625 8.8125 13.3359 8.8125H13.7656C14.0391 8.8125 14.1328 8.89062 14.1328 9.16406V9.59375C14.1328 9.86719 14.0391 9.95312 13.7656 9.95312H13.3359ZM6.24219 12.2734C5.96875 12.2734 5.875 12.1953 5.875 11.9219V11.4922C5.875 11.2188 5.96875 11.1328 6.24219 11.1328H6.67188C6.94531 11.1328 7.03906 11.2188 7.03906 11.4922V11.9219C7.03906 12.1953 6.94531 12.2734 6.67188 12.2734H6.24219ZM8.60156 12.2734C8.33594 12.2734 8.24219 12.1953 8.24219 11.9219V11.4922C8.24219 11.2188 8.33594 11.1328 8.60156 11.1328H9.03906C9.30469 11.1328 9.39844 11.2188 9.39844 11.4922V11.9219C9.39844 12.1953 9.30469 12.2734 9.03906 12.2734H8.60156ZM10.9688 12.2734C10.6953 12.2734 10.6016 12.1953 10.6016 11.9219V11.4922C10.6016 11.2188 10.6953 11.1328 10.9688 11.1328H11.3984C11.6719 11.1328 11.7656 11.2188 11.7656 11.4922V11.9219C11.7656 12.1953 11.6719 12.2734 11.3984 12.2734H10.9688ZM13.3359 12.2734C13.0625 12.2734 12.9688 12.1953 12.9688 11.9219V11.4922C12.9688 11.2188 13.0625 11.1328 13.3359 11.1328H13.7656C14.0391 11.1328 14.1328 11.2188 14.1328 11.4922V11.9219C14.1328 12.1953 14.0391 12.2734 13.7656 12.2734H13.3359ZM6.24219 14.6016C5.96875 14.6016 5.875 14.5156 5.875 14.25V13.8125C5.875 13.5469 5.96875 13.4609 6.24219 13.4609H6.67188C6.94531 13.4609 7.03906 13.5469 7.03906 13.8125V14.25C7.03906 14.5156 6.94531 14.6016 6.67188 14.6016H6.24219ZM8.60156 14.6016C8.33594 14.6016 8.24219 14.5156 8.24219 14.25V13.8125C8.24219 13.5469 8.33594 13.4609 8.60156 13.4609H9.03906C9.30469 13.4609 9.39844 13.5469 9.39844 13.8125V14.25C9.39844 14.5156 9.30469 14.6016 9.03906 14.6016H8.60156ZM10.9688 14.6016C10.6953 14.6016 10.6016 14.5156 10.6016 14.25V13.8125C10.6016 13.5469 10.6953 13.4609 10.9688 13.4609H11.3984C11.6719 13.4609 11.7656 13.5469 11.7656 13.8125V14.25C11.7656 14.5156 11.6719 14.6016 11.3984 14.6016H10.9688Z" fill="#020203"/></svg> Schedule</div>
         </div>
       </div>`;
@@ -2030,6 +2029,32 @@
   // iOS tab indicator spring: fast, no bounce
   var iosTabSpring = { type: 'spring', stiffness: 600, damping: 50 };
 
+  // Shared catalog: the classes this venue offers. Both the Classes panel
+  // (static list with descriptions) and the Schedule generator (random
+  // time slots) draw titles from this list so they stay in sync.
+  var VENUE_CLASSES = [
+    {
+      title: 'Power Vinyasa Flow',
+      description: 'A dynamic, breath-led flow that builds heat and strength through linked postures. Suitable for all levels.'
+    },
+    {
+      title: 'Sculpt & Tone',
+      description: 'A full-body sculpting class that blends light weights, pilates-inspired movement, and high reps to build lean strength. Modifications offered throughout.'
+    },
+    {
+      title: 'Restorative Yoga',
+      description: 'A slower, supported practice using props to help the body fully relax. Great for recovery days and for anyone new to yoga.'
+    },
+    {
+      title: 'HIIT Reformer',
+      description: 'High-intensity intervals on the reformer, fusing cardio bursts with strength and resistance work for a fast, efficient sweat.'
+    },
+    {
+      title: 'Candlelit Flow',
+      description: 'A slower, meditative flow set to low light. Perfect for winding down.'
+    }
+  ];
+
   function openVenueDetail(index, initialTab) {
     const pin = currentPins[index];
     if (!pin) return;
@@ -2067,8 +2092,6 @@
       });
     }
     document.getElementById('vd-description').textContent = desc;
-    document.getElementById('vd-rating-big').textContent = rating;
-    document.getElementById('vd-reviews-count').textContent = '(' + reviews + ')';
 
     // Static map thumbnail
     const mapThumb = document.getElementById('vd-map-thumb');
@@ -2190,15 +2213,6 @@
   // Close button
   document.getElementById('venue-detail-close').addEventListener('click', closeVenueDetail);
 
-  // Bookmark toggle (venue detail)
-  var vdBookmarkBtn = document.getElementById('vd-bookmark-btn');
-  if (vdBookmarkBtn) {
-    vdBookmarkBtn.addEventListener('click', function(e) {
-      e.stopPropagation();
-      vdBookmarkBtn.classList.toggle('bookmarked');
-    });
-  }
-
   // Sticky nav: show venue name when scrolled past the header
   (function() {
     var stickyNav = document.getElementById('vd-sticky-nav');
@@ -2257,6 +2271,12 @@
 
       // Reset horizontal scroll on all carousels
       venueDetailEl.querySelectorAll('.vd-hscroll').forEach(function(s) { s.scrollLeft = 0; });
+
+      // Classes panel descriptions can only be measured once the panel is
+      // laid out (display:flex). Run the overflow check on first activation.
+      if (panelName === 'classes' && window.__measureClassesSeeMore) {
+        requestAnimationFrame(window.__measureClassesSeeMore);
+      }
     }
 
     tabs.forEach(function(tab) {
@@ -2276,6 +2296,70 @@
         e.stopPropagation();
         window.__switchVenueDetailTab('schedule');
       });
+    }
+
+    // Classes panel: render cards from the shared venue class catalog, then
+    // reveal "see more" only on cards whose descriptions actually clamp.
+    var classesList = document.getElementById('vd-classes-list');
+    if (classesList) {
+      var classesHtml = VENUE_CLASSES.map(function(c, i) {
+        return '<div class="vd-class-summary-card">'
+          +   '<div class="vd-class-summary-text">'
+          +     '<div class="vd-class-summary-title">' + c.title + '</div>'
+          +     '<div class="vd-class-summary-desc">' + c.description + '</div>'
+          +     '<span class="vd-class-summary-seemore" hidden>see more</span>'
+          +   '</div>'
+          +   '<button class="vd-class-summary-btn" type="button" data-class-idx="' + i + '">View class</button>'
+          + '</div>';
+      }).join('');
+      classesList.innerHTML = classesHtml;
+
+      // Wire each "View Class" button to open the class detail page. Uses
+      // the same default cls shape as the slot-btn handler so pricing and
+      // intro-offer behavior stay consistent.
+      classesList.querySelectorAll('.vd-class-summary-btn').forEach(function(btn) {
+        btn.addEventListener('click', function(e) {
+          e.stopPropagation();
+          if (wasDragging) return;
+          var idx = parseInt(btn.dataset.classIdx, 10) || 0;
+          var venueClass = VENUE_CLASSES[idx];
+          var venueHasIntro = hasVenueIntroOffer(window.__currentVenuePin);
+          var cls = {
+            time: '10:00 AM · 60 min',
+            title: venueClass.title,
+            instructor: 'Carolyn',
+            rating: '4.8 (250)',
+            disabled: false,
+            spots: '3 spots left'
+          };
+          if (venueHasIntro) {
+            cls.priceLabel = 'Intro offer';
+            cls.strikePrice = '$35';
+            cls.finalPrice = '$25';
+          } else {
+            cls.plainPrice = '$25';
+          }
+          if (typeof window.__openClassDetail === 'function') window.__openClassDetail(cls);
+        });
+      });
+
+      // Reveal "see more" only on descriptions that overflow the 3-line clamp.
+      // Must run after layout so scrollHeight/clientHeight are measurable —
+      // the Classes panel may be hidden initially, so defer to first activation.
+      var seeMoreMeasured = false;
+      function measureSeeMore() {
+        if (seeMoreMeasured) return;
+        classesList.querySelectorAll('.vd-class-summary-card').forEach(function(card) {
+          var desc = card.querySelector('.vd-class-summary-desc');
+          var seeMore = card.querySelector('.vd-class-summary-seemore');
+          if (!desc || !seeMore) return;
+          if (desc.scrollHeight > desc.clientHeight + 1) {
+            seeMore.hidden = false;
+          }
+        });
+        seeMoreMeasured = true;
+      }
+      window.__measureClassesSeeMore = measureSeeMore;
     }
 
     // Wire Available today pills: "See more"/"See all" jump to Schedule tab;
@@ -2354,7 +2438,7 @@
       tabs.forEach(function(t) { t.classList.remove('active'); });
       firstTab.classList.add('active');
       panels.forEach(function(p) {
-        if (p.dataset.panel === 'overview') p.classList.add('active');
+        if (p.dataset.panel === 'schedule') p.classList.add('active');
         else p.classList.remove('active');
       });
       requestAnimationFrame(function() {
@@ -2461,12 +2545,9 @@
 
     var STAR_SVG = '<svg width="16" height="16" viewBox="0 0 20 20" fill="none"><path d="M9.10326 1.81699C9.47008 1.07374 10.5299 1.07374 10.8967 1.81699L12.7063 5.48347C12.8519 5.77862 13.1335 5.98319 13.4592 6.03051L17.5054 6.61846C18.3256 6.73765 18.6531 7.74562 18.0596 8.32416L15.1318 11.1781C14.8961 11.4079 14.7885 11.7389 14.8442 12.0632L15.5353 16.0931C15.6754 16.91 14.818 17.533 14.0844 17.1473L10.4653 15.2446C10.174 15.0915 9.82598 15.0915 9.53466 15.2446L5.91562 17.1473C5.18199 17.533 4.32456 16.91 4.46467 16.0931L5.15585 12.0632C5.21148 11.7389 5.10393 11.4079 4.86825 11.1781L1.94038 8.32416C1.34687 7.74562 1.67438 6.73765 2.4946 6.61846L6.54081 6.03051C6.86652 5.98319 7.14808 5.77862 7.29374 5.48347L9.10326 1.81699Z" fill="#FFB54D"/></svg>';
 
-    var CLASS_NAMES = [
-      'Slow Burn Hot Mat Pilates', 'Power Vinyasa Flow', 'Sculpt & Tone', 'Heated Barre Burn',
-      'Restorative Yoga', 'HIIT Reformer', 'Core Fusion', 'Candlelit Flow',
-      'Full Body Stretch', 'Cardio Kickboxing', 'Yoga Foundations', 'Athletic Conditioning',
-      'Deep Stretch Recovery', 'Sunrise Flow', 'Express Pilates', 'Strength & Balance'
-    ];
+    // Titles come from the shared VENUE_CLASSES catalog so Schedule and
+    // Classes tab always agree on what this venue offers.
+    var CLASS_NAMES = VENUE_CLASSES.map(function(c) { return c.title; });
     var INSTRUCTOR_NAMES = [
       'Sarah M.', 'Chauncie D.', 'Liz K.', 'Marcus J.', 'Priya S.',
       'Jordan T.', 'Kai N.', 'Emma R.', 'David C.', 'Nina L.'
@@ -3593,15 +3674,6 @@
       cdVenueLinkEl.addEventListener('click', function() {
         if (wasDragging) return;
         closeClassDetail();
-      });
-    }
-
-    // Bookmark toggle (class detail)
-    var cdBookmarkBtn = document.getElementById('cd-bookmark-btn');
-    if (cdBookmarkBtn) {
-      cdBookmarkBtn.addEventListener('click', function(e) {
-        e.stopPropagation();
-        cdBookmarkBtn.classList.toggle('bookmarked');
       });
     }
 
