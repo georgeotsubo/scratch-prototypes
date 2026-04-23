@@ -2250,7 +2250,7 @@
       // Tapping a tab always snaps the scroll to the pinned position so the tabs
       // stick to the top and the new panel's content starts from the top of view
       if (pinOffset > 0) {
-        venueDetailScroll.scrollTo({ top: pinOffset, behavior: 'smooth' });
+        venueDetailScroll.scrollTo({ top: pinOffset, behavior: 'auto' });
       }
 
       // Reset horizontal scroll on all carousels
@@ -3642,7 +3642,7 @@
       var name = tab.dataset.cdtab;
       cdPanels.forEach(function(p) { p.classList.toggle('active', p.dataset.cdpanel === name); });
       if (pinOffset > 0) {
-        classDetailScroll.scrollTo({ top: pinOffset, behavior: 'smooth' });
+        classDetailScroll.scrollTo({ top: pinOffset, behavior: 'auto' });
       }
       // Reset horizontal scroll on review carousels so each tab opens cleanly
       classDetailEl.querySelectorAll('.cd-review-cards').forEach(function(s) { s.scrollLeft = 0; });
@@ -3695,7 +3695,8 @@
       if (!cdTitleEl) return;
       var scrollRect = classDetailScroll.getBoundingClientRect();
       var titleRect = cdTitleEl.getBoundingClientRect();
-      cdTitleScrollThreshold = (titleRect.bottom - scrollRect.top) + classDetailScroll.scrollTop;
+      var navHeight = cdStickyNav ? cdStickyNav.offsetHeight : 80;
+      cdTitleScrollThreshold = (titleRect.top - scrollRect.top) + classDetailScroll.scrollTop - navHeight;
     };
 
     classDetailScroll.addEventListener('scroll', function() {

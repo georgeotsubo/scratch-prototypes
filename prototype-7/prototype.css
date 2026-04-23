@@ -1418,7 +1418,7 @@
   .venue-detail-scroll::-webkit-scrollbar { display: none; }
 
   .venue-detail-content {
-    padding: 20px 20px 0;
+    padding: 20px 20px 110px;
     display: flex;
     flex-direction: column;
     gap: 32px;
