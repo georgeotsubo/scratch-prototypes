@@ -2541,7 +2541,6 @@
         return '<div class="vd-schedule-card' + (c.disabled ? ' disabled' : '') + '" data-class-idx="' + i + '">'
           + '<div class="vd-schedule-top">'
           +   '<span class="vd-schedule-time">' + c.time + '</span>'
-          +   (c.spots ? '<span class="vd-schedule-spots">' + c.spots + '</span>' : '')
           + '</div>'
           + '<div class="vd-schedule-title">' + c.title + '</div>'
           + '<div class="vd-schedule-instructor">' + c.instructor + '</div>'
@@ -3043,7 +3042,6 @@
           +   '<div class="cd-time-slot-time">' + s.time + '</div>'
           +   '<div class="cd-time-slot-instructor">' + s.instructor + '</div>'
           + '</div>'
-          + (s.spots ? '<div class="cd-time-slot-spots">' + s.spots + '</div>' : '')
           + '</div>';
       }).join('');
       // Toggle selection — re-tapping a selected chip deselects it.
@@ -3133,7 +3131,7 @@
       var dateStr = dayShort + ', ' + monthShort + ' ' + today.getDate();
       if (timeEl) timeEl.textContent = dateStr + ' · ' + slot.time;
       if (instructorEl) instructorEl.textContent = slot.instructor;
-      if (ctaEl) ctaEl.textContent = slot.spots ? 'Book · ' + slot.spots : 'Book';
+      if (ctaEl) ctaEl.textContent = 'Book';
     }
 
     // Stable review pool generated once per class detail open.

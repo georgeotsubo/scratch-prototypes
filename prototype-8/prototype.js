@@ -2263,10 +2263,26 @@
         else p.classList.remove('active');
       });
 
-      // Tapping a tab always snaps the scroll to the pinned position so the tabs
-      // stick to the top and the new panel's content starts from the top of view
+      // Tapping a tab brings the tabs to the pinned position. When the user
+      // is far above the pin (e.g. at the header), an instant scroll feels
+      // violent — glide with a short ease-out so the tabs rise into place
+      // alongside the 200ms panel fade. When already pinned, the delta is
+      // ~0 and the loop exits on the first frame.
       if (pinOffset > 0) {
-        venueDetailScroll.scrollTo({ top: pinOffset, behavior: 'auto' });
+        var startTop = venueDetailScroll.scrollTop;
+        var delta = pinOffset - startTop;
+        if (Math.abs(delta) < 1) {
+          venueDetailScroll.scrollTop = pinOffset;
+        } else {
+          var startTime = performance.now();
+          var duration = 250;
+          (function glide() {
+            var t = Math.min(1, (performance.now() - startTime) / duration);
+            var eased = 1 - Math.pow(1 - t, 3);
+            venueDetailScroll.scrollTop = startTop + delta * eased;
+            if (t < 1) requestAnimationFrame(glide);
+          })();
+        }
       }
 
       // Reset horizontal scroll on all carousels
@@ -2622,7 +2638,6 @@
         return '<div class="vd-schedule-card' + (c.disabled ? ' disabled' : '') + '" data-class-idx="' + i + '">'
           + '<div class="vd-schedule-top">'
           +   '<span class="vd-schedule-time">' + c.time + '</span>'
-          +   (c.spots ? '<span class="vd-schedule-spots">' + c.spots + '</span>' : '')
           + '</div>'
           + '<div class="vd-schedule-title">' + c.title + '</div>'
           + '<div class="vd-schedule-instructor">' + c.instructor + '</div>'
@@ -3124,7 +3139,6 @@
           +   '<div class="cd-time-slot-time">' + s.time + '</div>'
           +   '<div class="cd-time-slot-instructor">' + s.instructor + '</div>'
           + '</div>'
-          + (s.spots ? '<div class="cd-time-slot-spots">' + s.spots + '</div>' : '')
           + '</div>';
       }).join('');
       // Toggle selection — re-tapping a selected chip deselects it.
@@ -3214,7 +3228,7 @@
       var dateStr = dayShort + ', ' + monthShort + ' ' + today.getDate();
       if (timeEl) timeEl.textContent = dateStr + ' · ' + slot.time;
       if (instructorEl) instructorEl.textContent = slot.instructor;
-      if (ctaEl) ctaEl.textContent = slot.spots ? 'Book · ' + slot.spots : 'Book';
+      if (ctaEl) ctaEl.textContent = 'Book';
     }
 
     // Stable review pool generated once per class detail open.
