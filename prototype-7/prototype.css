@@ -1,4 +1,9 @@
   * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  /* Disable text selection globally — prototype taps/swipes shouldn't trigger
+     selection UI. Re-enabled on form inputs below so search/location fields
+     still work. */
+  html, body { -webkit-user-select: none; user-select: none; }
+  input, textarea { -webkit-user-select: text; user-select: text; }
 
   body {
     font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', sans-serif;
@@ -1713,7 +1718,7 @@
   .vd-schedule-price {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 4px;
     font-family: 'DM Sans', sans-serif;
     font-size: 13px;
     font-weight: 500;
@@ -1735,7 +1740,7 @@
     font-size: 16px;
     font-weight: 600;
     line-height: 20px;
-    color: #296b49;
+    color: #379062;
   }
   .vd-price-plain {
     font-family: 'DM Sans', sans-serif;
@@ -2761,7 +2766,7 @@
     padding: 20px;
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: 12px;
   }
   .cd-rating-card-top {
     display: flex;
@@ -2987,14 +2992,14 @@
     font-size: 16px;
     font-weight: 500;
     line-height: 24px;
-    color: rgba(79, 81, 89, 1);
+    color: rgba(2, 2, 3, 1);
   }
   .cd-booking-intro-label {
     font-family: 'DM Sans', sans-serif;
     font-size: 16px;
-    font-weight: 700;
+    font-weight: 500;
     line-height: 24px;
-    color: #379062;
+    color: rgba(2, 2, 3, 1);
   }
   .cd-booking-intro-label[hidden] { display: none; }
   .cd-booking-price {
@@ -3013,7 +3018,7 @@
     font-weight: 500;
   }
   .cd-booking-price-final {
-    color: #020203;
+    color: #379062;
   }
   .cd-booking-price-plain {
     color: #020203;
@@ -3123,9 +3128,9 @@
   }
   .cd-checkout-title {
     position: absolute;
-    left: 50%;
+    left: 0;
     top: 50%;
-    transform: translate(-50%, -50%);
+    transform: translateY(-50%);
     margin: 0;
     font-family: 'DM Sans', sans-serif;
     font-size: 20px;

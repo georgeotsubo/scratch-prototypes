@@ -2520,8 +2520,8 @@
         if (c.finalPrice) {
           priceHtml = '<div class="vd-schedule-price">'
             + (c.priceLabel ? '<span class="vd-schedule-price-label">' + c.priceLabel + '</span>' : '')
-            + '<span class="vd-price-strike">' + c.strikePrice + '</span>'
             + '<span class="vd-price-final">' + c.finalPrice + '</span>'
+            + '<span class="vd-price-strike">' + c.strikePrice + '</span>'
             + '</div>';
         } else if (c.plainPrice) {
           priceHtml = '<span class="vd-price-plain">' + c.plainPrice + '</span>';
@@ -3072,8 +3072,10 @@
     function syncCdBookingBarVisibility() {
       var spacer = document.getElementById('cd-bottom-spacer');
       var hasSelected = !!classDetailEl.querySelector('.cd-time-slot.selected');
-      // Spacer clears the fixed booking card when it's visible; collapse when it's gone
-      if (spacer) spacer.style.height = hasSelected ? '190px' : '24px';
+      // Spacer clears the fixed booking card when it's visible, or just the
+      // persistent tab bar (62px tall + 24px bottom offset) when no slot is
+      // selected — 24px alone hides content behind the tab bar.
+      if (spacer) spacer.style.height = hasSelected ? '190px' : '110px';
       var shouldShow = classDetailOpen && hasSelected;
       var isShown = cdBookingBar.classList.contains('cd-booking-visible');
       // No-op when the target state matches the current state — otherwise
@@ -3089,7 +3091,7 @@
         // up after the sheet lands. Later toggles animate immediately.
         // Uses a plain CSS transition with an overshoot cubic-bezier because
         // Motion's keyframe pipeline silently flattens the bounce in this bundle.
-        var delay = cdBookingEnterPending ? 0.5 : 0;
+        var delay = cdBookingEnterPending ? 0.35 : 0;
         cdBookingEnterPending = false;
         cdBookingBar.style.transition = 'none';
         cdBookingBar.style.transform = cdBookingHiddenY();
