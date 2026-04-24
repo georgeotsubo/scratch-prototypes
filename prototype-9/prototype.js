@@ -2364,6 +2364,38 @@
       });
     }
 
+    // Tapping an "Available today" card opens the class detail modal — same
+    // behavior as Schedule-tab cards. Those cards are hardcoded HTML, so we
+    // build the cls object from their DOM instead of __lastGeneratedClasses.
+    var availableEl = document.getElementById('vd-available-today');
+    if (availableEl) {
+      availableEl.addEventListener('click', function(e) {
+        var card = e.target.closest('.vd-schedule-card');
+        if (!card || card.classList.contains('disabled')) return;
+        if (wasDragging) return;
+        var titleEl = card.querySelector('.vd-schedule-title');
+        var instructorEl = card.querySelector('.vd-schedule-instructor');
+        var timeEl = card.querySelector('.vd-schedule-time');
+        var ratingEl = card.querySelector('.vd-schedule-rating');
+        var finalPriceEl = card.querySelector('.vd-price-final');
+        var strikePriceEl = card.querySelector('.vd-price-strike');
+        var plainPriceEl = card.querySelector('.vd-price-plain');
+        var cls = {
+          title: titleEl ? titleEl.textContent.trim() : '',
+          instructor: instructorEl ? instructorEl.textContent.trim() : '',
+          time: timeEl ? timeEl.textContent.split('·')[0].trim() : '',
+          rating: ratingEl ? ratingEl.textContent.trim() : '4.9 (250)'
+        };
+        if (finalPriceEl && strikePriceEl) {
+          cls.finalPrice = finalPriceEl.textContent.trim();
+          cls.strikePrice = strikePriceEl.textContent.trim();
+        } else if (plainPriceEl) {
+          cls.plainPrice = plainPriceEl.textContent.trim();
+        }
+        if (typeof window.__openClassDetail === 'function') window.__openClassDetail(cls);
+      });
+    }
+
     // Expandable about text: tapping "see more" toggles .expanded and
     // relabels the link. The visibility of the link itself is driven by
     // the overflow measurement performed when the sheet opens.
@@ -3345,13 +3377,32 @@
       });
     }
 
+    // Carousel cards on the Overview tab: original layout (title + body stacked,
+    // name/stars/source in a footer row). Kept intentionally distinct from the
+    // Reviews-tab list layout so the carousel stays narrow and readable.
     function reviewCardHTML(title, review, withSource) {
       var stars = '';
-      for (var s = 0; s < review.stars; s++) stars += STAR_GOLD_16;
-      var sourceHTML = (withSource && review.showSource)
-        ? '<div class="cd-review-card-source">' + CD_REVIEW_SOURCE_SVG + '</div>'
-        : '';
+      for (var s = 0; s < 5; s++) stars += STAR_GOLD_16;
       return '<div class="cd-review-card">'
+        + '<p class="cd-review-card-title">' + title + ' with ' + review.instructor + '</p>'
+        + '<p class="cd-review-card-body">' + review.body + '</p>'
+        + '<span class="cd-review-card-seemore" hidden>see more</span>'
+        + '<div class="cd-review-card-footer">'
+        +   '<div class="cd-review-card-author">'
+        +     '<span class="cd-review-card-name">' + review.name + '</span>'
+        +     '<div class="cd-review-card-stars">' + stars + '</div>'
+        +   '</div>'
+        +   (withSource && review.showSource ? '<div class="cd-review-card-source">' + CD_REVIEW_SOURCE_SVG + '</div>' : '')
+        + '</div>'
+        + '</div>';
+    }
+
+    // Reviews-tab list cards: mirror the venue-detail review card format
+    // (avatar + name/stars row + date, bold class title, body).
+    function reviewCardListHTML(title, review) {
+      var stars = '';
+      for (var s = 0; s < review.stars; s++) stars += STAR_GOLD_16;
+      return '<div class="cd-review-card cd-review-card-list">'
         + '<div class="cd-review-card-header">'
         +   '<div class="cd-review-avatar">' + review.name.charAt(0) + '</div>'
         +   '<div class="cd-review-card-meta">'
@@ -3364,7 +3415,6 @@
         + '</div>'
         + '<div class="cd-review-card-title">' + title + '</div>'
         + '<div class="cd-review-card-body">' + review.body + '</div>'
-        + sourceHTML
         + '</div>';
     }
 
@@ -3384,12 +3434,40 @@
           if (typeof window.__cdActivateReviewsTab === 'function') window.__cdActivateReviewsTab();
         });
       }
+      // Reveal "see more" only on cards whose body actually clamps past
+      // 4 lines. Tapping it toggles .expanded and relabels to "see less".
+      // Wait for fonts to load before measuring — otherwise text wraps in
+      // the fallback system font (wider than DM Sans) and 4-line copy can
+      // appear to overflow when it actually fits once DM Sans resolves.
+      var measureOverflow = function() {
+        container.querySelectorAll('.cd-review-card').forEach(function(card) {
+          var body = card.querySelector('.cd-review-card-body');
+          var seeMore = card.querySelector('.cd-review-card-seemore');
+          if (!body || !seeMore) return;
+          seeMore.hidden = !(body.scrollHeight > body.clientHeight + 1);
+        });
+      };
+      if (document.fonts && document.fonts.ready) {
+        document.fonts.ready.then(function() { requestAnimationFrame(measureOverflow); });
+      } else {
+        requestAnimationFrame(measureOverflow);
+      }
+      container.querySelectorAll('.cd-review-card-seemore').forEach(function(link) {
+        link.addEventListener('click', function(e) {
+          if (wasDragging) return;
+          e.stopPropagation();
+          var body = link.previousElementSibling;
+          if (!body) return;
+          var isExpanded = body.classList.toggle('expanded');
+          link.textContent = isExpanded ? 'see less' : 'see more';
+        });
+      });
     }
 
     function renderCdReviewsList(title, highlight) {
       var container = document.getElementById('cd-reviews-list');
       var list = sortedPool(highlight).slice(0, 5);
-      container.innerHTML = list.map(function(r) { return reviewCardHTML(title, r, false); }).join('');
+      container.innerHTML = list.map(function(r) { return reviewCardListHTML(title, r); }).join('');
     }
 
     function rerenderCdReviewsForInstructor(instructor) {

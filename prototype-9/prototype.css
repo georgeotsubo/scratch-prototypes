@@ -2081,7 +2081,7 @@
     cursor: pointer;
   }
   .vd-see-schedule-btn:active {
-    background: #f1f2f3;
+    background: #d6d8dc;
   }
   .vd-section-title {
     font-family: 'DM Sans', sans-serif;
@@ -3071,14 +3071,50 @@
   }
   .cd-review-card-body {
     font-family: 'DM Sans', sans-serif;
-    font-size: 16px;
+    font-size: 14px;
     font-weight: 400;
-    line-height: 24px;
+    line-height: 20px;
     color: #020203;
     margin: 0;
-    /* Mirrors .vd-rev-body: the class title and body sit 4px apart while
-       the other .cd-review-card gaps stay at 12px. */
+  }
+  /* Carousel-only: clamp the body to 4 lines. JS unhides the adjacent
+     "see more" span when the text actually overflows; tapping it toggles
+     .expanded to reveal the full copy. Reviews-tab list cards are
+     unclamped (their block is full-width and gets its own styles below). */
+  .cd-review-cards .cd-review-card-body {
+    display: -webkit-box;
+    -webkit-line-clamp: 4;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .cd-review-cards .cd-review-card-body.expanded {
+    display: block;
+    -webkit-line-clamp: unset;
+    overflow: visible;
+  }
+  .cd-review-card-seemore {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    line-height: 20px;
+    color: #020203;
+    cursor: pointer;
+    /* Pulls the link 8px closer to the clamped body so they sit 4px apart
+       while the other .cd-review-card gaps stay at 12px. */
     margin-top: -8px;
+  }
+  /* Without this, the span's default `display` would override the UA
+     [hidden] rule, making the link visible even when JS left hidden=true. */
+  .cd-review-card-seemore[hidden] { display: none; }
+  .cd-review-card-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .cd-review-card-author {
+    display: flex;
+    align-items: center;
+    gap: 4px;
   }
   .cd-review-card-source {
     display: flex;
@@ -3089,6 +3125,14 @@
     font-weight: 500;
     line-height: 16px;
     color: #4F5159;
+  }
+  /* Reviews-tab list variant: vd-style body sizing (16/24) with the
+     -8px margin-top that mirrors .vd-rev-body so the class title and body
+     sit 4px apart while the other .cd-review-card gaps stay at 12px. */
+  .cd-review-card-list .cd-review-card-body {
+    font-size: 16px;
+    line-height: 24px;
+    margin-top: -8px;
   }
   .cd-review-card-source-icon {
     display: block;
