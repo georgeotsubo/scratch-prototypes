@@ -4375,19 +4375,10 @@
       if (wasDragging) setTimeout(function() { wasDragging = false; }, 0);
     });
 
-    // Mouse wheel vertical → horizontal scroll (only for true hscroll carousels;
-    // skip date picker / time slots so their parent can scroll vertically with the wheel)
-    if (el.classList.contains('vd-hscroll')) {
-      el.addEventListener('wheel', function(e) {
-        if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
-          var max = el.scrollWidth - el.clientWidth;
-          if (max <= 0) return;
-          if ((el.scrollLeft <= 0 && e.deltaY < 0) || (el.scrollLeft >= max && e.deltaY > 0)) return;
-          e.preventDefault();
-          el.scrollLeft += e.deltaY;
-        }
-      }, { passive: false });
-    }
+    // No vertical→horizontal wheel redirect: it hijacks the page's vertical
+    // mouse-wheel scroll whenever the cursor crosses a carousel. Trackpads can
+    // still pan carousels horizontally via native deltaX; mouse-wheel users
+    // now keep vertical scrolling all the way through the page.
   });
 
   // Venue detail vertical scroll
