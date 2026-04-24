@@ -2919,14 +2919,39 @@
     align-items: center;
     gap: 12px;
   }
-  /* Ratings & Reviews — full summary card (Reviews tab) */
+  /* Ratings & Reviews — full summary (Reviews tab). Mirrors the venue-detail
+     pattern: the outer container is transparent and sits on the sheet's gray
+     background; only the bar histogram gets its own white card. */
   .cd-rating-card {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .cd-rating-card .cd-rating-big {
+    font-size: 40px;
+    font-weight: 700;
+    line-height: 48px;
+  }
+  .cd-rating-card .cd-stars svg { width: 24px; height: 24px; }
+  .cd-rating-card .cd-rating-summary-count {
+    font-size: 14px;
+    line-height: 20px;
+  }
+  .cd-rating-card .cd-rating-source {
+    font-size: 16px;
+    line-height: 24px;
+    /* Pulls the subtitle 8px closer to the rating so the gap above it is 8px
+       while the other .cd-rating-card gaps stay at 16px. Mirrors .vd-rev-source. */
+    margin-top: -8px;
+  }
+  .cd-rating-card .cd-rating-ai-summary {
+    font-size: 16px;
+    line-height: 24px;
+  }
+  .cd-rating-bars-card {
     background: #fff;
     border-radius: 24px;
     padding: 20px;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
   }
   .cd-rating-card-top {
     display: flex;
