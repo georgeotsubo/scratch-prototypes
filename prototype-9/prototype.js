@@ -2684,6 +2684,9 @@
       // different prices for the same class at the same venue. Intro venues
       // override this with the $25/$35 pair on each card below.
       var venuePrice = PRICES[Math.floor(Math.random() * PRICES.length)];
+      // One venue-wide class duration so the start times can be spaced in a way
+      // that respects how long each class actually runs (no overlapping slots).
+      var venueDuration = DURATIONS[Math.floor(Math.random() * DURATIONS.length)];
       // Generate 6-9 classes spread from 10:00 AM to 5:00 PM
       var count = 6 + Math.floor(Math.random() * 4);
       // Generate random start times (in minutes from midnight) between 10:00 and 17:00
@@ -2694,6 +2697,16 @@
       times.sort(function(a, b) { return a - b; });
       // Round to nearest 15 min
       times = times.map(function(t) { return Math.round(t / 15) * 15; });
+      // Enforce a minimum gap equal to the venue's class duration — otherwise
+      // two random times can round into the same (or adjacent) 15-min slot and
+      // the picker shows classes as little as 15 min apart despite a 60-min run.
+      for (var i = 1; i < times.length; i++) {
+        if (times[i] - times[i - 1] < venueDuration) {
+          times[i] = times[i - 1] + venueDuration;
+        }
+      }
+      // Drop anything that ran past 9:00 PM (1260 min) after spacing shifted it.
+      times = times.filter(function(t) { return t <= 1260; });
 
       for (var i = 0; i < times.length; i++) {
         var h = Math.floor(times[i] / 60);
@@ -2701,7 +2714,7 @@
         var ampm = h >= 12 ? 'PM' : 'AM';
         var h12 = h > 12 ? h - 12 : (h === 0 ? 12 : h);
         var timeStr = h12 + ':' + (m < 10 ? '0' : '') + m + ' ' + ampm;
-        var dur = DURATIONS[Math.floor(Math.random() * DURATIONS.length)];
+        var dur = venueDuration;
         var title = CLASS_NAMES[Math.floor(Math.random() * CLASS_NAMES.length)];
         var instructor = INSTRUCTOR_NAMES[Math.floor(Math.random() * INSTRUCTOR_NAMES.length)];
         var rating = (4.3 + Math.random() * 0.7).toFixed(1);
@@ -3295,7 +3308,10 @@
             var timeEl = card.querySelector('.vd-schedule-time');
             var instEl = card.querySelector('.vd-schedule-instructor');
             if (!timeEl) return;
-            var t = timeEl.textContent.split('·')[0].trim();
+            // Overview cards prefix the date (e.g. "Tue, Mar 24 · 12:00 PM · 60 min"),
+            // so match the "12:00 PM" segment directly instead of splitting on '·'.
+            var timeMatch = timeEl.textContent.match(/\d{1,2}:\d{2}\s?[AP]M/i);
+            var t = timeMatch ? timeMatch[0] : timeEl.textContent.split('·')[0].trim();
             if (!collected[t]) collected[t] = { time: t, instructor: instEl ? instEl.textContent.trim() : primaryInstructor };
           });
         }

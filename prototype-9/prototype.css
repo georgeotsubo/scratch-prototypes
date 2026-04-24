@@ -2927,10 +2927,12 @@
     flex-direction: column;
     gap: 16px;
   }
+  /* Scoped to .cd-rating-card so the Overview tab's inline .cd-rating-summary
+     (which reuses .cd-rating-big / .cd-rating-summary-count) stays unchanged. */
   .cd-rating-card .cd-rating-big {
-    font-size: 40px;
+    font-size: 32px;
     font-weight: 700;
-    line-height: 48px;
+    line-height: 40px;
   }
   .cd-rating-card .cd-stars svg { width: 24px; height: 24px; }
   .cd-rating-card .cd-rating-summary-count {
@@ -2938,16 +2940,24 @@
     line-height: 20px;
   }
   .cd-rating-card .cd-rating-source {
-    font-size: 16px;
-    line-height: 24px;
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 16px;
     /* Pulls the subtitle 8px closer to the rating so the gap above it is 8px
        while the other .cd-rating-card gaps stay at 16px. Mirrors .vd-rev-source. */
     margin-top: -8px;
   }
   .cd-rating-card .cd-rating-ai-summary {
-    font-size: 16px;
-    line-height: 24px;
+    font-size: 14px;
+    font-weight: 400;
+    line-height: 20px;
   }
+  .cd-rating-card .cd-rating-bars { gap: 8px; }
+  .cd-rating-card .cd-rating-bar-track {
+    background: #f1f2f3;
+    border-radius: 5px;
+  }
+  .cd-rating-card .cd-rating-bar-fill { border-radius: 5px; }
   .cd-rating-bars-card {
     background: #fff;
     border-radius: 24px;
