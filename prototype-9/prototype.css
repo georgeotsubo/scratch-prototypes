@@ -1373,10 +1373,9 @@
     display: flex;
     align-items: center;
     gap: 8px;
-    padding-left: 4px;
-    padding-right: 4px;
     background: white;
     border-radius: 999px;
+    width: 44px;
     height: 44px;
     overflow: hidden;
     flex-shrink: 0;
@@ -1439,16 +1438,9 @@
     padding: 20px 20px 110px;
     display: flex;
     flex-direction: column;
-    gap: 24px;
+    gap: 32px;
     margin-top: 0;
     box-sizing: border-box;
-    min-height: calc(100% - 64px);
-  }
-  .venue-detail-content > .vd-panel.active {
-    flex: 1;
-  }
-  .venue-detail-content > .vd-panel.active > :last-child {
-    margin-top: auto;
   }
   .vd-header-group {
     display: flex;
@@ -1543,7 +1535,9 @@
     flex-shrink: 0;
   }
 
-  /* Tabs */
+  /* Tabs sit in the scroll flow right below the image carousel and stick
+     to the top of the scroll container (just below the sticky nav) once
+     scrolled past. Always visible. */
   .vd-tabs {
     display: flex;
     gap: 40px;
@@ -1602,10 +1596,13 @@
   .vd-panel {
     display: none;
     flex-direction: column;
-    gap: 24px;
+    gap: 32px;
   }
   .vd-panel-schedule {
     gap: 0;
+  }
+  .vd-panel-classes {
+    gap: 12px;
   }
   .vd-panel.active {
     display: flex;
@@ -1783,17 +1780,78 @@
   .vd-schedule-card.disabled .vd-price-final,
   .vd-schedule-card.disabled .vd-price-plain { color: #b3b5bc; }
 
-  /* ===== REVIEWS PANEL ===== */
-  .vd-panel-reviews { gap: 16px; }
-
-  /* Rating summary card */
-  .vd-rev-summary-card {
-    background: white;
+  /* ===== CLASSES PANEL ===== */
+  .vd-class-summary-card {
+    background: #fff;
     border-radius: 24px;
     padding: 16px;
     display: flex;
     flex-direction: column;
+    align-items: flex-start;
     gap: 12px;
+  }
+  .vd-class-summary-text {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+    width: 100%;
+  }
+  .vd-class-summary-title {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 24px;
+    color: #020203;
+  }
+  .vd-class-summary-desc {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 20px;
+    color: #020203;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .vd-class-summary-seemore {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    line-height: 20px;
+    color: #020203;
+    cursor: pointer;
+  }
+  .vd-class-summary-btn {
+    background: transparent;
+    border: 1px solid #e4e5e7;
+    border-radius: 999px;
+    padding: 8px 12px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 20px;
+    color: #020203;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .vd-class-summary-btn:active {
+    background: #f1f2f3;
+  }
+
+  /* ===== REVIEWS PANEL ===== */
+  .vd-panel-reviews { gap: 16px; }
+  /* Pushes the "Class reviews" title 16px further from the summary so the
+     gap between them is 32px while other .vd-panel-reviews gaps stay 16px. */
+  .vd-panel-reviews .vd-rev-summary + .vd-section-title { margin-top: 16px; }
+
+  /* Rating summary — sits directly on the panel's gray background;
+     only the bar histogram below gets its own white card. */
+  .vd-rev-summary {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
   }
   .vd-rev-top {
     display: flex;
@@ -1813,11 +1871,12 @@
     gap: 8px;
   }
   .vd-rev-stars { display: flex; gap: 0; }
+  .vd-rev-stars svg { width: 24px; height: 24px; }
   .vd-rev-count {
     font-family: 'DM Sans', sans-serif;
-    font-size: 13px;
+    font-size: 14px;
     font-weight: 500;
-    line-height: 16px;
+    line-height: 20px;
     color: #4F5159;
   }
   .vd-rev-source {
@@ -1826,6 +1885,16 @@
     font-weight: 500;
     line-height: 16px;
     color: #4F5159;
+    /* Pulls the source line 8px closer to the rating so the gap above
+       it is 8px while the other .vd-rev-summary gaps stay at 16px. */
+    margin-top: -8px;
+  }
+
+  /* White card that contains only the rating-distribution bars. */
+  .vd-rev-bars-card {
+    background: #fff;
+    border-radius: 24px;
+    padding: 20px;
   }
 
   /* Rating bars */
@@ -1887,7 +1956,7 @@
   .vd-rev-card-header {
     display: flex;
     gap: 12px;
-    align-items: flex-start;
+    align-items: center;
   }
   .vd-rev-avatar {
     width: 30px;
@@ -1939,6 +2008,9 @@
     font-weight: 400;
     line-height: 24px;
     color: #020203;
+    /* Pulls the body 8px closer to the class title so the gap between them
+       is 4px while the other .vd-rev-card gaps stay at 12px. */
+    margin-top: -8px;
   }
   .vd-rev-source-badge {
     display: flex;
@@ -1989,10 +2061,16 @@
     flex-direction: column;
     gap: 16px;
   }
+  /* Available today preview — sits between the carousel and the tabs. */
+  .vd-available-today {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
   .vd-see-schedule-btn {
     width: 100%;
-    background: #e10e0e;
-    color: #fff;
+    background: #fff;
+    color: #020203;
     border: none;
     border-radius: 999px;
     padding: 12px 24px;
@@ -2003,7 +2081,7 @@
     cursor: pointer;
   }
   .vd-see-schedule-btn:active {
-    background: #c00b0b;
+    background: #f1f2f3;
   }
   .vd-section-title {
     font-family: 'DM Sans', sans-serif;
@@ -2184,6 +2262,10 @@
     font-weight: 400;
     line-height: 20px;
     color: #020203;
+    display: -webkit-box;
+    -webkit-line-clamp: 4;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
   }
   .vd-review-footer {
     display: flex;
@@ -2220,36 +2302,63 @@
     white-space: nowrap;
   }
 
-  /* About */
+  /* About block wraps the clamped text + "see more" in a tight column (4px gap). */
+  .vd-about-block {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    /* Pulls the about copy 8px closer to the image carousel so the gap
+       between carousel and copy is 24px while all other
+       .venue-detail-content gaps stay at 32px. */
+    margin-top: -8px;
+  }
+
+  /* About — clamped to 3 lines by default. JS unhides the adjacent
+     "see more" span only when the text actually overflows; tapping it
+     toggles .expanded to reveal the full copy. */
   .vd-about-text {
     font-family: 'DM Sans', sans-serif;
     font-size: 16px;
     font-weight: 400;
     line-height: 24px;
     color: #020203;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .vd-about-text.expanded {
+    display: block;
+    -webkit-line-clamp: unset;
+    overflow: visible;
   }
   .vd-see-more {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 16px;
     font-weight: 700;
+    line-height: 24px;
+    color: #020203;
     cursor: pointer;
     display: block;
   }
 
-  /* Quick actions */
+  /* Quick actions: horizontal pill row above the image carousel */
   .vd-quick-actions {
     display: flex;
     gap: 8px;
+    align-items: flex-start;
   }
   .vd-quick-btn {
-    flex: 1;
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
     align-items: center;
     justify-content: center;
-    gap: 4px;
+    gap: 8px;
     padding: 12px 16px;
     background: white;
-    border-radius: 16px;
+    border-radius: 999px;
     cursor: pointer;
+    flex-shrink: 0;
   }
   .vd-quick-btn span {
     font-family: 'DM Sans', sans-serif;
@@ -2378,12 +2487,11 @@
     display: flex;
     align-items: center;
     gap: 8px;
-    padding-left: 4px;
-    padding-right: 4px;
     background: rgba(255, 255, 255, 0.55);
     -webkit-backdrop-filter: blur(14px);
     backdrop-filter: blur(14px);
     border-radius: 999px;
+    width: 44px;
     height: 44px;
     overflow: hidden;
     flex-shrink: 0;

@@ -6,7 +6,7 @@
   input, textarea { -webkit-user-select: text; user-select: text; }
 
   body {
-    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', sans-serif;
+    font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', sans-serif;
     background: #fff;
     display: flex;
     justify-content: center;
@@ -256,7 +256,7 @@
     flex: 1;
     font-size: 16px;
     color: #000;
-    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', sans-serif;
+    font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', sans-serif;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -1700,9 +1700,9 @@
     justify-content: space-between;
     align-items: center;
     font-family: 'DM Sans', sans-serif;
-    font-size: 13px;
+    font-size: 14px;
     font-weight: 500;
-    line-height: 16px;
+    line-height: 20px;
   }
   .vd-schedule-time { color: #020203; }
   .vd-schedule-spots { color: #4F5159; }
@@ -1858,7 +1858,7 @@
   .vd-rev-score {
     font-family: 'DM Sans', sans-serif;
     font-size: 32px;
-    font-weight: 900;
+    font-weight: 700;
     line-height: 40px;
     color: #020203;
   }
@@ -1920,7 +1920,7 @@
   .vd-rev-ai-summary {
     font-family: 'DM Sans', sans-serif;
     font-size: 14px;
-    font-weight: 500;
+    font-weight: 400;
     line-height: 20px;
     color: #020203;
   }
