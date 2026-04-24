@@ -2675,6 +2675,10 @@
 
     function generateClasses() {
       var classes = [];
+      // One venue-wide price for all non-intro classes so a user doesn't see
+      // different prices for the same class at the same venue. Intro venues
+      // override this with the $25/$35 pair on each card below.
+      var venuePrice = PRICES[Math.floor(Math.random() * PRICES.length)];
       // Generate 6-9 classes spread from 10:00 AM to 5:00 PM
       var count = 6 + Math.floor(Math.random() * 4);
       // Generate random start times (in minutes from midnight) between 10:00 and 17:00
@@ -2693,11 +2697,10 @@
         var h12 = h > 12 ? h - 12 : (h === 0 ? 12 : h);
         var timeStr = h12 + ':' + (m < 10 ? '0' : '') + m + ' ' + ampm;
         var dur = DURATIONS[Math.floor(Math.random() * DURATIONS.length)];
-        var title = i < 4 ? 'Power Vinyasa Flow' : CLASS_NAMES[Math.floor(Math.random() * CLASS_NAMES.length)];
+        var title = CLASS_NAMES[Math.floor(Math.random() * CLASS_NAMES.length)];
         var instructor = INSTRUCTOR_NAMES[Math.floor(Math.random() * INSTRUCTOR_NAMES.length)];
         var rating = (4.3 + Math.random() * 0.7).toFixed(1);
         var reviews = 50 + Math.floor(Math.random() * 400);
-        var price = PRICES[Math.floor(Math.random() * PRICES.length)];
         var isDisabled = Math.random() < 0.15;
         var hasIntro = !isDisabled && hasVenueIntroOffer(window.__currentVenuePin);
         var spotsNum = 1 + Math.floor(Math.random() * 5);
@@ -2716,7 +2719,7 @@
           cls.strikePrice = '$35';
           cls.finalPrice = '$25';
         } else {
-          cls.plainPrice = '$' + price;
+          cls.plainPrice = '$' + venuePrice;
         }
         classes.push(cls);
       }
@@ -2818,10 +2821,11 @@
     var STAR_SVG_16 = '<svg width="16" height="16" viewBox="0 0 20 20" fill="none"><path d="M9.10326 1.81699C9.47008 1.07374 10.5299 1.07374 10.8967 1.81699L12.7063 5.48347C12.8519 5.77862 13.1335 5.98319 13.4592 6.03051L17.5054 6.61846C18.3256 6.73765 18.6531 7.74562 18.0596 8.32416L15.1318 11.1781C14.8961 11.4079 14.7885 11.7389 14.8442 12.0632L15.5353 16.0931C15.6754 16.91 14.818 17.533 14.0844 17.1473L10.4653 15.2446C10.174 15.0915 9.82598 15.0915 9.53466 15.2446L5.91562 17.1473C5.18199 17.533 4.32456 16.91 4.46467 16.0931L5.15585 12.0632C5.21148 11.7389 5.10393 11.4079 4.86825 11.1781L1.94038 8.32416C1.34687 7.74562 1.67438 6.73765 2.4946 6.61846L6.54081 6.03051C6.86652 5.98319 7.14808 5.77862 7.29374 5.48347L9.10326 1.81699Z" fill="#FFB54D"/></svg>';
 
     var REVIEW_NAMES = ['Sara', 'Natalie', 'Jordan', 'Marcus', 'Priya', 'Emma', 'David', 'Liz', 'Kai', 'Nina'];
+    // Keep review class titles in sync with VENUE_CLASSES (the shared venue
+    // catalog used by the Schedule/Overview lists) so reviews reference classes
+    // this venue actually offers.
     var REVIEW_CLASSES = [
-      'Sui Power Soul with Chauncie', 'Heated Vinyasa Flow', 'Slow Burn Reformer',
-      'Power Yoga Sculpt', 'Full Body Barre', 'HIIT & Flow', 'Candlelit Yin',
-      'Core Fusion Express', 'Athletic Conditioning'
+      'Power Vinyasa Flow', 'Sculpt & Tone', 'Restorative Yoga', 'HIIT Reformer', 'Candlelit Flow'
     ];
     var REVIEW_BODIES = [
       "I really appreciate Chauncie's flows. They're physically challenging, often incorporating ashtanga elements, but never aggressive for the sake of it.",
