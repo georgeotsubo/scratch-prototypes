@@ -2064,6 +2064,20 @@
     // Toggle the Overview intro-offer promo card based on this venue's flag
     const promoEl = document.getElementById('vd-section-promo');
     if (promoEl) promoEl.style.display = hasVenueIntroOffer(pin) ? '' : 'none';
+    // Swap the price cluster on the hardcoded "Available today" cards: intro
+    // venues keep "Intro offer $25 $35"; non-intro venues show the plain
+    // full price so we don't imply a discount that doesn't exist.
+    const availableEl = document.getElementById('vd-available-today');
+    if (availableEl) {
+      const priceHTML = hasVenueIntroOffer(pin)
+        ? '<span class="vd-schedule-price-label">Intro offer</span>'
+          + '<span class="vd-price-final">$25</span>'
+          + '<span class="vd-price-strike">$35</span>'
+        : '<span class="vd-price-plain">$35</span>';
+      availableEl.querySelectorAll('.vd-schedule-price').forEach(function(el) {
+        el.innerHTML = priceHTML;
+      });
+    }
 
     const search = currentSearchLabel;
     const rawTags = search || pin.category || STUDIO_TAGS[pin.name] || 'Fitness';
@@ -2357,9 +2371,22 @@
     var seeMoreLink = document.getElementById('vd-see-more');
     if (aboutTextEl && seeMoreLink) {
       seeMoreLink.addEventListener('click', function(e) {
+        if (wasDragging) return;
         e.stopPropagation();
         var isExpanded = aboutTextEl.classList.toggle('expanded');
         seeMoreLink.textContent = isExpanded ? 'see less' : 'see more';
+        // Expanding the About block changes the natural flow position of
+        // the tabs. Re-measure __vdPinOffset so the next tab tap still
+        // lands the tabs at the pinned position. Safe to use live
+        // scrollTop here because the "see more/less" link sits above the
+        // tabs, so the user is never scrolled past the pin when tapping it.
+        requestAnimationFrame(function() {
+          var tabsEl = venueDetailEl.querySelector('.vd-tabs');
+          if (!tabsEl) return;
+          var scrollRect = venueDetailScroll.getBoundingClientRect();
+          var tabsRect = tabsEl.getBoundingClientRect();
+          window.__vdPinOffset = tabsRect.top - scrollRect.top + venueDetailScroll.scrollTop - 64;
+        });
       });
     }
 
@@ -3009,6 +3036,7 @@
       "Such a welcoming studio. First time here and the instructor made me feel right at home. Will definitely be coming back for more classes.",
       "Incredible workout! Left feeling so strong and centered. The sequencing was creative and the instructor's cues were super clear throughout."
     ];
+    var CD_REVIEW_DATES = ['Last week', '2 weeks ago', '3 weeks ago', 'Last month', '2 months ago'];
     var DAY_LETTERS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
     var STAR_GOLD_20 = '<svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M9.10326 1.81699C9.47008 1.07374 10.5299 1.07374 10.8967 1.81699L12.7063 5.48347C12.8519 5.77862 13.1335 5.98319 13.4592 6.03051L17.5054 6.61846C18.3256 6.73765 18.6531 7.74562 18.0596 8.32416L15.1318 11.1781C14.8961 11.4079 14.7885 11.7389 14.8442 12.0632L15.5353 16.0931C15.6754 16.91 14.818 17.533 14.0844 17.1473L10.4653 15.2446C10.174 15.0915 9.82598 15.0915 9.53466 15.2446L5.91562 17.1473C5.18199 17.533 4.32456 16.91 4.46467 16.0931L5.15585 12.0632C5.21148 11.7389 5.10393 11.4079 4.86825 11.1781L1.94038 8.32416C1.34687 7.74562 1.67438 6.73765 2.4946 6.61846L6.54081 6.03051C6.86652 5.98319 7.14808 5.77862 7.29374 5.48347L9.10326 1.81699Z" fill="#FFB54D"/></svg>';
     var STAR_GOLD_16 = '<svg width="16" height="16" viewBox="0 0 20 20" fill="none"><path d="M9.10326 1.81699C9.47008 1.07374 10.5299 1.07374 10.8967 1.81699L12.7063 5.48347C12.8519 5.77862 13.1335 5.98319 13.4592 6.03051L17.5054 6.61846C18.3256 6.73765 18.6531 7.74562 18.0596 8.32416L15.1318 11.1781C14.8961 11.4079 14.7885 11.7389 14.8442 12.0632L15.5353 16.0931C15.6754 16.91 14.818 17.533 14.0844 17.1473L10.4653 15.2446C10.174 15.0915 9.82598 15.0915 9.53466 15.2446L5.91562 17.1473C5.18199 17.533 4.32456 16.91 4.46467 16.0931L5.15585 12.0632C5.21148 11.7389 5.10393 11.4079 4.86825 11.1781L1.94038 8.32416C1.34687 7.74562 1.67438 6.73765 2.4946 6.61846L6.54081 6.03051C6.86652 5.98319 7.14808 5.77862 7.29374 5.48347L9.10326 1.81699Z" fill="#FFB54D"/></svg>';
@@ -3300,6 +3328,8 @@
             instructor: CD_INSTRUCTORS[j],
             body: pick(CD_REVIEW_BODIES),
             name: pick(CD_REVIEW_NAMES),
+            date: pick(CD_REVIEW_DATES),
+            stars: 4 + Math.floor(Math.random() * 2),
             showSource: Math.random() < 0.5
           });
         }
@@ -3317,17 +3347,24 @@
 
     function reviewCardHTML(title, review, withSource) {
       var stars = '';
-      for (var s = 0; s < 5; s++) stars += STAR_GOLD_16;
+      for (var s = 0; s < review.stars; s++) stars += STAR_GOLD_16;
+      var sourceHTML = (withSource && review.showSource)
+        ? '<div class="cd-review-card-source">' + CD_REVIEW_SOURCE_SVG + '</div>'
+        : '';
       return '<div class="cd-review-card">'
-        + '<p class="cd-review-card-title">' + title + ' with ' + review.instructor + '</p>'
-        + '<p class="cd-review-card-body">' + review.body + '</p>'
-        + '<div class="cd-review-card-footer">'
-        +   '<div class="cd-review-card-author">'
-        +     '<span class="cd-review-card-name">' + review.name + '</span>'
-        +     '<div class="cd-review-card-stars">' + stars + '</div>'
+        + '<div class="cd-review-card-header">'
+        +   '<div class="cd-review-avatar">' + review.name.charAt(0) + '</div>'
+        +   '<div class="cd-review-card-meta">'
+        +     '<div class="cd-review-name-row">'
+        +       '<span class="cd-review-card-name">' + review.name + '</span>'
+        +       '<div class="cd-review-card-stars">' + stars + '</div>'
+        +     '</div>'
+        +     '<div class="cd-review-card-date">' + review.date + '</div>'
         +   '</div>'
-        +   (withSource && review.showSource ? '<div class="cd-review-card-source">' + CD_REVIEW_SOURCE_SVG + '</div>' : '')
         + '</div>'
+        + '<div class="cd-review-card-title">' + title + '</div>'
+        + '<div class="cd-review-card-body">' + review.body + '</div>'
+        + sourceHTML
         + '</div>';
     }
 
