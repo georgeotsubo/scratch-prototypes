@@ -2061,23 +2061,12 @@
     window.__currentVenuePin = pin;
     // Re-render the Schedule tab so prices reflect this venue's intro-offer flag
     if (window.__renderVdSchedule) window.__renderVdSchedule();
+    // Render the Overview's "Available today" list from the same generated
+    // classes so it matches the Schedule tab.
+    if (window.__renderVdAvailableToday) window.__renderVdAvailableToday();
     // Toggle the Overview intro-offer promo card based on this venue's flag
     const promoEl = document.getElementById('vd-section-promo');
     if (promoEl) promoEl.style.display = hasVenueIntroOffer(pin) ? '' : 'none';
-    // Swap the price cluster on the hardcoded "Available today" cards: intro
-    // venues keep "Intro offer $25 $35"; non-intro venues show the plain
-    // full price so we don't imply a discount that doesn't exist.
-    const availableEl = document.getElementById('vd-available-today');
-    if (availableEl) {
-      const priceHTML = hasVenueIntroOffer(pin)
-        ? '<span class="vd-schedule-price-label">Intro offer</span>'
-          + '<span class="vd-price-final">$25</span>'
-          + '<span class="vd-price-strike">$35</span>'
-        : '<span class="vd-price-plain">$35</span>';
-      availableEl.querySelectorAll('.vd-schedule-price').forEach(function(el) {
-        el.innerHTML = priceHTML;
-      });
-    }
 
     const search = currentSearchLabel;
     const rawTags = search || pin.category || STUDIO_TAGS[pin.name] || 'Fitness';
@@ -2380,10 +2369,15 @@
         var finalPriceEl = card.querySelector('.vd-price-final');
         var strikePriceEl = card.querySelector('.vd-price-strike');
         var plainPriceEl = card.querySelector('.vd-price-plain');
+        // Extract the time segment (matches "12:00 PM"). Overview cards now prefix
+        // the date (e.g. "Tue, Mar 24 · 12:00 PM · 60 min"), so splitting on '·'
+        // and taking [0] would grab the date instead.
+        var timeText = timeEl ? timeEl.textContent : '';
+        var timeMatch = timeText.match(/\d{1,2}:\d{2}\s?[AP]M/i);
         var cls = {
           title: titleEl ? titleEl.textContent.trim() : '',
           instructor: instructorEl ? instructorEl.textContent.trim() : '',
-          time: timeEl ? timeEl.textContent.split('·')[0].trim() : '',
+          time: timeMatch ? timeMatch[0] : timeText.split('·')[0].trim(),
           rating: ratingEl ? ratingEl.textContent.trim() : '4.9 (250)'
         };
         if (finalPriceEl && strikePriceEl) {
@@ -2728,6 +2722,48 @@
       }
       return classes;
     }
+
+    // Renders the Overview's "Available today" list from the same generated
+    // classes as the Schedule tab so the two stay in sync. Filters to the
+    // first N non-disabled entries; re-rendered on venue open only (not on
+    // Schedule-tab date changes, since Overview is scoped to today).
+    function renderAvailableToday() {
+      var list = document.getElementById('vd-available-list');
+      if (!list) return;
+      var classes = window.__lastGeneratedClasses || [];
+      var preview = classes.filter(function(c) { return !c.disabled; }).slice(0, 5);
+      // Overview cards prepend today's date (e.g. "Tue, Mar 24 · 12:00 PM · 60 min")
+      // so users can see at a glance which day the preview refers to. The Schedule
+      // tab's cards omit this since the date picker above them already sets context.
+      var now = new Date();
+      var WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+      var MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      var datePrefix = WEEKDAYS[now.getDay()] + ', ' + MONTHS[now.getMonth()] + ' ' + now.getDate();
+      list.innerHTML = preview.map(function(c) {
+        var priceHtml = '';
+        if (c.finalPrice) {
+          priceHtml = '<div class="vd-schedule-price">'
+            + (c.priceLabel ? '<span class="vd-schedule-price-label">' + c.priceLabel + '</span>' : '')
+            + '<span class="vd-price-final">' + c.finalPrice + '</span>'
+            + '<span class="vd-price-strike">' + c.strikePrice + '</span>'
+            + '</div>';
+        } else if (c.plainPrice) {
+          priceHtml = '<span class="vd-price-plain">' + c.plainPrice + '</span>';
+        }
+        return '<div class="vd-schedule-card">'
+          + '<div class="vd-schedule-top">'
+          +   '<span class="vd-schedule-time">' + datePrefix + ' · ' + c.time + '</span>'
+          + '</div>'
+          + '<div class="vd-schedule-title">' + c.title + '</div>'
+          + '<div class="vd-schedule-instructor">' + c.instructor + '</div>'
+          + '<div class="vd-schedule-bottom">'
+          +   '<div class="vd-schedule-rating">' + STAR_SVG + ' ' + c.rating + '</div>'
+          +   priceHtml
+          + '</div>'
+          + '</div>';
+      }).join('');
+    }
+    window.__renderVdAvailableToday = renderAvailableToday;
 
     function renderScheduleList() {
       var classes = generateClasses();
@@ -3218,7 +3254,7 @@
       return h * 60 + m;
     }
 
-    function renderCdTimeSlots(primaryTime, primaryInstructor) {
+    function renderCdTimeSlots(primaryTime, primaryInstructor, primaryTitle) {
       var slots = document.getElementById('cd-time-slots');
       // Strip the duration off if present (e.g. "10:00 AM · 60 min" → "10:00 AM")
       var firstTime = primaryTime.split(' · ')[0];
@@ -3228,19 +3264,61 @@
         do { n = pick(CD_INSTRUCTORS); } while (n === except);
         return n;
       };
-      // Build the selected primary slot first, then add later time slots from BASE_TIMES
-      var BASE_TIMES = ['7:00 AM', '8:30 AM', '10:00 AM', '11:30 AM', '1:30 PM', '3:00 PM', '5:30 PM', '7:00 PM', '8:30 PM'];
-      // Start with the primary slot
-      var data = [{ time: firstTime, instructor: primaryInstructor, spots: '3 spots left', selected: true }];
-      // Add BASE_TIMES that are strictly AFTER the primary time
-      var lastInst = primaryInstructor;
-      for (var i = 0; i < BASE_TIMES.length; i++) {
-        if (timeToMinutes(BASE_TIMES[i]) <= primaryMinutes) continue;
-        var inst = pickInst(lastInst);
-        lastInst = inst;
+
+      // Pull time slots from the venue's actual schedule so the class detail
+      // stays consistent with the Overview "Available today" cards and the
+      // Schedule tab. Filter by class title so only slots for this class
+      // appear. Falls back to BASE_TIMES when no venue data is available.
+      var collected = {};
+      if (primaryTitle) {
+        if (window.__lastGeneratedClasses) {
+          window.__lastGeneratedClasses.forEach(function(c) {
+            if (c.disabled || c.title !== primaryTitle) return;
+            var t = c.time.split(' · ')[0];
+            if (!collected[t]) collected[t] = { time: t, instructor: c.instructor };
+          });
+        }
+        var availableEl = document.getElementById('vd-available-today');
+        if (availableEl) {
+          availableEl.querySelectorAll('.vd-schedule-card:not(.disabled)').forEach(function(card) {
+            var titleEl = card.querySelector('.vd-schedule-title');
+            if (!titleEl || titleEl.textContent.trim() !== primaryTitle) return;
+            var timeEl = card.querySelector('.vd-schedule-time');
+            var instEl = card.querySelector('.vd-schedule-instructor');
+            if (!timeEl) return;
+            var t = timeEl.textContent.split('·')[0].trim();
+            if (!collected[t]) collected[t] = { time: t, instructor: instEl ? instEl.textContent.trim() : primaryInstructor };
+          });
+        }
+      }
+      // Always include the tapped slot as the selected entry
+      collected[firstTime] = { time: firstTime, instructor: primaryInstructor, primary: true };
+
+      var data = Object.keys(collected).map(function(k) {
+        var s = collected[k];
         var spotsN = 1 + Math.floor(Math.random() * 6);
-        var spots = Math.random() < 0.5 ? spotsN + (spotsN === 1 ? ' spot left' : ' spots left') : '';
-        data.push({ time: BASE_TIMES[i], instructor: inst, spots: spots, selected: false });
+        return {
+          time: s.time,
+          instructor: s.instructor,
+          spots: s.primary ? '3 spots left' : (Math.random() < 0.5 ? spotsN + (spotsN === 1 ? ' spot left' : ' spots left') : ''),
+          selected: !!s.primary
+        };
+      });
+      data.sort(function(a, b) { return timeToMinutes(a.time) - timeToMinutes(b.time); });
+
+      // Fallback when the venue schedule has no other matching-title slots:
+      // fill from BASE_TIMES (upcoming today) so the picker isn't empty.
+      if (data.length < 2) {
+        var BASE_TIMES = ['7:00 AM', '8:30 AM', '10:00 AM', '11:30 AM', '1:30 PM', '3:00 PM', '5:30 PM', '7:00 PM', '8:30 PM'];
+        var lastInst = primaryInstructor;
+        for (var i = 0; i < BASE_TIMES.length; i++) {
+          if (timeToMinutes(BASE_TIMES[i]) <= primaryMinutes) continue;
+          var inst = pickInst(lastInst);
+          lastInst = inst;
+          var spotsN2 = 1 + Math.floor(Math.random() * 6);
+          var spotsStr = Math.random() < 0.5 ? spotsN2 + (spotsN2 === 1 ? ' spot left' : ' spots left') : '';
+          data.push({ time: BASE_TIMES[i], instructor: inst, spots: spotsStr, selected: false });
+        }
       }
       slots.innerHTML = data.map(function(s) {
         return '<div class="cd-time-slot' + (s.selected ? ' selected' : '') + '">'
@@ -3516,7 +3594,7 @@
       }
       // Date/slots — picker leads with today (absIdx = 0)
       renderCdDatePicker(0);
-      renderCdTimeSlots(cls.time, cls.instructor);
+      renderCdTimeSlots(cls.time, cls.instructor, cls.title);
       // Description / prep / cancel
       document.getElementById('cd-description-body').textContent = pick(CD_DESCRIPTIONS);
       document.getElementById('cd-prep-body').textContent = CD_PREP;
