@@ -2326,7 +2326,12 @@
     }
 
     tabs.forEach(function(tab) {
-      tab.addEventListener('click', function() { activateTab(tab); });
+      tab.addEventListener('click', function() {
+        // Suppress clicks that are the tail end of a drag-scroll — otherwise
+        // releasing a vertical drag over a tab row switches tabs unintentionally.
+        if (wasDragging) return;
+        activateTab(tab);
+      });
     });
 
     // Expose for external triggers (e.g. "See more" buttons)
