@@ -3270,35 +3270,22 @@
       var firstTime = primaryTime.split(' · ')[0];
 
       // Pull time slots from the venue's actual schedule so the class detail
-      // stays consistent with the Overview "Available today" cards and the
-      // Schedule tab. Filter by class title so only slots for this class appear.
+      // matches the Schedule tab exactly. Filter by class title and skip
+      // disabled entries; never inject synthetic slots — open paths that
+      // pass a placeholder time (e.g. the Classes tab "View class" button)
+      // shouldn't make the picker surface times the venue isn't running.
       var collected = {};
-      if (primaryTitle) {
-        if (window.__lastGeneratedClasses) {
-          window.__lastGeneratedClasses.forEach(function(c) {
-            if (c.disabled || c.title !== primaryTitle) return;
-            var t = c.time.split(' · ')[0];
-            if (!collected[t]) collected[t] = { time: t, instructor: c.instructor };
-          });
-        }
-        var availableEl = document.getElementById('vd-available-today');
-        if (availableEl) {
-          availableEl.querySelectorAll('.vd-schedule-card:not(.disabled)').forEach(function(card) {
-            var titleEl = card.querySelector('.vd-schedule-title');
-            if (!titleEl || titleEl.textContent.trim() !== primaryTitle) return;
-            var timeEl = card.querySelector('.vd-schedule-time');
-            var instEl = card.querySelector('.vd-schedule-instructor');
-            if (!timeEl) return;
-            // Overview cards prefix the date (e.g. "Tue, Mar 24 · 12:00 PM · 60 min"),
-            // so match the "12:00 PM" segment directly instead of splitting on '·'.
-            var timeMatch = timeEl.textContent.match(/\d{1,2}:\d{2}\s?[AP]M/i);
-            var t = timeMatch ? timeMatch[0] : timeEl.textContent.split('·')[0].trim();
-            if (!collected[t]) collected[t] = { time: t, instructor: instEl ? instEl.textContent.trim() : primaryInstructor };
-          });
-        }
+      if (primaryTitle && window.__lastGeneratedClasses) {
+        window.__lastGeneratedClasses.forEach(function(c) {
+          if (c.disabled || c.title !== primaryTitle) return;
+          var t = c.time.split(' · ')[0];
+          if (!collected[t]) collected[t] = { time: t, instructor: c.instructor };
+        });
       }
-      // Always include the tapped slot as the selected entry
-      collected[firstTime] = { time: firstTime, instructor: primaryInstructor, primary: true };
+      // Mark the tapped slot as selected only if it actually exists in the
+      // schedule. If primary time isn't in the venue's schedule for this
+      // class, leave nothing pre-selected.
+      if (collected[firstTime]) collected[firstTime].primary = true;
 
       var data = Object.keys(collected).map(function(k) {
         var s = collected[k];
