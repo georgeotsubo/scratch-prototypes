@@ -1946,24 +1946,29 @@
   .vd-rev-card-header {
     display: flex;
     gap: 12px;
-    align-items: center;
+    align-items: flex-start;
+    width: 100%;
   }
   .vd-rev-avatar {
-    width: 30px;
-    height: 30px;
-    border-radius: 50%;
-    background: #d6d6d6;
+    width: 32px;
+    height: 32px;
+    border-radius: 28px;
+    background: #d9dadd;
     display: flex;
     align-items: center;
     justify-content: center;
     font-family: 'DM Sans', sans-serif;
     font-size: 16px;
     font-weight: 700;
+    line-height: 24px;
     color: white;
     flex-shrink: 0;
   }
   .vd-rev-card-meta {
     flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
   }
   .vd-rev-name-row {
     display: flex;
@@ -1978,12 +1983,13 @@
     color: #020203;
   }
   .vd-rev-card-stars { display: flex; gap: 0; }
+  .vd-rev-card-stars svg { display: block; flex-shrink: 0; }
   .vd-rev-date {
     font-family: 'DM Sans', sans-serif;
-    font-size: 12px;
-    font-weight: 400;
+    font-size: 13px;
+    font-weight: 500;
     line-height: 16px;
-    color: #676767;
+    color: #90939d;
   }
   .vd-rev-class-title {
     font-family: 'DM Sans', sans-serif;
@@ -2001,23 +2007,6 @@
     /* Pulls the body 8px closer to the class title so the gap between them
        is 4px while the other .vd-rev-card gaps stay at 12px. */
     margin-top: -8px;
-  }
-  .vd-rev-source-badge {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-  .vd-rev-source-icon {
-    width: 20px;
-    height: 20px;
-    flex-shrink: 0;
-  }
-  .vd-rev-source-name {
-    font-family: 'DM Sans', sans-serif;
-    font-size: 13px;
-    font-weight: 500;
-    line-height: 16px;
-    color: #4F5159;
   }
 
   /* Promo card */

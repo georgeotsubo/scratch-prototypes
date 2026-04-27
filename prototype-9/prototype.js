@@ -2852,7 +2852,6 @@
       "Love the balance of strength and flexibility work. The instructor really knows their stuff and pushes you in the best way possible."
     ];
     var REVIEW_DATES = ['Last week', '2 weeks ago', '3 weeks ago', 'Last month', '2 months ago'];
-    var REVIEW_SOURCES = ['ClassPass', '', '', 'ClassPass', ''];
 
     var AI_SUMMARIES = [
       "People love this studio for its upbeat, music-driven workouts and motivating instructors who give clear form cues. Reviews highlight an intense full-body burn in a short time and frequent shout-outs to specific coaches for energy and guidance.",
@@ -2880,13 +2879,6 @@
     }
 
     function renderReviewCard(review) {
-      var sourceHTML = '';
-      if (review.source) {
-        sourceHTML = '<div class="vd-rev-source-badge">'
-          + '<svg class="vd-rev-source-icon" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M0 10C0 4.47715 4.47715 0 10 0V0C15.5228 0 20 4.47715 20 10V10C20 15.5228 15.5228 20 10 20V20C4.47715 20 0 15.5228 0 10V10Z" fill="#0055FF"/><path d="M11.8559 5.39815C11.733 5.39222 11.1837 5.38899 10.7913 5.38737C10.6637 5.38703 10.5399 5.43088 10.4409 5.51145C10.342 5.59202 10.274 5.70436 10.2484 5.82939L10.0398 6.82717C10.022 6.91422 9.97477 6.99249 9.90606 7.04883C9.83735 7.10518 9.75135 7.13616 9.66249 7.13658L7.70574 7.14521C5.52853 7.14521 3.53027 8.77745 3.53027 11.0636C3.53027 13.1173 5.24391 14.9657 7.70628 14.9657C7.8335 14.9722 8.54828 14.9706 9.0248 14.9722C9.15246 14.9724 9.27624 14.9283 9.3751 14.8475C9.47396 14.7668 9.5418 14.6542 9.56708 14.5291L9.77569 13.5254C9.79331 13.4382 9.84047 13.3597 9.90921 13.3033C9.97795 13.2468 10.0641 13.2158 10.153 13.2154L11.8548 13.2203C14.2595 13.2203 16.0303 11.3719 16.0303 9.29817C16.0303 7.03416 14.0746 5.39653 11.8543 5.39653L11.8559 5.39815ZM11.8446 11.7196L10.1094 11.7233C9.98344 11.7237 9.86149 11.7675 9.76402 11.8472C9.66654 11.9269 9.59947 12.0377 9.57409 12.1611L9.36494 13.1739C9.34712 13.2607 9.29979 13.3386 9.23099 13.3945C9.1622 13.4503 9.07619 13.4805 8.9876 13.4801C8.54828 13.4801 8.30571 13.4661 7.72569 13.4661C6.41041 13.4661 5.0202 12.5891 5.0202 11.0754C5.0202 9.67389 6.26002 8.64592 7.72138 8.64592L9.70076 8.64215C9.82673 8.64201 9.9488 8.59846 10.0464 8.51882C10.144 8.43919 10.2112 8.32835 10.2366 8.20498L10.4473 7.19588C10.4654 7.10919 10.5127 7.03138 10.5815 6.97559C10.6502 6.9198 10.7361 6.88946 10.8247 6.8897C11.1929 6.8897 11.7648 6.89347 11.8429 6.89994C13.2251 6.89994 14.5441 7.84489 14.5441 9.32566C14.5441 10.6808 13.3631 11.7217 11.8435 11.7217" fill="white"/></svg>'
-          + '<span class="vd-rev-source-name">' + review.source + '</span>'
-          + '</div>';
-      }
       return '<div class="vd-rev-card">'
         + '<div class="vd-rev-card-header">'
         +   '<div class="vd-rev-avatar">' + review.name.charAt(0) + '</div>'
@@ -2895,12 +2887,11 @@
         +       '<span class="vd-rev-name">' + review.name + '</span>'
         +       '<div class="vd-rev-card-stars">' + starsHTML(review.stars, STAR_SVG_16) + '</div>'
         +     '</div>'
-        +     '<div class="vd-rev-date">' + review.date + '</div>'
+        +     '<div class="vd-rev-date">' + review.date + ' · ClassPass</div>'
         +   '</div>'
         + '</div>'
         + '<div class="vd-rev-class-title">' + review.classTitle + '</div>'
         + '<div class="vd-rev-body">' + review.body + '</div>'
-        + sourceHTML
         + '</div>';
     }
 
@@ -2939,8 +2930,7 @@
           stars: 4 + Math.floor(Math.random() * 2),
           date: REVIEW_DATES[Math.floor(Math.random() * REVIEW_DATES.length)],
           classTitle: REVIEW_CLASSES[Math.floor(Math.random() * REVIEW_CLASSES.length)],
-          body: REVIEW_BODIES[Math.floor(Math.random() * REVIEW_BODIES.length)],
-          source: REVIEW_SOURCES[Math.floor(Math.random() * REVIEW_SOURCES.length)]
+          body: REVIEW_BODIES[Math.floor(Math.random() * REVIEW_BODIES.length)]
         });
       }
       var listEl = document.getElementById('vd-rev-list');
