@@ -2563,24 +2563,24 @@
   .cd-intro-chip-icon { display: none; }
   .cd-intro-chip-label {
     font-family: 'DM Sans', sans-serif;
-    font-size: 16px;
+    font-size: 18px;
     font-weight: 500;
-    line-height: 20px;
-    color: #379062;
+    line-height: 24px;
+    color: rgba(2, 2, 3, 1);
   }
   .cd-intro-chip-price {
     font-family: 'DM Sans', sans-serif;
-    font-size: 16px;
+    font-size: 18px;
     font-weight: 500;
-    line-height: 20px;
-    color: #020203;
+    line-height: 24px;
+    color: rgba(55, 144, 98, 1);
   }
   .cd-intro-chip-strike {
     font-family: 'DM Sans', sans-serif;
-    font-size: 16px;
-    font-weight: 500;
-    line-height: 20px;
-    color: #4F5159;
+    font-size: 18px;
+    font-weight: 400;
+    line-height: 24px;
+    color: rgba(144, 147, 157, 1);
     text-decoration: line-through;
   }
   .cd-intro-chip-plain {
@@ -3124,7 +3124,7 @@
     font-weight: 500;
   }
   .cd-booking-price-final {
-    color: #379062;
+    color: rgba(55, 144, 98, 1);
   }
   .cd-booking-price-plain {
     color: #020203;

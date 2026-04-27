@@ -1088,19 +1088,9 @@
     display: inline-flex;
     align-items: center;
     gap: 8px;
-    padding: 8px 12px;
-    background: #edfaf3;
-    border-radius: 12px;
   }
   .venue-intro-badge svg { display: block; flex-shrink: 0; }
   .venue-intro-badge-label {
-    font-family: 'DM Sans', sans-serif;
-    font-size: 14px;
-    font-weight: 700;
-    line-height: 20px;
-    color: #020203;
-  }
-  .venue-intro-badge-save {
     font-family: 'DM Sans', sans-serif;
     font-size: 14px;
     font-weight: 700;
@@ -1112,8 +1102,8 @@
     gap: 12px;
   }
   .venue-image {
-    width: 100px;
-    height: 100px;
+    width: 108px;
+    height: 108px;
     background: #e4e5e7;
     border-radius: 16px;
     flex-shrink: 0;
@@ -1122,64 +1112,64 @@
     flex: 1;
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    gap: 0;
     min-width: 0;
+  }
+  .venue-info-text {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
   }
   .venue-title {
     font-size: 18px;
     font-weight: 700;
+    line-height: 24px;
     color: #020203;
     font-family: 'DM Sans', -apple-system, sans-serif;
   }
   .venue-tags {
     font-size: 14px;
     font-weight: 500;
-    color: #020203;
-    font-family: 'DM Sans', -apple-system, sans-serif;
-  }
-  .venue-subtitle {
-    font-size: 13px;
-    font-weight: 500;
-    color: #4F5159;
+    line-height: 20px;
+    color: #90939d;
     font-family: 'DM Sans', -apple-system, sans-serif;
   }
   .venue-rating {
     display: flex;
     align-items: center;
-    gap: 2px;
-    font-size: 14px;
-    font-weight: 500;
-    color: #020203;
-    margin-top: auto;
-    font-family: 'DM Sans', -apple-system, sans-serif;
-  }
-  .venue-rating .star { color: #020203; font-size: 13px; }
-  .venue-desc {
+    gap: 4px;
     font-size: 13px;
-    font-weight: 500;
-    color: #4F5159;
     line-height: 16px;
     font-family: 'DM Sans', -apple-system, sans-serif;
   }
-  .venue-actions {
-    display: flex;
-    gap: 12px;
+  .venue-rating .star-icon { width: 12px; height: 12px; flex-shrink: 0; }
+  .venue-rating-score { font-weight: 700; color: #020203; }
+  .venue-rating-reviews { font-weight: 500; color: #90939d; }
+  .venue-rating-distance { font-weight: 500; color: #90939d; }
+  .venue-desc {
+    font-size: 14px;
+    font-weight: 500;
+    color: #90939d;
+    line-height: 20px;
+    font-family: 'DM Sans', -apple-system, sans-serif;
   }
   .venue-action-btn {
+    align-self: flex-start;
+    margin-top: 8px;
     display: flex;
     align-items: center;
-    gap: 4px;
-    background: #e3e4e8;
-    border-radius: 40px;
-    padding: 8px 16px;
+    gap: 8px;
+    background: #f1f2f3;
+    border-radius: 999px;
+    padding: 8px 12px;
     font-size: 14px;
     font-weight: 600;
-    color: #282828;
+    line-height: 20px;
+    color: #020203;
     cursor: pointer;
     font-family: 'DM Sans', -apple-system, sans-serif;
   }
   .venue-action-btn svg, .venue-action-btn img { width: 20px; height: 20px; flex-shrink: 0; }
-  .venue-rating img { width: 16px; height: 20px; flex-shrink: 0; }
 
   /* ========== SEARCH TAB TOGGLE ========== */
   .search-toggle-wrapper {
@@ -2241,10 +2231,63 @@
   /* Review cards scroll */
   .vd-review-card {
     flex-shrink: 0;
-    width: 286px;
+    width: 311px;
     background: white;
     border-radius: 24px;
     padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .vd-review-header {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    width: 100%;
+  }
+  .vd-review-avatar {
+    width: 32px;
+    height: 32px;
+    background: #d9dadd;
+    border-radius: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 24px;
+    color: white;
+    flex-shrink: 0;
+  }
+  .vd-review-meta {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+  }
+  .vd-review-name-row {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .vd-reviewer {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 20px;
+    color: #020203;
+  }
+  .vd-review-stars { display: flex; gap: 0; }
+  .vd-review-stars svg { display: block; flex-shrink: 0; }
+  .vd-review-date {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 16px;
+    color: #90939d;
+  }
+  .vd-review-body-group {
     display: flex;
     flex-direction: column;
     gap: 4px;
@@ -2258,29 +2301,15 @@
   }
   .vd-review-body {
     font-family: 'DM Sans', sans-serif;
-    font-size: 14px;
+    font-size: 16px;
     font-weight: 400;
-    line-height: 20px;
+    line-height: 24px;
     color: #020203;
     display: -webkit-box;
     -webkit-line-clamp: 4;
     -webkit-box-orient: vertical;
     overflow: hidden;
   }
-  .vd-review-footer {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-top: 8px;
-  }
-  .vd-reviewer {
-    font-family: 'DM Sans', sans-serif;
-    font-size: 16px;
-    font-weight: 600;
-    line-height: 20px;
-    color: #020203;
-  }
-  .vd-review-stars { display: flex; gap: 0; }
 
   /* "See all" card at the end of the reviews carousel */
   .vd-review-see-all {
@@ -2617,24 +2646,24 @@
   .cd-intro-chip-icon { display: none; }
   .cd-intro-chip-label {
     font-family: 'DM Sans', sans-serif;
-    font-size: 16px;
+    font-size: 18px;
     font-weight: 500;
-    line-height: 20px;
-    color: #379062;
+    line-height: 24px;
+    color: rgba(2, 2, 3, 1);
   }
   .cd-intro-chip-price {
     font-family: 'DM Sans', sans-serif;
-    font-size: 16px;
+    font-size: 18px;
     font-weight: 500;
-    line-height: 20px;
-    color: #020203;
+    line-height: 24px;
+    color: rgba(55, 144, 98, 1);
   }
   .cd-intro-chip-strike {
     font-family: 'DM Sans', sans-serif;
-    font-size: 16px;
-    font-weight: 500;
-    line-height: 20px;
-    color: #4F5159;
+    font-size: 18px;
+    font-weight: 400;
+    line-height: 24px;
+    color: rgba(144, 147, 157, 1);
     text-decoration: line-through;
   }
   .cd-intro-chip-plain {
@@ -3048,7 +3077,7 @@
   .cd-review-cards::-webkit-scrollbar { display: none; }
   .cd-review-card {
     flex-shrink: 0;
-    width: 286px;
+    width: 311px;
     background: #fff;
     border-radius: 24px;
     padding: 16px;
@@ -3059,23 +3088,30 @@
   .cd-review-card-header {
     display: flex;
     gap: 12px;
-    align-items: center;
+    align-items: flex-start;
+    width: 100%;
   }
   .cd-review-avatar {
-    width: 30px;
-    height: 30px;
-    border-radius: 50%;
-    background: #d6d6d6;
+    width: 32px;
+    height: 32px;
+    border-radius: 28px;
+    background: #d9dadd;
     display: flex;
     align-items: center;
     justify-content: center;
     font-family: 'DM Sans', sans-serif;
     font-size: 16px;
     font-weight: 700;
+    line-height: 24px;
     color: white;
     flex-shrink: 0;
   }
-  .cd-review-card-meta { flex: 1; }
+  .cd-review-card-meta {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+  }
   .cd-review-name-row {
     display: flex;
     align-items: center;
@@ -3089,12 +3125,18 @@
     color: #020203;
   }
   .cd-review-card-stars { display: flex; gap: 0; }
+  .cd-review-card-stars svg { display: block; flex-shrink: 0; }
   .cd-review-card-date {
     font-family: 'DM Sans', sans-serif;
-    font-size: 12px;
-    font-weight: 400;
+    font-size: 13px;
+    font-weight: 500;
     line-height: 16px;
-    color: #676767;
+    color: #90939d;
+  }
+  .cd-review-card-body-group {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
   }
   .cd-review-card-title {
     font-family: 'DM Sans', sans-serif;
@@ -3106,9 +3148,9 @@
   }
   .cd-review-card-body {
     font-family: 'DM Sans', sans-serif;
-    font-size: 14px;
+    font-size: 16px;
     font-weight: 400;
-    line-height: 20px;
+    line-height: 24px;
     color: #020203;
     margin: 0;
   }
@@ -3134,46 +3176,14 @@
     line-height: 20px;
     color: #020203;
     cursor: pointer;
-    /* Pulls the link 8px closer to the clamped body so they sit 4px apart
-       while the other .cd-review-card gaps stay at 12px. */
-    margin-top: -8px;
   }
   /* Without this, the span's default `display` would override the UA
      [hidden] rule, making the link visible even when JS left hidden=true. */
   .cd-review-card-seemore[hidden] { display: none; }
-  .cd-review-card-footer {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
-  .cd-review-card-author {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-  }
-  .cd-review-card-source {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    font-family: 'DM Sans', sans-serif;
-    font-size: 13px;
-    font-weight: 500;
-    line-height: 16px;
-    color: #4F5159;
-  }
-  /* Reviews-tab list variant: vd-style body sizing (16/24) with the
-     -8px margin-top that mirrors .vd-rev-body so the class title and body
-     sit 4px apart while the other .cd-review-card gaps stay at 12px. */
+  /* Reviews-tab list variant: pulls the body 8px closer to the class title
+     so they sit 4px apart while the other .cd-review-card gaps stay at 12px. */
   .cd-review-card-list .cd-review-card-body {
-    font-size: 16px;
-    line-height: 24px;
     margin-top: -8px;
-  }
-  .cd-review-card-source-icon {
-    display: block;
-    width: 20px;
-    height: 20px;
-    flex-shrink: 0;
   }
   .cd-review-see-all {
     flex-shrink: 0;
@@ -3282,7 +3292,7 @@
     font-weight: 500;
   }
   .cd-booking-price-final {
-    color: #379062;
+    color: rgba(55, 144, 98, 1);
   }
   .cd-booking-price-plain {
     color: #020203;
