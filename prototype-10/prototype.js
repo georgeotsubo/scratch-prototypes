@@ -2211,6 +2211,7 @@
     venueDetailSheet.classList.remove('show-class');
     venueDetailEl.style.background = '';
     venueDetailEl.classList.remove('venue-detail-visible');
+    if (typeof window.__hideBookingBar === 'function') window.__hideBookingBar();
     // Get the sheet height so we can animate to a pixel value (avoids % vs px mismatch)
     var sheetHeight = venueDetailSheet.offsetHeight;
     if (motionAnimate) {
@@ -3044,6 +3045,7 @@
         // Reset the sheet so a re-open of any venue starts on the venue pane
         venueDetailSheet.classList.remove('show-class');
         venueDetailEl.style.background = '';
+        if (typeof window.__hideBookingBar === 'function') window.__hideBookingBar();
         var sheetHeight = venueDetailSheet.offsetHeight;
         // Cancel any Motion animations that might interfere
         if (motionAnimate) {
@@ -3146,12 +3148,24 @@
     function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
 
     var CD_WEEKS_COUNT = 2; // current week + 1 future (forward-only navigation)
-    function renderCdDatePicker(selectedAbsIdx) {
+    // Two date trackers:
+    //  • cdViewingAbsIdx — the day the user is currently browsing in the
+    //    date picker. Updates on date tap; doesn't move the picker's
+    //    visual selection (today is the only card with the selected
+    //    style).
+    //  • cdSelectedAbsIdx — the day matching the booked slot. Drives the
+    //    date shown in the booking footer + checkout. Only updates when
+    //    the user taps a slot on a different date.
+    var cdViewingAbsIdx = 0;
+    var cdSelectedAbsIdx = 0;
+
+    function renderCdDatePicker(viewingAbsIdx) {
       var picker = document.getElementById('cd-date-picker');
       var today = new Date();
       var dow = today.getDay();
       // absIdx 0 = today; subsequent indices are future days.
-      if (selectedAbsIdx == null) selectedAbsIdx = 0;
+      if (viewingAbsIdx == null) viewingAbsIdx = 0;
+      cdViewingAbsIdx = viewingAbsIdx;
       var html = '';
       for (var w = 0; w < CD_WEEKS_COUNT; w++) {
         html += '<div class="cd-week">';
@@ -3161,8 +3175,10 @@
           d.setDate(today.getDate() + absIdx);
           var letterIdx = (dow + absIdx) % 7;
           var classes = 'cd-date-cell';
-          if (absIdx === 0) classes += ' today';
-          if (absIdx === selectedAbsIdx) classes += ' selected';
+          // Today is the only card that shows the selected style — the
+          // picker's selected highlight stays anchored to today regardless
+          // of which day the user is browsing.
+          if (absIdx === 0) classes += ' today selected';
           html += '<div class="' + classes + '" data-abs="' + absIdx + '">'
             + '<div class="cd-date-letter">' + DAY_LETTERS[letterIdx] + '</div>'
             + '<div class="cd-date-day">' + d.getDate() + '</div>'
@@ -3174,15 +3190,18 @@
       picker.querySelectorAll('.cd-date-cell').forEach(function(cell) {
         cell.addEventListener('click', function() {
           if (wasDragging) return;
-          renderCdDatePicker(parseInt(cell.dataset.abs, 10));
+          // Tapping a date only updates which day the user is browsing —
+          // the picker's selected highlight stays on today, and the booking
+          // footer date stays put until the user taps a slot.
+          cdViewingAbsIdx = parseInt(cell.dataset.abs, 10);
           scrollCdTimeSlotsToTop();
         });
       });
-      // Scroll to the week containing the selected day (preserve user's swipe)
-      var selectedWeekIdx = Math.floor(selectedAbsIdx / 7);
+      // Scroll to the week containing the day the user is viewing.
+      var viewingWeekIdx = Math.floor(viewingAbsIdx / 7);
       requestAnimationFrame(function() {
         var weekWidth = picker.clientWidth;
-        picker.scrollLeft = selectedWeekIdx * weekWidth;
+        picker.scrollLeft = viewingWeekIdx * weekWidth;
       });
     }
 
@@ -3382,20 +3401,19 @@
           +   '</div>'
           + '</div>';
       }).join('');
-      // Toggle selection — re-tapping a selected card deselects it.
-      // When no card is selected, the booking bar slides down off-screen.
+      // Slot selection cannot be undone — re-tapping a selected card is a
+      // no-op. Tapping a different card selects it, and copies the date the
+      // user was browsing into cdSelectedAbsIdx so the footer reflects the
+      // slot's date.
       slots.querySelectorAll('.cd-time-slot').forEach(function(slot, idx) {
         slot.addEventListener('click', function() {
           if (wasDragging) return;
-          var wasSelected = slot.classList.contains('selected');
-          if (wasSelected) {
-            slot.classList.remove('selected');
-          } else {
-            slots.querySelectorAll('.cd-time-slot').forEach(function(s) { s.classList.remove('selected'); });
-            slot.classList.add('selected');
-            updateBookingBar(data[idx]);
-            if (window.__rerenderCdReviews) window.__rerenderCdReviews(data[idx].instructor);
-          }
+          if (slot.classList.contains('selected')) return;
+          slots.querySelectorAll('.cd-time-slot').forEach(function(s) { s.classList.remove('selected'); });
+          slot.classList.add('selected');
+          cdSelectedAbsIdx = cdViewingAbsIdx;
+          updateBookingBar(data[idx]);
+          if (window.__rerenderCdReviews) window.__rerenderCdReviews(data[idx].instructor);
           syncCdBookingBarVisibility();
         });
       });
@@ -3416,13 +3434,10 @@
     }
     function syncCdBookingBarVisibility() {
       var spacer = document.getElementById('cd-bottom-spacer');
-      var hasSelected = !!classDetailEl.querySelector('.cd-time-slot.selected');
-      // Spacer clears the fixed booking card when it's visible (96px bar +
-      // 32px breathing room above), or just 32px breathing when no slot is
-      // selected (the venue sheet now sits in front of the persistent tab
-      // bar so we no longer reserve space for it).
-      if (spacer) spacer.style.height = hasSelected ? '128px' : '32px';
-      var shouldShow = classDetailOpen && hasSelected;
+      // Spacer always reserves room for the docked booking bar — the bar
+      // is now always visible while class detail is open.
+      if (spacer) spacer.style.height = '128px';
+      var shouldShow = classDetailOpen;
       var isShown = cdBookingBar.classList.contains('cd-booking-visible');
       // No-op when the target state matches the current state — otherwise
       // re-selecting a different pill would restart the slide-up every time.
@@ -3458,21 +3473,36 @@
       }
     }
 
+    // Last selected time slot — kept so we can refresh the booking bar's
+    // date string when the user changes the date picker without re-tapping
+    // the slot.
+    var cdLastSlot = null;
+
+    // Build "Mar 1" from the currently selected date-picker offset.
+    function cdShortDate() {
+      var date = new Date();
+      date.setDate(date.getDate() + (cdSelectedAbsIdx || 0));
+      var monthShort = date.toLocaleDateString('en-US', { month: 'short' });
+      return monthShort + ' ' + date.getDate();
+    }
+
     function updateBookingBar(slot) {
+      cdLastSlot = slot;
       var timeEl = document.getElementById('cd-booking-time');
       var instructorEl = document.getElementById('cd-booking-instructor');
       var ctaEl = document.getElementById('cd-booking-cta');
-      // Format date as "Tue, Mar 3" — kept on the bar element via dataset so
-      // the checkout can build its full "Tue, Mar 3 · 12:00 PM" line.
-      var today = new Date();
-      var dayShort = today.toLocaleDateString('en-US', { weekday: 'short' });
-      var monthShort = today.toLocaleDateString('en-US', { month: 'short' });
-      var dateStr = dayShort + ', ' + monthShort + ' ' + today.getDate();
-      if (timeEl) timeEl.textContent = slot.time;
+      if (timeEl) timeEl.textContent = cdShortDate() + ' · ' + slot.time;
       if (instructorEl) instructorEl.textContent = slot.instructor;
       if (ctaEl) ctaEl.textContent = 'Book';
-      cdBookingBar.dataset.fullTime = dateStr + ' · ' + slot.time;
     }
+
+    // Re-render only the date portion of the booking bar — used when the
+    // user picks a different date but keeps the same selected time slot.
+    window.__refreshBookingBarDate = function() {
+      if (!cdLastSlot) return;
+      var timeEl = document.getElementById('cd-booking-time');
+      if (timeEl) timeEl.textContent = cdShortDate() + ' · ' + cdLastSlot.time;
+    };
 
     // Stable review pool generated once per class detail open.
     // Each entry has its own instructor so the Reviews tab can prioritize
@@ -3749,21 +3779,23 @@
       populateClassDetail(cls);
       // Reset class scroll to the top so the hero is visible on every push.
       classDetailScroll.scrollTop = 0;
-      // Don't touch the nav's .scrolled state mid-slide — fading the gray
-      // bg out while the venue pane is drifting left exposes the moving
-      // content through the nav. We re-evaluate after the slide settles.
-      // Slide the class pane in from the right; venue pane drifts left.
-      // .show-class lives on the sheet so the shared nav (a sibling of the
-      // pane stack) can react via parent selectors.
+      // Decouple bg-color from title visibility during the slide.
+      // .scrolled toggles BOTH the grey nav bg and the title fade-in, but
+      // we only want the bg to stay grey through the push — the class
+      // title shouldn't appear yet (it should fade in on scroll instead).
+      // Clear .scrolled (hides both titles) and pin the bg grey via inline
+      // if the venue was scrolled. After the slide, clear inline bg so the
+      // CSS transitions it back to transparent.
+      var sharedNav = document.getElementById('vd-sticky-nav');
+      var navWasScrolled = sharedNav && sharedNav.classList.contains('scrolled');
+      if (sharedNav) {
+        sharedNav.classList.remove('scrolled');
+        sharedNav.style.background = navWasScrolled ? '#f1f2f3' : '';
+      }
       venueDetailSheet.classList.add('show-class');
-      // Drop .scrolled right at the end of the slide (the slide is 0.35s)
-      // so the nav fades to transparent immediately as the slide lands —
-      // the bg transition itself was also bumped to 0.18s so the grey
-      // doesn't linger after the class detail is visible.
       setTimeout(function() {
         if (!classDetailOpen) return;
-        var nav = document.getElementById('vd-sticky-nav');
-        if (nav && classDetailScroll.scrollTop <= 10) nav.classList.remove('scrolled');
+        if (sharedNav) sharedNav.style.background = '';
       }, 320);
       // Position the tab indicator after layout settles
       if (window.__resetClassDetailTabs) {
@@ -3790,19 +3822,23 @@
       // If the venue pane will need a gray nav once it slides back in (it
       // was scrolled past the header), set .scrolled now so the nav stays
       // gray through the slide. If the venue is at the top, defer dropping
-      // .scrolled until after the slide so we don't fade the bg mid-swap.
+      // Decouple bg from title during slide-back too: clear .scrolled
+      // (hides both titles), pin grey bg via inline if venue should land
+      // scrolled. After the slide, clear inline + restore .scrolled state
+      // based on venue scroll position.
       var sharedNav = document.getElementById('vd-sticky-nav');
       var venueWasScrolled = venueDetailScroll.scrollTop > 10;
-      if (sharedNav && venueWasScrolled) sharedNav.classList.add('scrolled');
-      // Slide the class pane back to the right; venue pane returns to center
-      venueDetailSheet.classList.remove('show-class');
-      if (!venueWasScrolled) {
-        setTimeout(function() {
-          if (classDetailOpen) return;
-          var nav = document.getElementById('vd-sticky-nav');
-          if (nav && venueDetailScroll.scrollTop <= 10) nav.classList.remove('scrolled');
-        }, 380);
+      if (sharedNav) {
+        sharedNav.classList.remove('scrolled');
+        sharedNav.style.background = venueWasScrolled ? '#f1f2f3' : '';
       }
+      venueDetailSheet.classList.remove('show-class');
+      setTimeout(function() {
+        if (classDetailOpen) return;
+        if (!sharedNav) return;
+        sharedNav.style.background = '';
+        if (venueDetailScroll.scrollTop > 10) sharedNav.classList.add('scrolled');
+      }, 320);
       // Booking bar: slide back down alongside the pane swap
       cdBookingBar.classList.remove('cd-booking-visible');
       if (motionAnimate) {
@@ -3819,6 +3855,29 @@
 
     window.__closeClassDetail = closeClassDetail;
 
+    // Slide the docked booking bar back down — reused by the venue close
+    // paths (X button + drag-to-dismiss) so a venue dismiss while a class
+    // slot is selected animates the booking footer away too.
+    window.__hideBookingBar = function() {
+      if (!cdBookingBar) return;
+      var wasVisible = cdBookingBar.classList.contains('cd-booking-visible');
+      cdBookingBar.classList.remove('cd-booking-visible');
+      if (!wasVisible) return;
+      if (motionAnimate) {
+        cdBookingBar.getAnimations().forEach(function(a) { a.cancel(); });
+        motionAnimate(cdBookingBar, {
+          transform: [CD_BOOKING_VISIBLE_Y, cdBookingHiddenY()]
+        }, { duration: 0.25, easing: 'cubic-bezier(.25,.46,.45,.94)' }).finished.then(function() {
+          if (!cdBookingBar.classList.contains('cd-booking-visible')) {
+            cdBookingBar.style.visibility = 'hidden';
+          }
+        });
+      } else {
+        cdBookingBar.style.transform = cdBookingHiddenY();
+        cdBookingBar.style.visibility = 'hidden';
+      }
+    };
+
     // === Checkout sheet: morph-in-place from the booking bar ===
     var cdCheckoutSheet = document.getElementById('cd-checkout-sheet');
     var cdCheckoutScrim = document.getElementById('cd-checkout-scrim');
@@ -3829,10 +3888,17 @@
 
     function populateCheckout() {
       var instructor = document.getElementById('cd-booking-instructor').textContent;
-      // Booking bar now shows just the time — fall back to the dataset for
-      // the full "Tue, Mar 3 · 12:00 PM" string the checkout needs.
-      var time = cdBookingBar.dataset.fullTime
-        || document.getElementById('cd-booking-time').textContent;
+      var slotTime = document.getElementById('cd-booking-time').textContent;
+      // Compute the date from the day index the user picked in the
+      // cd-date-picker (0 = today, 1 = tomorrow, ...). The booking bar
+      // dataset.fullTime is captured at slot-tap time and would go stale
+      // if the user changes the date afterwards, so we recompute here.
+      var date = new Date();
+      date.setDate(date.getDate() + (cdSelectedAbsIdx || 0));
+      var dayShort = date.toLocaleDateString('en-US', { weekday: 'short' });
+      var monthShort = date.toLocaleDateString('en-US', { month: 'short' });
+      var dateStr = dayShort + ', ' + monthShort + ' ' + date.getDate();
+      var time = dateStr + ' · ' + slotTime;
       var titleEl = document.getElementById('cd-title');
       var classTitle = titleEl ? titleEl.textContent : '';
       var venueText = document.getElementById('cd-venue-text');
@@ -4408,26 +4474,27 @@
       if (slideImage.getAnimations) {
         slideImage.getAnimations().forEach(function(a) { a.cancel(); });
       }
-      // Pin the from-transform, force a reflow, then transition to the FLIP
-      // destination via CSS. Motion's default fill was reverting the
-      // element to the drag-end transform once its keyframes ended, causing
-      // a visible "linger" before the chrome fade revealed the class detail.
+      // Pin the from-transform, force a reflow, then transition transform
+      // AND opacity together. The opacity fade runs faster than the
+      // transform morph so the slide is mostly invisible by the time it
+      // reaches the thumb's rect — the FLIP serves as a quick spatial
+      // anchor while the fade carries the visual weight of the dismiss.
       slideImage.style.transition = 'none';
       slideImage.style.transform = fromTransform;
+      slideImage.style.opacity = '1';
       void slideImage.offsetHeight;
-      slideImage.style.transition = 'transform 0.28s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+      // Match the fade duration to the morph so the slide stays partially
+      // visible through most of the FLIP and fades fully out as it lands
+      // at the thumb's rect.
+      slideImage.style.transition =
+        'transform 0.28s cubic-bezier(0.25, 0.46, 0.45, 0.94), opacity 0.28s ease-out';
       slideImage.style.transform = toTransform;
+      slideImage.style.opacity = '0';
       // Drop inline chrome opacities and close — CSS transitions everything to 0.
-      // Pass skipSlideFade so the FLIP-ed slide doesn't fade mid-morph.
       clearChromeOpacities();
       lightboxEl.classList.remove('open');
       setTimeout(function() {
         closeLightbox(true);
-        // Only clear the inline transition. Leaving `transform` as the
-        // toTransform keeps the slide pinned to the thumb's rect while the
-        // lightbox chrome fades out and the DOM is torn down. Clearing it
-        // here would pop the slide back to identity for ~220ms before the
-        // DOM clears — visible as an "animates back up" jitter.
         slideImage.style.transition = '';
       }, 280);
     }
