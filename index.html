@@ -179,11 +179,22 @@
       <div class="item">
         <h2>Prototypes</h2>
         <div class="proto-item">
-          <a href="/prototype-9/prototype.html" class="proto-link">Venue + Class Detail UX v4</a>
-          <p>Updated venue detail with schedule list preview.</p>
+          <a href="/prototype-10/prototype.html" class="proto-link">Venue + Class Detail UX v6</a>
+          <p>Forked from v5 for the next round of iteration.</p>
           <ul class="changelog">
-            <li>Updated schedule list preview</li>
-            <li>Updated reviews preview</li>
+            <li>Updated modal UX to push transition</li>
+            <li>Updated class detail schedule card to list view</li>
+            <li>Updated booking card footer UI</li>
+            <li>Added image gallery view for venue and class detail</li>
+          </ul>
+        </div>
+        <div class="proto-item">
+          <a href="/prototype-9/prototype.html" class="proto-link">Venue + Class Detail UX v5</a>
+          <p>Figma-aligned venue list cards and unified review cards.</p>
+          <ul class="changelog">
+            <li>Review cards unified across carousel + Reviews tab in venue and class detail</li>
+            <li>Class-detail time picker strictly mirrors venue Schedule</li>
+            <li>Available today label now reads "time · date · duration"</li>
           </ul>
         </div>
         <div class="proto-item">
@@ -255,7 +266,7 @@
         panel.classList.add('open');
         closeBtn.style.display = 'flex';
         // Only show search hint for search prototypes, not venue detail
-        if (link.href.includes('prototype-6') || link.href.includes('prototype-7') || link.href.includes('prototype-8') || link.href.includes('prototype-9')) {
+        if (link.href.includes('prototype-6') || link.href.includes('prototype-7') || link.href.includes('prototype-8') || link.href.includes('prototype-9') || link.href.includes('prototype-10')) {
           hint.style.display = 'none';
         } else {
           hint.style.display = '';

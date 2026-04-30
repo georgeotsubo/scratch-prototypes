@@ -2453,7 +2453,7 @@
   .cd-title {
     font-family: 'DM Sans', sans-serif;
     font-size: 24px;
-    font-weight: 900;
+    font-weight: 800;
     line-height: 28px;
     color: #020203;
   }
@@ -2566,7 +2566,7 @@
     width: 100%;
     display: flex;
     gap: 12px;
-    padding: 8px 20px;
+    padding: 8px 20px 12px 20px;
     box-sizing: border-box;
     scroll-snap-align: start;
   }

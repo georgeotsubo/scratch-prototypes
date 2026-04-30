@@ -1,4 +1,9 @@
   * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  /* Disable text selection globally — prototype taps/swipes shouldn't trigger
+     selection UI. Re-enabled on form inputs below so search/location fields
+     still work. */
+  html, body { -webkit-user-select: none; user-select: none; }
+  input, textarea { -webkit-user-select: text; user-select: text; }
 
   body {
     font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', sans-serif;
@@ -15,6 +20,7 @@
     width: 393px;
     height: 852px;
     background: #fff;
+    border: 1px solid #e4e5e7;
     border-radius: 40px;
     overflow: hidden;
     position: relative;
@@ -28,6 +34,7 @@
       width: 100vw;
       height: 100vh;
       height: 100dvh;
+      border: none;
       border-radius: 0;
       box-shadow: none;
     }
@@ -852,7 +859,7 @@
     box-shadow: 0 2px 8px rgba(0,0,0,0.08);
     z-index: 20;
     cursor: pointer;
-    color: #90939D;
+    color: #4F5159;
     font-size: 16px;
     font-family: 'DM Sans', -apple-system, sans-serif;
   }
@@ -1083,19 +1090,9 @@
     display: inline-flex;
     align-items: center;
     gap: 8px;
-    padding: 8px 12px;
-    background: #edfaf3;
-    border-radius: 24px;
   }
   .venue-intro-badge svg { display: block; flex-shrink: 0; }
   .venue-intro-badge-label {
-    font-family: 'DM Sans', sans-serif;
-    font-size: 14px;
-    font-weight: 700;
-    line-height: 20px;
-    color: #020203;
-  }
-  .venue-intro-badge-save {
     font-family: 'DM Sans', sans-serif;
     font-size: 14px;
     font-weight: 700;
@@ -1107,8 +1104,8 @@
     gap: 12px;
   }
   .venue-image {
-    width: 100px;
-    height: 100px;
+    width: 108px;
+    height: 108px;
     background: #e4e5e7;
     border-radius: 16px;
     flex-shrink: 0;
@@ -1117,64 +1114,64 @@
     flex: 1;
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    gap: 0;
     min-width: 0;
+  }
+  .venue-info-text {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
   }
   .venue-title {
     font-size: 18px;
     font-weight: 700;
+    line-height: 24px;
     color: #020203;
     font-family: 'DM Sans', -apple-system, sans-serif;
   }
   .venue-tags {
     font-size: 14px;
     font-weight: 500;
-    color: #020203;
-    font-family: 'DM Sans', -apple-system, sans-serif;
-  }
-  .venue-subtitle {
-    font-size: 13px;
-    font-weight: 500;
+    line-height: 20px;
     color: #90939d;
     font-family: 'DM Sans', -apple-system, sans-serif;
   }
   .venue-rating {
     display: flex;
     align-items: center;
-    gap: 2px;
-    font-size: 14px;
-    font-weight: 500;
-    color: #020203;
-    margin-top: auto;
-    font-family: 'DM Sans', -apple-system, sans-serif;
-  }
-  .venue-rating .star { color: #020203; font-size: 13px; }
-  .venue-desc {
+    gap: 4px;
     font-size: 13px;
-    font-weight: 500;
-    color: #90939d;
     line-height: 16px;
     font-family: 'DM Sans', -apple-system, sans-serif;
   }
-  .venue-actions {
-    display: flex;
-    gap: 12px;
+  .venue-rating .star-icon { width: 12px; height: 12px; flex-shrink: 0; }
+  .venue-rating-score { font-weight: 700; color: #020203; }
+  .venue-rating-reviews { font-weight: 500; color: #90939d; }
+  .venue-rating-distance { font-weight: 500; color: #90939d; }
+  .venue-desc {
+    font-size: 14px;
+    font-weight: 500;
+    color: #90939d;
+    line-height: 20px;
+    font-family: 'DM Sans', -apple-system, sans-serif;
   }
   .venue-action-btn {
+    align-self: flex-start;
+    margin-top: 8px;
     display: flex;
     align-items: center;
-    gap: 4px;
-    background: #e3e4e8;
-    border-radius: 40px;
-    padding: 8px 16px;
+    gap: 8px;
+    background: #f1f2f3;
+    border-radius: 999px;
+    padding: 8px 12px;
     font-size: 14px;
     font-weight: 600;
-    color: #282828;
+    line-height: 20px;
+    color: #020203;
     cursor: pointer;
     font-family: 'DM Sans', -apple-system, sans-serif;
   }
   .venue-action-btn svg, .venue-action-btn img { width: 20px; height: 20px; flex-shrink: 0; }
-  .venue-rating img { width: 16px; height: 20px; flex-shrink: 0; }
 
   /* ========== SEARCH TAB TOGGLE ========== */
   .search-toggle-wrapper {
@@ -1226,7 +1223,11 @@
   #venue-detail {
     position: absolute;
     top: 0; left: 0; right: 0; bottom: 0;
-    z-index: 22;
+    /* Above the persistent tab bar (z:30) so the venue and class detail
+       sheets (and the class hero) sit in front of the docked tab bar. The
+       class detail's booking bar (z:35) and checkout sheet (z:36) still
+       sit above this so their docked card pokes above the venue sheet. */
+    z-index: 31;
     pointer-events: none;
     transition: background 0.35s ease;
   }
@@ -1243,8 +1244,6 @@
     background: #f1f2f3;
     border-radius: 32px 32px 0 0;
     overflow: hidden;
-    display: flex;
-    flex-direction: column;
     transform: translateY(100%);
     transform-origin: top center;
     will-change: transform, border-radius, filter;
@@ -1269,14 +1268,34 @@
                 border-radius 0.35s ease,
                 filter 0.35s ease;
   }
-  /* Hide venue's drag handle while stacked — class detail's handle takes over */
+  /* Hide venue's drag handle while stacked — class detail's handle takes over.
+     Fade back in immediately when unstacking so there's no perceived lag
+     between the sheet scaling back and the handle reappearing. */
   .venue-detail-sheet.stacked .venue-detail-handle {
     opacity: 0;
     transition: opacity 0.2s ease;
   }
   .venue-detail-sheet .venue-detail-handle {
-    transition: opacity 0.2s ease 0.15s;
+    transition: opacity 0.2s ease;
   }
+
+  /* Blurred wash behind the persistent tab bar. Fades from opaque at the
+     bottom to transparent at the top so scrolling content dissolves into it. */
+  .tab-bar-blur {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 40px;
+    pointer-events: none;
+    z-index: 25;
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
+    -webkit-mask-image: linear-gradient(to top, #000 50%, transparent);
+    mask-image: linear-gradient(to top, #000 50%, transparent);
+    transition: opacity 0.3s ease;
+  }
+  .tab-bar-blur.hidden-down { opacity: 0; }
 
   /* Persistent tab bar that floats above venue detail */
   .tab-bar-persistent {
@@ -1292,7 +1311,7 @@
     display: flex;
     align-items: center;
     padding: 4px;
-    z-index: 15;
+    z-index: 30;
     pointer-events: auto;
     transition: transform 0.3s cubic-bezier(.25,.46,.45,.94), opacity 0.3s ease;
   }
@@ -1304,14 +1323,18 @@
   }
 
   .venue-detail-handle {
-    width: 100%;
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 6;
     padding: 10px 0 8px;
     display: flex;
     justify-content: center;
     align-items: center;
-    flex-shrink: 0;
     cursor: grab;
     touch-action: none;
+    pointer-events: auto;
   }
   .venue-detail-handle::before {
     content: '';
@@ -1322,7 +1345,7 @@
     border-radius: 20px;
   }
 
-  /* Top bar: close left, title center, save/share right */
+  /* Top bar: close/back left, title center, share right */
   .vd-top-bar {
     display: flex;
     align-items: center;
@@ -1332,29 +1355,66 @@
     gap: 12px;
     position: relative;
   }
-  .venue-detail-close {
+  /* Left-side icon stack: holds the venue close (X) and class back (<) which
+     occupy the same slot and crossfade based on which pane is active. */
+  .vd-nav-left {
+    position: relative;
     width: 44px;
     height: 44px;
-    background: white;
+    flex-shrink: 0;
+  }
+  .venue-detail-close,
+  .vd-nav-back {
+    position: absolute;
+    inset: 0;
+    width: 44px;
+    height: 44px;
+    background: rgba(255, 255, 255, 0.55);
+    -webkit-backdrop-filter: blur(14px);
+    backdrop-filter: blur(14px);
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    flex-shrink: 0;
+    transition: opacity 0.25s ease, background 0.25s ease, box-shadow 0.25s ease;
+  }
+  /* Default state: X visible, back hidden. Class-active state inverts. */
+  .vd-nav-back {
+    opacity: 0;
+    pointer-events: none;
+  }
+  .venue-detail-sheet.show-class .venue-detail-close {
+    opacity: 0;
+    pointer-events: none;
+  }
+  .venue-detail-sheet.show-class .vd-nav-back {
+    opacity: 1;
+    pointer-events: auto;
+  }
+  /* Once the active pane has scrolled past the title, swap the icon backdrops
+     to solid white (matches the sticky nav adopting a solid bg). */
+  .vd-sticky-nav.scrolled .venue-detail-close,
+  .vd-sticky-nav.scrolled .vd-nav-back {
+    background: #fff;
     box-shadow: 0 2px 8px rgba(0,0,0,0.08);
   }
   .vd-actions-pill {
     display: flex;
     align-items: center;
     gap: 8px;
-    padding-left: 4px;
-    padding-right: 4px;
-    background: white;
+    background: rgba(255, 255, 255, 0.55);
+    -webkit-backdrop-filter: blur(14px);
+    backdrop-filter: blur(14px);
     border-radius: 999px;
+    width: 44px;
     height: 44px;
     overflow: hidden;
     flex-shrink: 0;
+    transition: background 0.25s ease, box-shadow 0.25s ease;
+  }
+  .vd-sticky-nav.scrolled .vd-actions-pill {
+    background: #fff;
     box-shadow: 0 2px 8px rgba(0,0,0,0.08);
   }
   .vd-action-icon {
@@ -1367,40 +1427,128 @@
   }
   .vd-action-icon svg { width: 24px; height: 24px; }
 
-  /* Sticky nav with venue name */
+  /* Shared sticky nav: stationary overlay above the pane stack. Spans from
+     top:0 of the sheet so its solid bg (added on .scrolled) also covers the
+     strip behind the drag handle. The padding-top reserves room for the
+     drag handle area, so the 44px icon row sits with breathing room below
+     it. Total nav height: 28 + 44 + 8 = 80px. */
   .vd-sticky-nav {
-    position: sticky;
+    position: absolute;
     top: 0;
-    z-index: 3;
+    left: 0;
+    right: 0;
+    z-index: 5;
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 12px 0 8px;
+    padding: 28px 0 8px;
+    background: transparent;
+    /* Faster bg fade so the grey wash doesn't linger after a class-detail
+       push; the post-slide JS clears .scrolled and the nav transparents
+       within ~180ms. */
+    transition: background 0.18s ease;
+    pointer-events: none;
+  }
+  /* Re-enable pointer-events on the interactive controls inside the nav.
+     IMPORTANT: do NOT include .vd-nav-back here — its pointer-events are
+     toggled explicitly by show-class state below, and adding it here would
+     out-specificity the default `pointer-events: none` and let the
+     invisible back arrow eat clicks on top of the X. */
+  .vd-sticky-nav .vd-top-bar,
+  .vd-sticky-nav .vd-nav-left,
+  .vd-sticky-nav .venue-detail-close,
+  .vd-sticky-nav .vd-actions-pill {
+    pointer-events: auto;
+  }
+  .vd-sticky-nav.scrolled {
     background: #f1f2f3;
   }
+  /* Title wrap: holds the venue title and class title overlapping in the same
+     slot so they can crossfade based on the active pane. */
+  .vd-sticky-title-wrap {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    max-width: calc(100% - 280px);
+    height: 22px;
+    pointer-events: none;
+  }
   .vd-sticky-title {
+    position: absolute;
+    left: 50%;
+    top: 0;
+    transform: translateX(-50%) translateY(6px);
     font-family: 'DM Sans', sans-serif;
     font-size: 17px;
     font-weight: 700;
     color: #020203;
     opacity: 0;
-    transform: translateY(6px);
-    transition: opacity 0.25s ease, transform 0.25s ease;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    position: absolute;
-    left: 50%;
-    transform: translateX(-50%) translateY(6px);
-    max-width: calc(100% - 280px);
     text-align: center;
     pointer-events: none;
+    transition: opacity 0.25s ease, transform 0.25s ease;
   }
-  .vd-sticky-nav.scrolled .vd-sticky-title {
+  /* Venue title — visible only when the venue pane is active (i.e. the sheet
+     does NOT have .show-class) AND the nav is .scrolled. Excluded the
+     class-variant via :not() so the two titles never both fade in at once. */
+  .vd-sticky-nav.scrolled .vd-sticky-title:not(.vd-sticky-title--class) {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+  .venue-detail-sheet.show-class .vd-sticky-nav .vd-sticky-title:not(.vd-sticky-title--class) {
+    opacity: 0;
+    transform: translateX(-50%) translateY(6px);
+  }
+  /* Class title — only when class pane is active AND the nav is .scrolled. */
+  .venue-detail-sheet.show-class .vd-sticky-nav.scrolled .vd-sticky-title.vd-sticky-title--class {
     opacity: 1;
     transform: translateX(-50%) translateY(0);
   }
 
+  /* Pane stack: spans the entire sheet so the class-pane hero can extend up
+     behind the drag handle and the shared sticky nav. Both panes are
+     absolutely positioned siblings that translate horizontally. */
+  .vd-pane-stack {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+  }
+  .vd-pane-stack > .venue-detail-scroll,
+  .vd-pane-stack > .class-detail-scroll {
+    position: absolute;
+    inset: 0;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-x: contain;
+    will-change: transform;
+    transition: transform 0.35s cubic-bezier(.25,.46,.45,.94);
+  }
+  .vd-pane-stack > .venue-detail-scroll::-webkit-scrollbar,
+  .vd-pane-stack > .class-detail-scroll::-webkit-scrollbar { display: none; }
+
+  /* Class pane: parked off-screen to the right, slides in when the sheet
+     gets .show-class. Solid bg matches the sheet so the venue pane (drifted
+     left) doesn't bleed through when an active hero slide is faded out
+     during a lightbox open. */
+  .vd-pane-stack > .class-detail-scroll {
+    transform: translateX(100%);
+    pointer-events: none;
+    background: #f1f2f3;
+  }
+  .venue-detail-sheet.show-class .vd-pane-stack > .class-detail-scroll {
+    transform: translateX(0);
+    pointer-events: auto;
+  }
+  /* Venue pane drifts a quarter-screen left underneath the class pane (iOS
+     push pattern). It keeps its solid sheet bg so it doesn't bleed through. */
+  .venue-detail-sheet.show-class .vd-pane-stack > .venue-detail-scroll {
+    transform: translateX(-25%);
+  }
+
+  /* Fallback for any .venue-detail-scroll that is NOT inside a pane stack
+     (kept for robustness — currently unused). */
   .venue-detail-scroll {
     position: relative;
     flex: 1;
@@ -1411,13 +1559,33 @@
   .venue-detail-scroll::-webkit-scrollbar { display: none; }
 
   .venue-detail-content {
-    padding: 20px 20px 0;
+    /* Top padding clears the 80px shared sticky nav (which sits over the
+       venue scroll). Bottom padding is just breathing room — the venue
+       sheet now sits in front of the persistent tab bar so we no longer
+       need to clear it. */
+    padding: 84px 20px 32px;
     display: flex;
     flex-direction: column;
-    gap: 24px;
+    gap: 32px;
     margin-top: 0;
+    box-sizing: border-box;
+  }
+  .vd-header-group {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
   }
 
+  /* Header — no fixed height; column stacks h1 → meta → tags */
+  .vd-header#vd-section-header {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+    height: fit-content;
+    min-height: 0;
+    flex-shrink: 0;
+  }
   /* Header */
   .vd-name {
     font-family: 'DM Sans', sans-serif;
@@ -1426,32 +1594,49 @@
     line-height: 32px;
     color: #020203;
     margin: 0;
+    overflow-wrap: anywhere;
   }
   .vd-info {
     display: flex;
     flex-direction: column;
     gap: 4px;
+    margin-top: 4px;
+  }
+  #vd-section-header > .vd-meta {
     margin-top: 8px;
   }
   .vd-tags {
     font-family: 'DM Sans', sans-serif;
-    font-size: 14px;
+    font-size: 16px;
     font-weight: 500;
-    line-height: 20px;
-    color: #020203;
+    line-height: 24px;
+    color: #4F5159;
   }
   .vd-meta {
     display: flex;
-    align-items: center;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: flex-start;
     gap: 4px;
   }
-  .vd-star { display: flex; align-items: center; }
-  .vd-rating-text {
+  .vd-star { display: flex; align-items: center; flex-shrink: 0; }
+  .vd-rating-num {
     font-family: 'DM Sans', sans-serif;
-    font-size: 14px;
-    font-weight: 500;
-    line-height: 20px;
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 24px;
     color: #020203;
+    flex-shrink: 0;
+  }
+  .vd-rating-meta {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 16px;
+    font-weight: 400;
+    line-height: 24px;
+    color: #4f5159;
+    flex: 1 1 0;
+    min-width: 0;
+    overflow-wrap: anywhere;
   }
 
 
@@ -1478,13 +1663,16 @@
     flex-shrink: 0;
   }
 
-  /* Tabs */
+  /* Tabs sit in the scroll flow right below the image carousel and stick
+     to the top of the scroll container (just below the sticky nav) once
+     scrolled past. Always visible. */
   .vd-tabs {
     display: flex;
     gap: 40px;
     border-bottom: 1px solid #e4e5e7;
     position: sticky;
-    top: 64px;
+    /* Pin flush below the 80px shared sticky nav. */
+    top: 80px;
     z-index: 3;
     background: #f1f2f3;
     margin-left: -20px;
@@ -1526,9 +1714,9 @@
     position: absolute;
     bottom: -1px;
     left: 0;
-    height: 3px;
+    height: 4px;
     background: #020203;
-    border-radius: 2px 2px 0 0;
+    border-radius: 4px 4px 0 0;
     /* Motion.js handles animation */
     pointer-events: none;
   }
@@ -1537,13 +1725,21 @@
   .vd-panel {
     display: none;
     flex-direction: column;
-    gap: 24px;
+    gap: 32px;
   }
   .vd-panel-schedule {
     gap: 0;
   }
+  .vd-panel-classes {
+    gap: 12px;
+  }
   .vd-panel.active {
     display: flex;
+    animation: vd-panel-fade 200ms cubic-bezier(.25,.46,.45,.94);
+  }
+  @keyframes vd-panel-fade {
+    from { opacity: 0; }
+    to { opacity: 1; }
   }
 
   /* ===== SCHEDULE PANEL ===== */
@@ -1554,7 +1750,8 @@
     -webkit-overflow-scrolling: touch;
     overscroll-behavior-x: contain;
     position: sticky;
-    top: 109px;
+    /* Pin flush below the sticky vd-tabs (which sit at top:80, height 45). */
+    top: 125px;
     z-index: 2;
     background: #f1f2f3;
     margin-top: -24px;
@@ -1634,14 +1831,22 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
+    width: 100%;
     font-family: 'DM Sans', sans-serif;
-    font-size: 14px;
-    font-weight: 500;
     line-height: 20px;
   }
-  .vd-schedule-time { color: #020203; }
-  .vd-schedule-spots { color: #90939d; }
-  .vd-schedule-card.disabled .vd-schedule-time { color: #b3b5bc; }
+  .vd-schedule-time {
+    font-size: 14px;
+    font-weight: 500;
+    color: #020203;
+  }
+  .vd-schedule-duration {
+    font-size: 14px;
+    font-weight: 500;
+    color: #020203;
+  }
+  .vd-schedule-card.disabled .vd-schedule-time,
+  .vd-schedule-card.disabled .vd-schedule-duration { color: #b3b5bc; }
   .vd-schedule-title {
     font-family: 'DM Sans', sans-serif;
     font-size: 16px;
@@ -1650,24 +1855,16 @@
     color: #020203;
   }
   .vd-schedule-card.disabled .vd-schedule-title { color: #b3b5bc; }
-  .vd-schedule-instructor {
-    font-family: 'DM Sans', sans-serif;
-    font-size: 14px;
-    font-weight: 600;
-    line-height: 20px;
-    color: #90939d;
-  }
-  .vd-schedule-card.disabled .vd-schedule-instructor { color: #b3b5bc; }
   .vd-schedule-bottom {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-top: 4px;
+    width: 100%;
   }
   .vd-schedule-rating {
     display: flex;
     align-items: center;
-    gap: 2px;
+    gap: 0;
     font-family: 'DM Sans', sans-serif;
     font-size: 14px;
     font-weight: 500;
@@ -1679,7 +1876,7 @@
   .vd-schedule-price {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 4px;
     font-family: 'DM Sans', sans-serif;
     font-size: 13px;
     font-weight: 500;
@@ -1692,38 +1889,99 @@
     font-size: 16px;
     font-weight: 500;
     line-height: 24px;
-    color: #90939d;
+    color: #4F5159;
     text-decoration: line-through;
   }
   .vd-schedule-card.disabled .vd-price-strike { color: #b3b5bc; }
   .vd-price-final {
     font-family: 'DM Sans', sans-serif;
     font-size: 16px;
-    font-weight: 600;
-    line-height: 20px;
-    color: #296b49;
+    font-weight: 700;
+    line-height: 24px;
+    color: #379062;
   }
   .vd-price-plain {
     font-family: 'DM Sans', sans-serif;
     font-size: 16px;
     font-weight: 600;
-    line-height: 20px;
+    line-height: 24px;
     color: #020203;
   }
   .vd-schedule-card.disabled .vd-price-final,
   .vd-schedule-card.disabled .vd-price-plain { color: #b3b5bc; }
 
-  /* ===== REVIEWS PANEL ===== */
-  .vd-panel-reviews { gap: 16px; }
-
-  /* Rating summary card */
-  .vd-rev-summary-card {
-    background: white;
+  /* ===== CLASSES PANEL ===== */
+  .vd-class-summary-card {
+    background: #fff;
     border-radius: 24px;
     padding: 16px;
     display: flex;
     flex-direction: column;
+    align-items: flex-start;
     gap: 12px;
+  }
+  .vd-class-summary-text {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+    width: 100%;
+  }
+  .vd-class-summary-title {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 24px;
+    color: #020203;
+  }
+  .vd-class-summary-desc {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 20px;
+    color: #020203;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .vd-class-summary-seemore {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    line-height: 20px;
+    color: #020203;
+    cursor: pointer;
+  }
+  .vd-class-summary-btn {
+    background: transparent;
+    border: 1px solid #e4e5e7;
+    border-radius: 999px;
+    padding: 8px 12px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 20px;
+    color: #020203;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .vd-class-summary-btn:active {
+    background: #f1f2f3;
+  }
+
+  /* ===== REVIEWS PANEL ===== */
+  .vd-panel-reviews { gap: 16px; }
+  /* Pushes the "Class reviews" title 16px further from the summary so the
+     gap between them is 32px while other .vd-panel-reviews gaps stay 16px. */
+  .vd-panel-reviews .vd-rev-summary + .vd-section-title { margin-top: 16px; }
+
+  /* Rating summary — sits directly on the panel's gray background;
+     only the bar histogram below gets its own white card. */
+  .vd-rev-summary {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
   }
   .vd-rev-top {
     display: flex;
@@ -1743,19 +2001,30 @@
     gap: 8px;
   }
   .vd-rev-stars { display: flex; gap: 0; }
+  .vd-rev-stars svg { width: 24px; height: 24px; }
   .vd-rev-count {
     font-family: 'DM Sans', sans-serif;
-    font-size: 13px;
+    font-size: 14px;
     font-weight: 500;
-    line-height: 16px;
-    color: #90939d;
+    line-height: 20px;
+    color: #4F5159;
   }
   .vd-rev-source {
     font-family: 'DM Sans', sans-serif;
     font-size: 13px;
     font-weight: 500;
     line-height: 16px;
-    color: #90939d;
+    color: #4F5159;
+    /* Pulls the source line 8px closer to the rating so the gap above
+       it is 8px while the other .vd-rev-summary gaps stay at 16px. */
+    margin-top: -8px;
+  }
+
+  /* White card that contains only the rating-distribution bars. */
+  .vd-rev-bars-card {
+    background: #fff;
+    border-radius: 24px;
+    padding: 20px;
   }
 
   /* Rating bars */
@@ -1818,23 +2087,28 @@
     display: flex;
     gap: 12px;
     align-items: flex-start;
+    width: 100%;
   }
   .vd-rev-avatar {
-    width: 30px;
-    height: 30px;
-    border-radius: 50%;
-    background: #d6d6d6;
+    width: 32px;
+    height: 32px;
+    border-radius: 28px;
+    background: #d9dadd;
     display: flex;
     align-items: center;
     justify-content: center;
     font-family: 'DM Sans', sans-serif;
     font-size: 16px;
     font-weight: 700;
+    line-height: 24px;
     color: white;
     flex-shrink: 0;
   }
   .vd-rev-card-meta {
     flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
   }
   .vd-rev-name-row {
     display: flex;
@@ -1849,12 +2123,13 @@
     color: #020203;
   }
   .vd-rev-card-stars { display: flex; gap: 0; }
+  .vd-rev-card-stars svg { display: block; flex-shrink: 0; }
   .vd-rev-date {
     font-family: 'DM Sans', sans-serif;
-    font-size: 12px;
-    font-weight: 400;
+    font-size: 13px;
+    font-weight: 500;
     line-height: 16px;
-    color: #676767;
+    color: #90939d;
   }
   .vd-rev-class-title {
     font-family: 'DM Sans', sans-serif;
@@ -1869,23 +2144,9 @@
     font-weight: 400;
     line-height: 24px;
     color: #020203;
-  }
-  .vd-rev-source-badge {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-  .vd-rev-source-icon {
-    width: 20px;
-    height: 20px;
-    flex-shrink: 0;
-  }
-  .vd-rev-source-name {
-    font-family: 'DM Sans', sans-serif;
-    font-size: 13px;
-    font-weight: 500;
-    line-height: 16px;
-    color: #90939d;
+    /* Pulls the body 8px closer to the class title so the gap between them
+       is 4px while the other .vd-rev-card gaps stay at 12px. */
+    margin-top: -8px;
   }
 
   /* Promo card */
@@ -1910,7 +2171,7 @@
     font-size: 13px;
     font-weight: 500;
     line-height: 16px;
-    color: #90939d;
+    color: #4F5159;
   }
 
   /* Section titles */
@@ -1918,6 +2179,28 @@
     display: flex;
     flex-direction: column;
     gap: 16px;
+  }
+  /* Available today preview — sits between the carousel and the tabs. */
+  .vd-available-today {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .vd-see-schedule-btn {
+    width: 100%;
+    background: #e10e0e;
+    color: #fff;
+    border: none;
+    border-radius: 999px;
+    padding: 12px 24px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 16px;
+    font-weight: 500;
+    line-height: 28px;
+    cursor: pointer;
+  }
+  .vd-see-schedule-btn:active {
+    background: #c00b0b;
   }
   .vd-section-title {
     font-family: 'DM Sans', sans-serif;
@@ -1956,14 +2239,14 @@
     font-size: 14px;
     font-weight: 500;
     line-height: 20px;
-    color: #90939d;
+    color: #4F5159;
   }
   .vd-class-time {
     font-family: 'DM Sans', sans-serif;
     font-size: 16px;
     font-weight: 500;
     line-height: 24px;
-    color: #020203;
+    color: #4f5159;
     margin-top: 4px;
   }
   .vd-class-slots {
@@ -2026,7 +2309,7 @@
     transform: translate(-50%, -50%);
   }
   .vd-map-address {
-    padding: 12px 16px;
+    padding: 16px 16px;
     font-family: 'DM Sans', sans-serif;
     font-size: 14px;
     font-weight: 500;
@@ -2071,16 +2354,69 @@
     font-size: 13px;
     font-weight: 500;
     line-height: 16px;
-    color: #90939d;
+    color: #4F5159;
   }
 
   /* Review cards scroll */
   .vd-review-card {
     flex-shrink: 0;
-    width: 286px;
+    width: 311px;
     background: white;
     border-radius: 24px;
     padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .vd-review-header {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    width: 100%;
+  }
+  .vd-review-avatar {
+    width: 32px;
+    height: 32px;
+    background: #d9dadd;
+    border-radius: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 24px;
+    color: white;
+    flex-shrink: 0;
+  }
+  .vd-review-meta {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+  }
+  .vd-review-name-row {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .vd-reviewer {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 20px;
+    color: #020203;
+  }
+  .vd-review-stars { display: flex; gap: 0; }
+  .vd-review-stars svg { display: block; flex-shrink: 0; }
+  .vd-review-date {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 16px;
+    color: #90939d;
+  }
+  .vd-review-body-group {
     display: flex;
     flex-direction: column;
     gap: 4px;
@@ -2094,56 +2430,93 @@
   }
   .vd-review-body {
     font-family: 'DM Sans', sans-serif;
-    font-size: 14px;
-    font-weight: 500;
-    line-height: 20px;
+    font-size: 16px;
+    font-weight: 400;
+    line-height: 24px;
     color: #020203;
+    display: -webkit-box;
+    -webkit-line-clamp: 4;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
   }
-  .vd-review-footer {
+
+  /* "See all" card at the end of the reviews carousel */
+  .vd-review-see-all {
+    flex-shrink: 0;
+    align-self: stretch;
+    background: white;
+    border-radius: 24px;
+    padding: 16px 20px;
     display: flex;
     align-items: center;
-    gap: 8px;
-    margin-top: 8px;
-  }
-  .vd-reviewer {
+    justify-content: center;
+    gap: 4px;
+    cursor: pointer;
     font-family: 'DM Sans', sans-serif;
     font-size: 16px;
-    font-weight: 600;
-    line-height: 20px;
+    font-weight: 700;
+    line-height: 24px;
     color: #020203;
+    white-space: nowrap;
   }
-  .vd-review-stars { display: flex; gap: 0; }
 
-  /* About */
+  /* About block wraps the clamped text + "see more" in a tight column (4px gap). */
+  .vd-about-block {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    /* Pulls the about copy 8px closer to the image carousel so the gap
+       between carousel and copy is 24px while all other
+       .venue-detail-content gaps stay at 32px. */
+    margin-top: -8px;
+  }
+
+  /* About — clamped to 3 lines by default. JS unhides the adjacent
+     "see more" span only when the text actually overflows; tapping it
+     toggles .expanded to reveal the full copy. */
   .vd-about-text {
     font-family: 'DM Sans', sans-serif;
     font-size: 16px;
     font-weight: 400;
     line-height: 24px;
     color: #020203;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .vd-about-text.expanded {
+    display: block;
+    -webkit-line-clamp: unset;
+    overflow: visible;
   }
   .vd-see-more {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 16px;
     font-weight: 700;
+    line-height: 24px;
+    color: #020203;
     cursor: pointer;
     display: block;
   }
 
-  /* Quick actions */
+  /* Quick actions: horizontal pill row above the image carousel */
   .vd-quick-actions {
     display: flex;
     gap: 8px;
+    align-items: flex-start;
   }
   .vd-quick-btn {
-    flex: 1;
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
     align-items: center;
     justify-content: center;
-    gap: 4px;
+    gap: 8px;
     padding: 12px 16px;
     background: white;
-    border-radius: 16px;
+    border-radius: 999px;
     cursor: pointer;
+    flex-shrink: 0;
   }
   .vd-quick-btn span {
     font-family: 'DM Sans', sans-serif;
@@ -2218,7 +2591,9 @@
   }
   .class-detail-scroll::-webkit-scrollbar { display: none; }
 
-  /* Sticky nav: X left, fade-in title center, save+share right */
+  /* Sticky nav: back arrow left, fade-in title center, share right.
+     Top padding matches .vd-sticky-nav so the icon doesn't jump vertically
+     when sliding between the venue and class panes. */
   .cd-sticky-nav {
     position: sticky;
     top: 0;
@@ -2226,7 +2601,7 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 28px 20px 8px;
+    padding: 12px 20px 8px;
     background: transparent;
     gap: 12px;
     transition: background 0.25s ease;
@@ -2257,27 +2632,35 @@
   .cd-icon-btn {
     width: 44px;
     height: 44px;
-    background: #fff;
+    background: rgba(255, 255, 255, 0.55);
+    -webkit-backdrop-filter: blur(14px);
+    backdrop-filter: blur(14px);
     border-radius: 999px;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.12);
     flex-shrink: 0;
+    transition: background 0.25s ease, box-shadow 0.25s ease;
   }
   .cd-actions-pill {
     display: flex;
     align-items: center;
     gap: 8px;
-    padding-left: 4px;
-    padding-right: 4px;
-    background: #fff;
+    background: rgba(255, 255, 255, 0.55);
+    -webkit-backdrop-filter: blur(14px);
+    backdrop-filter: blur(14px);
     border-radius: 999px;
+    width: 44px;
     height: 44px;
     overflow: hidden;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
     flex-shrink: 0;
+    transition: background 0.25s ease, box-shadow 0.25s ease;
+  }
+  .cd-sticky-nav.scrolled .cd-icon-btn,
+  .cd-sticky-nav.scrolled .cd-actions-pill {
+    background: #fff;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
   }
   .cd-action-icon {
     display: flex;
@@ -2296,35 +2679,95 @@
     stroke: #020203;
   }
 
-  /* Content area */
+  /* Hero carousel — first child of the class scroll, so it extends to the
+     very top of the sheet (behind the venue handle and the shared sticky
+     nav, both of which overlay this pane). 3 swipeable slides with a
+     scroll-snap pagination, plus a "1/N" counter pinned bottom-right.
+     Height is generous (340px) so the image reads as the dominant visual
+     and the counter clears the rounded corner of the cd-content overlap. */
+  .cd-hero {
+    position: relative;
+    width: 100%;
+    height: 340px;
+    margin-top: 0;
+    flex-shrink: 0;
+    overflow: hidden;
+  }
+  /* Transform-based pagination (mirrors the lightbox track). The track is
+     a flex row of full-width slides; drag updates `transform` directly and
+     a CSS transition handles the snap on release. `touch-action: pan-x`
+     stops native vertical scroll from firing during a horizontal swipe —
+     otherwise the class detail view drifts up alongside the gesture. To
+     scroll the page, the user touches outside the hero (content below). */
+  .cd-hero-track {
+    display: flex;
+    width: 100%;
+    height: 100%;
+    transform: translate3d(0, 0, 0);
+    transition: transform 0.32s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    will-change: transform;
+    touch-action: pan-x;
+  }
+  .cd-hero-track.dragging { transition: none; }
+  .cd-hero-slide {
+    flex: 0 0 100%;
+    width: 100%;
+    height: 100%;
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    cursor: pointer;
+  }
+  /* Distinct gray gradients per slide so the carousel reads as 3 separate
+     images and swiping is visually obvious until real photos are wired. */
+  .cd-hero-slide:nth-child(1) {
+    background: linear-gradient(180deg, #eceef1 0%, #cdced0 100%);
+  }
+  .cd-hero-slide:nth-child(2) {
+    background: linear-gradient(180deg, #eceef1 0%, #bbbcbd 100%);
+  }
+  .cd-hero-slide:nth-child(3) {
+    background: linear-gradient(180deg, #eceef1 0%, #b0b1b2 100%);
+  }
+  /* "1/3" pill, bottom-right of the hero. Sits above the carousel via
+     pointer-events:none so it doesn't intercept swipe gestures. The 64px
+     bottom offset clears the 48px rounded-corner overlap of cd-content
+     with breathing room so the counter is fully visible. */
+  .cd-hero-counter {
+    position: absolute;
+    bottom: 64px;
+    right: 16px;
+    background: rgba(2, 2, 3, 0.7);
+    color: #fff;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 20px;
+    padding: 4px 12px;
+    border-radius: 999px;
+    pointer-events: none;
+    -webkit-backdrop-filter: blur(8px);
+    backdrop-filter: blur(8px);
+  }
+
+  /* Content area — overlaps the hero image with rounded top corners.
+     The negative margin pulls the title block up over the hero so the
+     image area reads less tall. */
   .cd-content {
     position: relative;
+    z-index: 1;
+    margin-top: -48px;
     padding: 24px 20px 0;
+    background: #f1f2f3;
+    border-radius: 24px 24px 0 0;
     display: flex;
     flex-direction: column;
     gap: 24px;
   }
 
-  /* Groups venue header + description + date picker + time slots
-     with a tighter gap than the .cd-content default (24px) */
-  .cd-hero-stack {
-    display: flex;
-    flex-direction: column;
-    gap: 0px;
-  }
-
-  /* Venue header — image on left, info stack on right */
+  /* Venue header — full-width info stack (hero image is full-bleed above) */
   .cd-venue-header {
     display: flex;
-    gap: 12px;
-    align-items: flex-start;
-  }
-  .cd-venue-image {
-    width: 112px;
-    height: 112px;
-    border-radius: 16px;
-    background: #d9dadc;
-    flex-shrink: 0;
   }
   .cd-venue-info {
     flex: 1;
@@ -2335,9 +2778,9 @@
   }
   .cd-title {
     font-family: 'DM Sans', sans-serif;
-    font-size: 18px;
-    font-weight: 700;
-    line-height: 24px;
+    font-size: 24px;
+    font-weight: 800;
+    line-height: 28px;
     color: #020203;
   }
   .cd-venue-link {
@@ -2345,10 +2788,10 @@
     align-items: center;
     gap: 6px;
     font-family: 'DM Sans', sans-serif;
-    font-size: 14px;
+    font-size: 16px;
     font-weight: 500;
-    line-height: 20px;
-    color: #020203;
+    line-height: 24px;
+    color: #4F5159;
     cursor: pointer;
     min-width: 0;
   }
@@ -2357,6 +2800,10 @@
     text-overflow: ellipsis;
     white-space: nowrap;
     min-width: 0;
+  }
+  #cd-venue-text {
+    font-size: 14px;
+    line-height: 20px;
   }
   .cd-venue-link > svg {
     flex-shrink: 0;
@@ -2376,48 +2823,59 @@
   }
   .cd-header-rating-count {
     font-weight: 500;
-    color: #90939d;
+    color: #4f5159;
   }
+  /* Intro offer line — plain green text (no pill), rendered last in the info stack */
   .cd-intro-chip {
     align-self: flex-start;
     display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    padding: 8px 12px;
-    background: #fff;
-    border-radius: 24px;
-    /* Cancel the 2px gap from the parent flex column so the chip sits flush
-       directly under the rating row while other siblings keep their spacing. */
-    margin-top: -2px;
+    align-items: baseline;
+    gap: 6px;
   }
-  .cd-intro-chip-icon { display: block; flex-shrink: 0; }
+  .cd-intro-chip-icon { display: none; }
   .cd-intro-chip-label {
     font-family: 'DM Sans', sans-serif;
-    font-size: 14px;
-    font-weight: 700;
-    line-height: 20px;
-    color: #296b49;
+    font-size: 18px;
+    font-weight: 500;
+    line-height: 24px;
+    color: rgba(2, 2, 3, 1);
+  }
+  .cd-intro-chip-price {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 18px;
+    font-weight: 500;
+    line-height: 24px;
+    color: rgba(55, 144, 98, 1);
   }
   .cd-intro-chip-strike {
     font-family: 'DM Sans', sans-serif;
-    font-size: 14px;
-    font-weight: 700;
-    line-height: 20px;
-    color: #b3b5bc;
+    font-size: 18px;
+    font-weight: 400;
+    line-height: 24px;
+    color: rgba(144, 147, 157, 1);
     text-decoration: line-through;
   }
-  /* Plain-price variant: same white pill as the intro chip, price only */
   .cd-intro-chip-plain {
     font-family: 'DM Sans', sans-serif;
-    font-size: 14px;
-    font-weight: 700;
-    line-height: 20px;
+    font-size: 18px;
+    font-weight: 500;
+    line-height: 24px;
     color: #020203;
+  }
+
+  /* Wraps date picker + time slots so spacing between them is one knob (gap). */
+  .cd-schedule-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
   }
 
   /* Date picker — horizontally paginated by week (carousel)
      Native scroll-snap is disabled because we drive the snap with a JS ease-out
-     animation in prototype.js for a slower, more deliberate carousel feel. */
+     animation in prototype.js for a slower, more deliberate carousel feel.
+     Stuck at top:80 (just below the shared sticky nav) while the user scrolls
+     through the time slots; un-sticks naturally when the .cd-schedule-stack
+     parent scrolls past so the cd-tabs (also sticky at 80) take over. */
   .cd-date-picker {
     display: flex;
     overflow-x: auto;
@@ -2426,8 +2884,16 @@
     overscroll-behavior-x: contain;
     margin-left: -20px;
     margin-right: -20px;
+    position: sticky;
+    top: 80px;
+    z-index: 4;
+    background: #f1f2f3;
   }
   .cd-date-picker::-webkit-scrollbar { display: none; }
+  /* Tighten space from header into the schedule block (cd-content flex gap is 24px). */
+  .cd-header-section + .cd-schedule-stack {
+    margin-top: -16px;
+  }
   .cd-week {
     flex: 0 0 100%;
     width: 100%;
@@ -2442,8 +2908,8 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 4px;
-    padding-top: 8px;
+    gap: 2px;
+    padding-top: 4px;
     cursor: pointer;
   }
   .cd-date-letter {
@@ -2454,9 +2920,9 @@
     color: #020203;
   }
   .cd-date-day {
-    width: 40px;
-    height: 40px;
-    border-radius: 32px;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -2479,41 +2945,38 @@
     color: #fff;
   }
 
-  /* Time slot chips — single horizontal row, scrollable */
+  /* Time slot list — vertical stack of cards. Padding-top creates the 16px
+     gap below the date picker; 4px bottom matches the tabs gap below. */
   .cd-time-slots {
     display: flex;
-    gap: 8px;
-    align-items: flex-start;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    margin-left: -20px;
-    margin-right: -20px;
-    padding: 16px 20px 0;
-    scroll-padding-left: 20px;
-    scroll-snap-type: x proximity;
-  }
-  .cd-time-slots::-webkit-scrollbar { display: none; }
-  .cd-time-slot {
-    display: flex;
     flex-direction: column;
-    align-items: center;
     gap: 8px;
-    cursor: pointer;
-    flex-shrink: 0;
+    padding: 16px 0 4px;
   }
-  .cd-time-slot-chip {
+  /* Card layout per Figma: 80px tall, 16px padding, 24px radius, two rows
+     (time/duration on top, instructor/price on bottom) with 4px between. */
+  .cd-time-slot {
     background: #fff;
     border: 2px solid transparent;
-    border-radius: 12px;
-    padding: 12px 16px;
+    border-radius: 24px;
+    padding: 14px 16px;
+    min-height: 80px;
     display: flex;
     flex-direction: column;
-    gap: 0;
-    white-space: nowrap;
+    justify-content: center;
+    gap: 4px;
+    cursor: pointer;
     transition: border-color 0.15s ease;
+    box-sizing: border-box;
   }
-  .cd-time-slot.selected .cd-time-slot-chip {
+  .cd-time-slot.selected {
     border-color: #161618;
+  }
+  .cd-time-slot-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
   }
   .cd-time-slot-time {
     font-family: 'DM Sans', sans-serif;
@@ -2522,26 +2985,46 @@
     line-height: 20px;
     color: #020203;
   }
-  .cd-time-slot-instructor {
+  .cd-time-slot-duration {
     font-family: 'DM Sans', sans-serif;
     font-size: 14px;
     font-weight: 500;
     line-height: 20px;
-    color: #90939d;
+    color: #020203;
   }
-  .cd-time-slot-spots {
+  .cd-time-slot-instructor {
     font-family: 'DM Sans', sans-serif;
-    font-size: 13px;
-    font-weight: 500;
-    line-height: 16px;
-    color: #90939d;
-    text-align: center;
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 20px;
+    color: #020203;
+  }
+  .cd-time-slot-price {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 24px;
+    color: #020203;
+  }
+
+  /* Class detail header simplification: when class detail lives inside the
+     venue sheet, the venue link and intro chip are redundant (the user came
+     from the venue, and per-slot prices show the offer). */
+  .cd-venue-link,
+  .cd-intro-chip { display: none; }
+
+  /* Summary description sits between the header and the date picker. The
+     cd-content gap is 24px between siblings — pull the summary up 12px so
+     the visual gap from the bottom of the rating to the top of the summary
+     text is 12px (per spec). */
+  .cd-section.cd-header-section + .cd-summary {
+    margin-top: -12px;
   }
 
   /* Tabs (sticky below nav, animated indicator) */
   .cd-tabs {
     display: flex;
-    gap: 32px;
+    gap: 40px;
     border-bottom: 1px solid #e4e5e7;
     position: sticky;
     top: 80px;
@@ -2555,8 +3038,8 @@
   .cd-tab {
     padding: 12px 0;
     font-family: 'DM Sans', sans-serif;
-    font-size: 16px;
-    line-height: 24px;
+    font-size: 14px;
+    line-height: 20px;
     color: #020203;
     cursor: pointer;
     white-space: nowrap;
@@ -2567,7 +3050,7 @@
     visibility: hidden;
   }
   .cd-tab-label {
-    font-weight: 400;
+    font-weight: 500;
     position: absolute;
     left: 0;
     right: 0;
@@ -2590,7 +3073,12 @@
   .cd-panel.active {
     display: flex;
     flex-direction: column;
-    gap: 24px;
+    gap: 32px;
+    animation: cd-panel-fade 200ms cubic-bezier(.25,.46,.45,.94);
+  }
+  @keyframes cd-panel-fade {
+    from { opacity: 0; }
+    to { opacity: 1; }
   }
 
   /* Description */
@@ -2653,6 +3141,18 @@
     color: #020203;
     margin: 0;
   }
+  .cd-section-subtitle {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 16px;
+    font-weight: 500;
+    line-height: 24px;
+    color: #4f5159;
+    margin: -4px 0 0;
+  }
+  #cd-reviews-subtitle {
+    font-size: 14px;
+    line-height: 20px;
+  }
 
   /* Ratings & Reviews — inline summary (Overview tab) */
   .cd-rating-summary {
@@ -2660,14 +3160,49 @@
     align-items: center;
     gap: 12px;
   }
-  /* Ratings & Reviews — full summary card (Reviews tab) */
+  /* Ratings & Reviews — full summary (Reviews tab). Mirrors the venue-detail
+     pattern: the outer container is transparent and sits on the sheet's gray
+     background; only the bar histogram gets its own white card. */
   .cd-rating-card {
-    background: #fff;
-    border-radius: 24px;
-    padding: 20px;
     display: flex;
     flex-direction: column;
     gap: 16px;
+  }
+  /* Scoped to .cd-rating-card so the Overview tab's inline .cd-rating-summary
+     (which reuses .cd-rating-big / .cd-rating-summary-count) stays unchanged. */
+  .cd-rating-card .cd-rating-big {
+    font-size: 32px;
+    font-weight: 700;
+    line-height: 40px;
+  }
+  .cd-rating-card .cd-stars svg { width: 24px; height: 24px; }
+  .cd-rating-card .cd-rating-summary-count {
+    font-size: 14px;
+    line-height: 20px;
+  }
+  .cd-rating-card .cd-rating-source {
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 16px;
+    /* Pulls the subtitle 8px closer to the rating so the gap above it is 8px
+       while the other .cd-rating-card gaps stay at 16px. Mirrors .vd-rev-source. */
+    margin-top: -8px;
+  }
+  .cd-rating-card .cd-rating-ai-summary {
+    font-size: 14px;
+    font-weight: 400;
+    line-height: 20px;
+  }
+  .cd-rating-card .cd-rating-bars { gap: 8px; }
+  .cd-rating-card .cd-rating-bar-track {
+    background: #f1f2f3;
+    border-radius: 5px;
+  }
+  .cd-rating-card .cd-rating-bar-fill { border-radius: 5px; }
+  .cd-rating-bars-card {
+    background: #fff;
+    border-radius: 24px;
+    padding: 20px;
   }
   .cd-rating-card-top {
     display: flex;
@@ -2693,14 +3228,14 @@
     font-size: 13px;
     font-weight: 500;
     line-height: 16px;
-    color: #90939d;
+    color: #4F5159;
   }
   .cd-rating-source {
     font-family: 'DM Sans', sans-serif;
     font-size: 14px;
     font-weight: 400;
     line-height: 20px;
-    color: #90939d;
+    color: #4F5159;
   }
   .cd-rating-bars {
     display: flex;
@@ -2736,7 +3271,7 @@
   .cd-rating-ai-summary {
     font-family: 'DM Sans', sans-serif;
     font-size: 14px;
-    font-weight: 500;
+    font-weight: 400;
     line-height: 20px;
     color: #020203;
     margin: 0;
@@ -2754,7 +3289,7 @@
   .cd-review-cards::-webkit-scrollbar { display: none; }
   .cd-review-card {
     flex-shrink: 0;
-    width: 286px;
+    width: 311px;
     background: #fff;
     border-radius: 24px;
     padding: 16px;
@@ -2762,28 +3297,34 @@
     flex-direction: column;
     gap: 12px;
   }
-  .cd-review-card-title {
+  .cd-review-card-header {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    width: 100%;
+  }
+  .cd-review-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 28px;
+    background: #d9dadd;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     font-family: 'DM Sans', sans-serif;
     font-size: 16px;
     font-weight: 700;
     line-height: 24px;
-    color: #020203;
-    margin: 0;
+    color: white;
+    flex-shrink: 0;
   }
-  .cd-review-card-body {
-    font-family: 'DM Sans', sans-serif;
-    font-size: 14px;
-    font-weight: 500;
-    line-height: 20px;
-    color: #020203;
-    margin: 0;
-  }
-  .cd-review-card-footer {
+  .cd-review-card-meta {
+    flex: 1;
+    min-width: 0;
     display: flex;
-    justify-content: space-between;
-    align-items: center;
+    flex-direction: column;
   }
-  .cd-review-card-author {
+  .cd-review-name-row {
     display: flex;
     align-items: center;
     gap: 4px;
@@ -2795,22 +3336,84 @@
     line-height: 20px;
     color: #020203;
   }
-  .cd-review-card-stars { display: flex; }
-  .cd-review-card-source {
-    display: flex;
-    align-items: center;
-    gap: 4px;
+  .cd-review-card-stars { display: flex; gap: 0; }
+  .cd-review-card-stars svg { display: block; flex-shrink: 0; }
+  .cd-review-card-date {
     font-family: 'DM Sans', sans-serif;
     font-size: 13px;
     font-weight: 500;
     line-height: 16px;
     color: #90939d;
   }
-  .cd-review-card-source-icon {
+  .cd-review-card-body-group {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .cd-review-card-title {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 24px;
+    color: #020203;
+    margin: 0;
+  }
+  .cd-review-card-body {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 16px;
+    font-weight: 400;
+    line-height: 24px;
+    color: #020203;
+    margin: 0;
+  }
+  /* Carousel-only: clamp the body to 4 lines. JS unhides the adjacent
+     "see more" span when the text actually overflows; tapping it toggles
+     .expanded to reveal the full copy. Reviews-tab list cards are
+     unclamped (their block is full-width and gets its own styles below). */
+  .cd-review-cards .cd-review-card-body {
+    display: -webkit-box;
+    -webkit-line-clamp: 4;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .cd-review-cards .cd-review-card-body.expanded {
     display: block;
-    width: 20px;
-    height: 20px;
+    -webkit-line-clamp: unset;
+    overflow: visible;
+  }
+  .cd-review-card-seemore {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    line-height: 20px;
+    color: #020203;
+    cursor: pointer;
+  }
+  /* Without this, the span's default `display` would override the UA
+     [hidden] rule, making the link visible even when JS left hidden=true. */
+  .cd-review-card-seemore[hidden] { display: none; }
+  /* Reviews-tab list variant: pulls the body 8px closer to the class title
+     so they sit 4px apart while the other .cd-review-card gaps stay at 12px. */
+  .cd-review-card-list .cd-review-card-body {
+    margin-top: -8px;
+  }
+  .cd-review-see-all {
     flex-shrink: 0;
+    align-self: stretch;
+    background: #fff;
+    border-radius: 24px;
+    padding: 16px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 24px;
+    color: #020203;
+    white-space: nowrap;
   }
 
   /* Reviews panel list */
@@ -2821,78 +3424,490 @@
   }
   .cd-reviews-list .cd-review-card { width: 100%; }
 
-  /* Fixed booking footer: pinned 24px above the bottom of the sheet */
+  /* Fixed booking footer: pinned to the device frame so it can sit above the
+     persistent tab bar. Hidden offscreen by default; `.cd-booking-visible`
+     adds the reveal transform so JS can animate it in when class detail opens. */
+  /* Slide + visibility flip are driven by Motion in JS. CSS only defines the
+     hidden resting state so first paint (before JS hydrates) doesn't flash
+     the bar onscreen. The `.cd-booking-visible` class is a state marker only
+     — no CSS rules tied to it beyond pointer-events. */
   .cd-booking-bar {
     position: absolute;
-    bottom: 24px;
-    left: 16px;
-    right: 16px;
+    bottom: 0;
+    left: 0;
+    right: 0;
     background: #fff;
-    border-radius: 24px;
-    padding: 16px;
-    box-shadow: 0 6px 16px rgba(0,0,0,0.14);
+    border-radius: 0;
+    /* Vertical padding asymmetric: more bottom space (32px) for breathing
+       room from the device bottom edge. Matches the sheet's Book CTA
+       `bottom: 32`, so the morph and hand-off keep the button's y stable. */
+    padding: 16px 20px 32px;
+    box-shadow: 0 -2px 16px rgba(0, 0, 0, 0.12);
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
     gap: 12px;
-    z-index: 6;
+    z-index: 35;
+    pointer-events: none;
+    visibility: hidden;
+    transform: translateY(calc(100% + 24px));
+    will-change: transform;
+  }
+  .cd-booking-bar.cd-booking-visible {
     pointer-events: auto;
   }
   .cd-booking-info {
     display: flex;
     flex-direction: column;
-    width: 100%;
-  }
-  .cd-booking-time {
-    font-family: 'DM Sans', sans-serif;
-    font-size: 16px;
-    font-weight: 700;
-    line-height: 24px;
-    color: #020203;
-  }
-  .cd-booking-bottom {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-  }
-  .cd-booking-instructor {
-    font-family: 'DM Sans', sans-serif;
-    font-size: 16px;
-    font-weight: 700;
-    line-height: 24px;
-    color: #90939d;
+    align-items: flex-start;
+    min-width: 0;
+    gap: 0;
   }
   .cd-booking-price {
     display: flex;
-    align-items: center;
+    align-items: baseline;
     gap: 4px;
     font-family: 'DM Sans', sans-serif;
     font-size: 16px;
     font-weight: 700;
     line-height: 24px;
+    color: #020203;
   }
   .cd-booking-price-strike {
-    color: #b3b5bc;
+    color: #696c77;
     text-decoration: line-through;
+    font-weight: 400;
   }
+  /* Discount price (intro offer) renders in the brand green; plain price
+     stays in the default text color. */
   .cd-booking-price-final {
     color: #379062;
   }
   .cd-booking-price-plain {
     color: #020203;
+    font-weight: 700;
+  }
+  .cd-booking-meta {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 20px;
+    color: #020203;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
   }
   .cd-booking-cta {
-    width: 100%;
+    flex-shrink: 0;
+    width: 100px;
     background: #e10e0e;
     color: #fff;
     border: none;
     border-radius: 999px;
-    padding: 12px 24px;
+    padding: 12px 16px;
     font-family: 'DM Sans', sans-serif;
-    font-size: 18px;
+    font-size: 16px;
     font-weight: 500;
-    line-height: 28px;
+    line-height: 24px;
     cursor: pointer;
   }
   .cd-booking-cta:active {
     background: #c00b0b;
+  }
+
+  /* Checkout: morph-in-place from the booking bar. Shares the same
+     bottom/left/right/border-radius geometry as .cd-booking-bar so the
+     seam is invisible when the sheet first appears; then grows upward
+     while its background transitions from glass → solid white. */
+  .cd-checkout-scrim {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.32);
+    opacity: 0;
+    pointer-events: none;
+    z-index: 35;
+    transition: opacity 0.25s ease;
+  }
+  .cd-checkout-scrim.is-visible {
+    opacity: 1;
+    pointer-events: auto;
+  }
+  .cd-checkout-sheet {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    /* Height is controlled by JS; CSS default keeps it invisible offscreen. */
+    height: 130px;
+    border-radius: 0;
+    /* Closed and open share flush left/right/bottom + solid white bg now;
+       padding animates 16 → 24 to keep the Book button pinned in place while
+       the sheet grows in height. Bottom padding reserves CTA space (52px
+       button + 16px offset + 16px breathing room) so the absolutely-positioned
+       CTA doesn't overlap the flex content above it. */
+    padding: 16px 16px 84px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    overflow: hidden;
+    visibility: hidden;
+    z-index: 36;
+    /* Closed state — matches .cd-booking-bar exactly (solid white + shadow). */
+    background: #fff;
+    box-shadow: 0 -2px 16px rgba(0, 0, 0, 0.12);
+    transition:
+      background 0.44s cubic-bezier(.32,.72,0,1),
+      box-shadow 0.44s cubic-bezier(.32,.72,0,1),
+      left 0.44s cubic-bezier(.32,.72,0,1),
+      right 0.44s cubic-bezier(.32,.72,0,1),
+      bottom 0.44s cubic-bezier(.32,.72,0,1),
+      border-radius 0.44s cubic-bezier(.32,.72,0,1),
+      padding 0.44s cubic-bezier(.32,.72,0,1),
+      height 0.44s cubic-bezier(.32,.72,0,1);
+  }
+  .cd-checkout-sheet.is-open {
+    left: 0;
+    right: 0;
+    bottom: 0;
+    /* Bottom padding 96 = 32 (CTA bottom) + 48 (CTA height) + 16 breathing. */
+    padding: 24px 24px 96px 24px;
+    border-radius: 24px 24px 0 0;
+    background: #fff;
+    box-shadow: 0 -2px 16px rgba(0, 0, 0, 0.12);
+  }
+  /* Header and body fade in/out with the geometry morph. The CTA is NOT
+     in this group — it morphs between Next-shape (closed) and Book-shape
+     (open) so it can hand off cleanly to the booking bar's Next button. */
+  .cd-checkout-sheet .cd-checkout-header,
+  .cd-checkout-sheet .cd-checkout-body {
+    opacity: 0;
+    transition: opacity 0.22s ease;
+  }
+  .cd-checkout-sheet.is-open .cd-checkout-header,
+  .cd-checkout-sheet.is-open .cd-checkout-body {
+    opacity: 1;
+    transition: opacity 0.22s ease 0.18s;
+  }
+  .cd-checkout-header {
+    position: relative;
+    width: 100%;
+    height: 44px;
+    flex-shrink: 0;
+  }
+  .cd-checkout-title {
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    margin: 0;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 20px;
+    font-weight: 900;
+    line-height: 28px;
+    color: #020203;
+    white-space: nowrap;
+  }
+  .cd-checkout-close {
+    position: absolute;
+    right: 0;
+    top: 0;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+    border: none;
+    cursor: pointer;
+    display: grid;
+    place-items: center;
+    padding: 0;
+  }
+  .cd-checkout-close:active {
+    background: #f4f4f6;
+  }
+  .cd-checkout-body {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    flex: 1 1 auto;
+    overflow: hidden;
+    min-height: 0;
+  }
+  .cd-checkout-info {
+    display: flex;
+    flex-direction: column;
+  }
+  .cd-checkout-class-title {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 18px;
+    font-weight: 700;
+    line-height: 24px;
+    color: #020203;
+  }
+  .cd-checkout-time {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 16px;
+    font-weight: 500;
+    line-height: 24px;
+    color: #020203;
+  }
+  .cd-checkout-instructor {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 20px;
+    color: #4f5159;
+  }
+  .cd-checkout-venue {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 20px;
+    color: #020203;
+  }
+  .cd-checkout-cancellation {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 16px 0;
+  }
+  .cd-checkout-cancellation-title {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 20px;
+    color: #020203;
+  }
+  .cd-checkout-cancellation-body {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 16px;
+    color: #4f5159;
+  }
+  .cd-checkout-lines {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .cd-checkout-line {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 20px;
+    color: #4f5159;
+  }
+  .cd-checkout-line--total {
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 20px;
+    color: #020203;
+  }
+  .cd-checkout-payment {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .cd-checkout-payment-label {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 20px;
+    color: #020203;
+  }
+  .cd-checkout-payment-value {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 16px;
+    color: #020203;
+  }
+  .cd-checkout-applepay-mark {
+    display: inline-flex;
+    width: 32px;
+    height: 20px;
+  }
+  .cd-checkout-applepay-mark svg {
+    width: 100%;
+    height: 100%;
+  }
+  .cd-checkout-cta {
+    /* Anchored to bottom-right at the booking bar's Next coordinates
+       (right:20, bottom:32). The morph is intentionally minimal — only
+       the left edge moves, so the button grows leftward into a full-width
+       Book CTA. Right edge, bottom, padding and font stay fixed so there
+       is no vertical shift or right-edge jerk during the transition. */
+    position: absolute;
+    left: calc(100% - 120px);
+    right: 20px;
+    bottom: 32px;
+    background: #e10e0e;
+    color: #fff;
+    border: none;
+    border-radius: 999px;
+    padding: 12px 16px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 16px;
+    font-weight: 500;
+    line-height: 24px;
+    /* Long checkout label ("Confirm and reserve") must never wrap into a
+       second line during the morph. */
+    white-space: nowrap;
+    overflow: hidden;
+    cursor: pointer;
+    transition: left 0.44s cubic-bezier(.32,.72,0,1);
+  }
+  .cd-checkout-sheet.is-open .cd-checkout-cta {
+    left: 20px;
+  }
+  .cd-checkout-cta:active {
+    background: #c00b0b;
+  }
+  /* Hide original booking card while the sheet covers it. The sheet's
+     CTA closed-state matches the bar's Next exactly, so the hand-off is
+     visually seamless — no opacity transition needed. */
+  .cd-booking-bar.is-under-checkout {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  /* ========== LIGHTBOX ==========
+     Image gallery scoped to the phone frame (positioned absolute relative
+     to .device-frame, which has overflow:hidden + rounded corners). The
+     active slide morphs from the tapped thumbnail's bounding rect into
+     its natural lightbox position when opening. */
+  .lightbox {
+    position: absolute;
+    inset: 0;
+    background: transparent;
+    z-index: 200;
+    display: flex;
+    flex-direction: column;
+    pointer-events: none;
+  }
+  .lightbox.open {
+    pointer-events: auto;
+  }
+  /* Solid background panel — separated from .lightbox so the dismiss
+     gesture can fade it independently of chrome and slides. */
+  .lightbox-bg {
+    position: absolute;
+    inset: 0;
+    background: #ededee;
+    opacity: 0;
+    transition: opacity 0.2s ease-out;
+    pointer-events: none;
+  }
+  .lightbox.open .lightbox-bg { opacity: 1; }
+  .lightbox-close {
+    position: absolute;
+    top: 60px;
+    left: 20px;
+    width: 40px;
+    height: 40px;
+    background: #fff;
+    border: none;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    z-index: 2;
+    opacity: 0;
+    transition: opacity 0.2s ease-out;
+  }
+  .lightbox.open .lightbox-close { opacity: 1; }
+  .lightbox-header {
+    position: absolute;
+    top: 60px;
+    left: 0;
+    right: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    pointer-events: none;
+    z-index: 1;
+    opacity: 0;
+    transition: opacity 0.2s ease-out;
+  }
+  .lightbox.open .lightbox-header { opacity: 1; }
+  /* Drag-time: kill chrome transitions so each frame's opacity write isn't
+     interpolated by CSS (which would lag the drag and cause a flash on
+     release when the underlying inline value pops back). */
+  .lightbox.dragging .lightbox-bg,
+  .lightbox.dragging .lightbox-close,
+  .lightbox.dragging .lightbox-header,
+  .lightbox.dragging .lightbox-status-bar { transition: none; }
+  .lightbox-title {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 24px;
+    color: #020203;
+  }
+  .lightbox-counter {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 20px;
+    color: #90939d;
+  }
+  .lightbox-status-bar {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 3;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.2s ease-out;
+  }
+  .lightbox.open .lightbox-status-bar { opacity: 1; }
+  .lightbox-status-bar img {
+    width: 100%;
+    display: block;
+  }
+  .lightbox-viewport {
+    position: relative;
+    z-index: 1;
+    flex: 1;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+  }
+  .lightbox-track {
+    display: flex;
+    width: 100%;
+    height: 100%;
+    align-items: center;
+    transform: translate3d(0, 0, 0);
+    transition: transform 0.32s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    will-change: transform;
+  }
+  .lightbox-track.dragging { transition: none; }
+  .lightbox-slide {
+    flex: 0 0 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 8px;
+    box-sizing: border-box;
+  }
+  .lightbox-slide-image {
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    background: #d9d9d9;
+    border-radius: 24px;
+    transform-origin: center center;
+    will-change: transform, opacity;
+    transition: opacity 0.2s ease-out;
   }
