@@ -3175,10 +3175,8 @@
           d.setDate(today.getDate() + absIdx);
           var letterIdx = (dow + absIdx) % 7;
           var classes = 'cd-date-cell';
-          // Today is the only card that shows the selected style — the
-          // picker's selected highlight stays anchored to today regardless
-          // of which day the user is browsing.
-          if (absIdx === 0) classes += ' today selected';
+          if (absIdx === 0) classes += ' today';
+          if (absIdx === viewingAbsIdx) classes += ' selected';
           html += '<div class="' + classes + '" data-abs="' + absIdx + '">'
             + '<div class="cd-date-letter">' + DAY_LETTERS[letterIdx] + '</div>'
             + '<div class="cd-date-day">' + d.getDate() + '</div>'
@@ -3190,10 +3188,12 @@
       picker.querySelectorAll('.cd-date-cell').forEach(function(cell) {
         cell.addEventListener('click', function() {
           if (wasDragging) return;
-          // Tapping a date only updates which day the user is browsing —
-          // the picker's selected highlight stays on today, and the booking
-          // footer date stays put until the user taps a slot.
-          cdViewingAbsIdx = parseInt(cell.dataset.abs, 10);
+          // Re-render so the visual "selected" highlight follows the user's
+          // tap. The booking-footer date stays anchored to whichever date
+          // the user picked their slot on (cdSelectedAbsIdx) — only a slot
+          // tap updates that. cdViewingAbsIdx tracks the currently-visible
+          // date and is what gets baked in on the next slot tap.
+          renderCdDatePicker(parseInt(cell.dataset.abs, 10));
           scrollCdTimeSlotsToTop();
         });
       });
