@@ -4504,7 +4504,7 @@
       slideImage.style.opacity = '1';
       void slideImage.offsetHeight;
       slideImage.style.transition =
-        'transform 0.45s cubic-bezier(0.25, 0.46, 0.45, 0.94), opacity 0.45s ease-in';
+        'transform 0.45s cubic-bezier(0.25, 0.46, 0.45, 0.94), opacity 0.55s ease-in';
       slideImage.style.transform = toTransform;
       slideImage.style.opacity = '0';
       // Start fading the source thumb back in NOW, in parallel with the
@@ -4513,7 +4513,7 @@
       // of the visibility into the first half of the dismiss, so the thumb
       // is mostly visible well before the slide lands and fades.
       if (thumb) {
-        thumb.style.transition = 'opacity 0.45s ease-out';
+        thumb.style.transition = 'opacity 0.95s ease-out';
         thumb.style.opacity = '';
       }
       // Override the chrome's default 0.2s CSS transition with a 0.45s fade
