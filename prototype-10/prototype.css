@@ -3022,11 +3022,22 @@
     color: #020203;
   }
   .cd-time-slot-price {
+    display: flex;
+    align-items: baseline;
+    gap: 4px;
     font-family: 'DM Sans', sans-serif;
     font-size: 16px;
     font-weight: 700;
     line-height: 24px;
     color: #020203;
+  }
+  .cd-time-slot-price-final {
+    color: #379062;
+  }
+  .cd-time-slot-price-strike {
+    color: #696c77;
+    text-decoration: line-through;
+    font-weight: 400;
   }
 
   /* Class detail header simplification: when class detail lives inside the

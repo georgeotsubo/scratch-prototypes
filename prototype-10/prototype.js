@@ -2460,7 +2460,6 @@
             spots: '3 spots left'
           };
           if (venueHasIntro) {
-            cls.priceLabel = 'Offer';
             cls.strikePrice = '$35';
             cls.finalPrice = '$25';
           } else {
@@ -2516,7 +2515,6 @@
             spots: '3 spots left'
           };
           if (venueHasIntro) {
-            cls.priceLabel = 'Offer';
             cls.strikePrice = '$35';
             cls.finalPrice = '$25';
           } else {
@@ -2791,7 +2789,6 @@
         };
         if (spotsLeft) cls.spots = spotsLeft;
         if (hasIntro) {
-          cls.priceLabel = 'Offer';
           cls.strikePrice = '$35';
           cls.finalPrice = '$25';
         } else {
@@ -3414,6 +3411,10 @@
       if (data.length > MAX_SLOTS) data = data.slice(0, MAX_SLOTS);
 
       slots.innerHTML = data.map(function(s) {
+        var priceHtml = s.strikePrice
+          ? '<span class="cd-time-slot-price-final">' + s.price + '</span>'
+            + '<span class="cd-time-slot-price-strike">' + s.strikePrice + '</span>'
+          : s.price;
         return '<div class="cd-time-slot' + (s.selected ? ' selected' : '') + '">'
           +   '<div class="cd-time-slot-row">'
           +     '<div class="cd-time-slot-time">' + s.time + '</div>'
@@ -3421,7 +3422,7 @@
           +   '</div>'
           +   '<div class="cd-time-slot-row">'
           +     '<div class="cd-time-slot-instructor">' + s.instructor + '</div>'
-          +     '<div class="cd-time-slot-price">' + s.price + '</div>'
+          +     '<div class="cd-time-slot-price">' + priceHtml + '</div>'
           +   '</div>'
           + '</div>';
       }).join('');
@@ -3702,7 +3703,6 @@
         if (hasVenueIntroOffer(window.__currentVenuePin)) {
           introChipEl.classList.remove('cd-intro-chip--plain');
           introChipEl.innerHTML = CD_INTRO_CHIP_SVG
-            + '<span class="cd-intro-chip-label">Offer \u00b7</span>'
             + '<span class="cd-intro-chip-price">' + cdFormatPrice(cls.finalPrice || '$25') + '</span>'
             + '<span class="cd-intro-chip-strike">' + cdFormatPrice(cls.strikePrice || '$35') + '</span>';
         } else {
@@ -4507,6 +4507,15 @@
         'transform 0.45s cubic-bezier(0.25, 0.46, 0.45, 0.94), opacity 0.45s ease-in';
       slideImage.style.transform = toTransform;
       slideImage.style.opacity = '0';
+      // Start fading the source thumb back in NOW, in parallel with the
+      // dismiss animation. Match the 0.45s window of the slide morph so the
+      // thumb eases in gradually rather than popping. ease-out shapes most
+      // of the visibility into the first half of the dismiss, so the thumb
+      // is mostly visible well before the slide lands and fades.
+      if (thumb) {
+        thumb.style.transition = 'opacity 0.45s ease-out';
+        thumb.style.opacity = '';
+      }
       // Override the chrome's default 0.2s CSS transition with a 0.45s fade
       // so the bg + status + close + header don't disappear before the slide
       // finishes its morph. The dismiss should read as one cohesive motion;
@@ -4556,30 +4565,16 @@
       });
 
       var fromTransform = slideImage.style.transform || 'translate(0px, 0px) scale(1)';
-
-      // Restore chrome opacity INSTANTLY — no transition, no animation.
-      // Even a fast quart-out fade-back reads as a "fade in," and the user
-      // wants the snap-back to feel like the slide moving home, not a fade.
-      // Using `transition: none` for one frame, then clearing it, snaps the
-      // chrome to its CSS .lightbox.open opacity (1) without triggering the
-      // CSS transition on the inline-clear.
-      chromeEls.forEach(function(el) {
-        if (el) el.style.transition = 'none';
-      });
-      lightboxBg.style.opacity = '';
-      lightboxStatusBar.style.opacity = '';
-      lightboxClose.style.opacity = '';
-      if (headerEl) headerEl.style.opacity = '';
-      // Force a reflow to commit the no-transition state before restoring
-      // the default transitions for future state changes (e.g. lightbox close).
-      void lightboxBg.offsetHeight;
-      chromeEls.forEach(function(el) {
-        if (el) el.style.transition = '';
-      });
-
       slideImage.style.transition = '';
 
-      // Snappy quart-out for the slide — 240ms keeps the gesture tight.
+      // Two-phase recovery:
+      //   1) Animate the slide back to identity FIRST. Chrome stays at the
+      //      drag-faded opacity throughout — no chrome motion is visible
+      //      while the slide is in flight, so the user doesn't perceive a
+      //      fade overlapping with the snap.
+      //   2) Once the slide lands, clear the chrome's inline opacities so
+      //      the default 0.2s CSS transition fades them back to 1. This
+      //      reads as "everything settles" after the slide is already home.
       var imgAnim = slideImage.animate(
         [
           { transform: fromTransform },
@@ -4593,6 +4588,12 @@
         // override is removed. Both synchronous — no paint between them.
         slideImage.style.transform = '';
         imgAnim.cancel();
+        // Now that the slide is home, let the chrome fade back to opacity 1
+        // via its default CSS transition (0.2s ease-out on each element).
+        lightboxBg.style.opacity = '';
+        lightboxStatusBar.style.opacity = '';
+        lightboxClose.style.opacity = '';
+        if (headerEl) headerEl.style.opacity = '';
       };
     }
 
