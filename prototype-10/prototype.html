@@ -336,6 +336,12 @@
       <div class="vd-pane-stack" id="vd-pane-stack">
       <div class="venue-detail-scroll">
 
+        <!-- Per-pane grey nav backdrop. Sticky to the top of THIS pane so it
+             slides left along with the venue when the class pane pushes in.
+             The shared sticky nav above stays transparent and only carries
+             the icons + titles (which don't translate). -->
+        <div class="vd-pane-nav-bg" id="vd-pane-nav-bg-venue"></div>
+
         <div class="venue-detail-content">
 
           <!-- Header + images grouped so the carousel sits tight (16px) below the tags -->
@@ -577,6 +583,11 @@
            the body slides. The hero image fills the top of this pane and is
            visible behind the venue handle and the shared nav. -->
       <div class="class-detail-scroll" id="class-detail-scroll">
+
+        <!-- Per-pane grey nav backdrop. Sticky to the top of THIS pane so it
+             slides in from the right with the class pane. Fades to grey only
+             once the class scroll has passed the title threshold. -->
+        <div class="vd-pane-nav-bg" id="vd-pane-nav-bg-class"></div>
 
         <!-- Hero carousel — 3 swipeable slides + 1/N counter; tap any
              slide to launch the lightbox at that page. -->

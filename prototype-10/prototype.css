@@ -1442,11 +1442,10 @@
     align-items: center;
     justify-content: center;
     padding: 28px 0 8px;
+    /* Shared nav is now permanently transparent — the grey wash lives inside
+       each pane (.vd-pane-nav-bg) so it slides horizontally with its pane.
+       This nav only carries the icons + titles, which stay fixed. */
     background: transparent;
-    /* Faster bg fade so the grey wash doesn't linger after a class-detail
-       push; the post-slide JS clears .scrolled and the nav transparents
-       within ~180ms. */
-    transition: background 0.18s ease;
     pointer-events: none;
   }
   /* Re-enable pointer-events on the interactive controls inside the nav.
@@ -1460,7 +1459,30 @@
   .vd-sticky-nav .vd-actions-pill {
     pointer-events: auto;
   }
-  .vd-sticky-nav.scrolled {
+  /* Per-pane grey nav backdrop. Lives inside each pane's scroll container
+     and pinned with `position: sticky; top: 0` so it stays anchored to the
+     top of its pane visually while translating with the pane during the
+     class-detail slide. Negative margin pulls the next sibling up so the
+     bg overlays the top 80px of pane content (transparent until scrolled
+     past the title). z-index keeps it above pane content but below the
+     shared nav (z:5). */
+  .vd-pane-nav-bg {
+    position: sticky;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 80px;
+    margin-bottom: -80px;
+    background: transparent;
+    transition: background 0.18s ease;
+    /* Must outrank .cd-content which is z-index:1 — otherwise the description
+       and other pane content render on top of the sticky bg and the grey
+       wash never appears at the top once scrolled. Still below the shared
+       nav (z:5) so the icons + title remain on top. */
+    z-index: 3;
+    pointer-events: none;
+  }
+  .vd-pane-nav-bg.scrolled {
     background: #f1f2f3;
   }
   /* Title wrap: holds the venue title and class title overlapping in the same
@@ -3062,9 +3084,9 @@
     position: absolute;
     bottom: -1px;
     left: 0;
-    height: 3px;
+    height: 4px;
     background: #020203;
-    border-radius: 2px 2px 0 0;
+    border-radius: 4px 4px 0 0;
     pointer-events: none;
   }
 
@@ -3129,7 +3151,7 @@
   .cd-section-title {
     font-family: 'DM Sans', sans-serif;
     font-size: 20px;
-    font-weight: 900;
+    font-weight: 800;
     line-height: 28px;
     color: #020203;
   }
@@ -3147,7 +3169,7 @@
     font-weight: 500;
     line-height: 24px;
     color: #4f5159;
-    margin: -4px 0 0;
+    margin: -8px 0 0;
   }
   #cd-reviews-subtitle {
     font-size: 14px;

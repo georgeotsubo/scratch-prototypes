@@ -2125,6 +2125,8 @@
 
     document.getElementById('vd-sticky-title').textContent = pin.name;
     document.getElementById('vd-sticky-nav').classList.remove('scrolled');
+    var vdVenueBg = document.getElementById('vd-pane-nav-bg-venue');
+    if (vdVenueBg) vdVenueBg.classList.remove('scrolled');
 
     // Populate reviews panel with this venue's rating
     if (window.__renderReviewsPanel) {
@@ -2242,18 +2244,21 @@
   // and tabs are re-hidden when the user scrolls back to the top.
   (function() {
     var stickyNav = document.getElementById('vd-sticky-nav');
+    var venuePaneBg = document.getElementById('vd-pane-nav-bg-venue');
     var SCROLL_THRESHOLD = 10;
 
     venueDetailScroll.addEventListener('scroll', function() {
       if (!venueDetailOpen) return;
-      // Skip while the class pane is active — the class scroll handler owns
-      // the .scrolled state on the shared sticky nav.
+      var scrolled = venueDetailScroll.scrollTop > SCROLL_THRESHOLD;
+      // The pane-owned grey backdrop is always tied to its own pane's scroll
+      // — it stays grey even when the class pane is active, so it slides
+      // back into view (still grey) when the user pops the class.
+      if (venuePaneBg) venuePaneBg.classList.toggle('scrolled', scrolled);
+      // Shared-nav .scrolled drives the icon/title styling. Only the active
+      // pane's scroll should drive it — class scroll handler takes over
+      // while the class pane is open.
       if (classDetailOpen) return;
-      if (venueDetailScroll.scrollTop > SCROLL_THRESHOLD) {
-        stickyNav.classList.add('scrolled');
-      } else {
-        stickyNav.classList.remove('scrolled');
-      }
+      stickyNav.classList.toggle('scrolled', scrolled);
     }, { passive: true });
   })();
 
@@ -2712,26 +2717,54 @@
       // One venue-wide class duration so the start times can be spaced in a way
       // that respects how long each class actually runs (no overlapping slots).
       var venueDuration = DURATIONS[Math.floor(Math.random() * DURATIONS.length)];
-      // Generate 6-9 classes spread from 10:00 AM to 5:00 PM
-      var count = 6 + Math.floor(Math.random() * 4);
-      // Generate random start times (in minutes from midnight) between 10:00 and 17:00
-      var times = [];
-      for (var i = 0; i < count; i++) {
-        times.push(600 + Math.floor(Math.random() * 420)); // 600=10AM, 1020=5PM
-      }
-      times.sort(function(a, b) { return a - b; });
-      // Round to nearest 15 min
-      times = times.map(function(t) { return Math.round(t / 15) * 15; });
-      // Enforce a minimum gap equal to the venue's class duration — otherwise
-      // two random times can round into the same (or adjacent) 15-min slot and
-      // the picker shows classes as little as 15 min apart despite a 60-min run.
-      for (var i = 1; i < times.length; i++) {
-        if (times[i] - times[i - 1] < venueDuration) {
-          times[i] = times[i - 1] + venueDuration;
+
+      // Each venue offers 3-4 distinct class types, and each title runs at
+      // 3-4 time slots through the day so the class-detail picker always has
+      // multiple real siblings. If the venue's duration is too long to squeeze
+      // the requested totals into the day window, slotsPerTitle is held at 3
+      // and a title is dropped before slots-per-title goes below 3.
+      var DAY_START = 420;  // 7 AM
+      var DAY_END = 1320;   // 10 PM
+      var DAY_LEN = DAY_END - DAY_START;
+      var maxFit = Math.floor(DAY_LEN / venueDuration);
+      var numTitles = Math.min(CLASS_NAMES.length, 3 + Math.floor(Math.random() * 2));
+      var slotsPerTitle = 3 + Math.floor(Math.random() * 2);
+      if (numTitles * slotsPerTitle > maxFit) {
+        slotsPerTitle = 3;
+        if (numTitles * slotsPerTitle > maxFit) {
+          numTitles = Math.max(1, Math.floor(maxFit / 3));
         }
       }
-      // Drop anything that ran past 9:00 PM (1260 min) after spacing shifted it.
-      times = times.filter(function(t) { return t <= 1260; });
+      var totalSlots = numTitles * slotsPerTitle;
+
+      // Even-spaced start times with the venue's duration as the floor; pick
+      // a random offset so different venues don't all start at 7 AM sharp.
+      var spacing = Math.max(venueDuration, Math.floor(DAY_LEN / totalSlots));
+      var slack = Math.max(0, DAY_LEN - (totalSlots - 1) * spacing - venueDuration);
+      var startOffset = Math.floor(Math.random() * (slack + 1));
+      var times = [];
+      for (var i = 0; i < totalSlots; i++) {
+        var t = DAY_START + startOffset + i * spacing;
+        // Snap to 15 min for clean times like 10:30 / 11:45.
+        t = Math.round(t / 15) * 15;
+        // Defensive: enforce min spacing in case snapping pulled adjacent
+        // slots within the duration.
+        if (i > 0 && t < times[i - 1] + venueDuration) {
+          t = times[i - 1] + venueDuration;
+        }
+        times.push(t);
+      }
+
+      // Pick distinct titles and assign cyclically (so each title gets exactly
+      // slotsPerTitle slots), then shuffle so the day's order isn't strictly
+      // round-robin.
+      var shuffledNames = CLASS_NAMES.slice().sort(function() { return Math.random() - 0.5; });
+      var venueTitles = shuffledNames.slice(0, numTitles);
+      var titleAssignments = [];
+      for (var ti = 0; ti < totalSlots; ti++) {
+        titleAssignments.push(venueTitles[ti % numTitles]);
+      }
+      titleAssignments.sort(function() { return Math.random() - 0.5; });
 
       for (var i = 0; i < times.length; i++) {
         var h = Math.floor(times[i] / 60);
@@ -2740,7 +2773,7 @@
         var h12 = h > 12 ? h - 12 : (h === 0 ? 12 : h);
         var timeStr = h12 + ':' + (m < 10 ? '0' : '') + m + ' ' + ampm;
         var dur = venueDuration;
-        var title = CLASS_NAMES[Math.floor(Math.random() * CLASS_NAMES.length)];
+        var title = titleAssignments[i];
         var instructor = INSTRUCTOR_NAMES[Math.floor(Math.random() * INSTRUCTOR_NAMES.length)];
         var rating = (4.3 + Math.random() * 0.7).toFixed(1);
         var reviews = 50 + Math.floor(Math.random() * 400);
@@ -3193,7 +3226,25 @@
           // the user picked their slot on (cdSelectedAbsIdx) — only a slot
           // tap updates that. cdViewingAbsIdx tracks the currently-visible
           // date and is what gets baked in on the next slot tap.
-          renderCdDatePicker(parseInt(cell.dataset.abs, 10));
+          var absIdx = parseInt(cell.dataset.abs, 10);
+          renderCdDatePicker(absIdx);
+          // Black border on a slot only persists when the user is viewing
+          // the date their booked slot is on. Switching to any other date
+          // clears the highlight — they have to actively pick a slot for
+          // the new date. Coming back restores the highlight on the
+          // previously-booked slot.
+          var slotsEl = document.getElementById('cd-time-slots');
+          if (slotsEl) {
+            var slotEls = slotsEl.querySelectorAll('.cd-time-slot');
+            if (absIdx === cdSelectedAbsIdx && cdLastSlot) {
+              slotEls.forEach(function(s) {
+                var t = s.querySelector('.cd-time-slot-time');
+                s.classList.toggle('selected', !!(t && t.textContent === cdLastSlot.time));
+              });
+            } else {
+              slotEls.forEach(function(s) { s.classList.remove('selected'); });
+            }
+          }
           scrollCdTimeSlotsToTop();
         });
       });
@@ -3354,40 +3405,13 @@
       });
       data.sort(function(a, b) { return timeToMinutes(a.time) - timeToMinutes(b.time); });
 
-      // Enforce min 3 / max 5 slots so the class detail always reads as a
-      // proper schedule. Cap first; pad afterwards using synthetic times
-      // that don't collide with the real ones (>= 60 min apart) and inherit
-      // the duration/price from the existing slots.
-      var MIN_SLOTS = 3, MAX_SLOTS = 5;
+      // Cap at 5 slots. Never pad with synthetic times — the time-slot list
+      // must always reflect the venue schedule exactly so a user comparing
+      // the two doesn't see fabricated entries here that aren't on the
+      // schedule tab. The schedule generator clusters titles so each tapped
+      // class has multiple real siblings.
+      var MAX_SLOTS = 5;
       if (data.length > MAX_SLOTS) data = data.slice(0, MAX_SLOTS);
-      if (data.length < MIN_SLOTS) {
-        var taken = data.map(function(s) { return timeToMinutes(s.time); });
-        var fallbackDur = (data[0] && data[0].duration) || '60 min';
-        var fallbackPrice = (data[0] && data[0].price) || '$25';
-        var fallbackStrike = (data[0] && data[0].strikePrice) || null;
-        var safety = 0;
-        while (data.length < MIN_SLOTS && safety++ < 50) {
-          // Generate between 8 AM (480) and 8 PM (1200), snap to :00 / :30.
-          var mins = 480 + Math.floor(Math.random() * 720);
-          mins = Math.round(mins / 30) * 30;
-          if (taken.some(function(t) { return Math.abs(t - mins) < 60; })) continue;
-          var h = Math.floor(mins / 60);
-          var m = mins % 60;
-          var ampm = h >= 12 ? 'PM' : 'AM';
-          var h12 = h > 12 ? h - 12 : (h === 0 ? 12 : h);
-          var timeStr = h12 + ':' + (m < 10 ? '0' : '') + m + ' ' + ampm;
-          data.push({
-            time: timeStr,
-            duration: fallbackDur,
-            instructor: CD_INSTRUCTORS[Math.floor(Math.random() * CD_INSTRUCTORS.length)],
-            price: fallbackPrice,
-            strikePrice: fallbackStrike,
-            selected: false
-          });
-          taken.push(mins);
-        }
-        data.sort(function(a, b) { return timeToMinutes(a.time) - timeToMinutes(b.time); });
-      }
 
       slots.innerHTML = data.map(function(s) {
         return '<div class="cd-time-slot' + (s.selected ? ' selected' : '') + '">'
@@ -3779,24 +3803,19 @@
       populateClassDetail(cls);
       // Reset class scroll to the top so the hero is visible on every push.
       classDetailScroll.scrollTop = 0;
-      // Decouple bg-color from title visibility during the slide.
-      // .scrolled toggles BOTH the grey nav bg and the title fade-in, but
-      // we only want the bg to stay grey through the push — the class
-      // title shouldn't appear yet (it should fade in on scroll instead).
-      // Clear .scrolled (hides both titles) and pin the bg grey via inline
-      // if the venue was scrolled. After the slide, clear inline bg so the
-      // CSS transitions it back to transparent.
+      // Drop .scrolled on the shared nav — class scroll is at 0, so the
+      // class title shouldn't be visible yet and the icons should drop
+      // their white bg. The class pane's own grey backdrop (vd-pane-nav-bg)
+      // is reset to transparent here too, since it'll only re-grey once
+      // the user scrolls past the title threshold inside the class pane.
+      // The venue pane keeps its own .vd-pane-nav-bg state intact and
+      // slides left with the venue, so the grey wash literally pushes
+      // out instead of fading in place.
       var sharedNav = document.getElementById('vd-sticky-nav');
-      var navWasScrolled = sharedNav && sharedNav.classList.contains('scrolled');
-      if (sharedNav) {
-        sharedNav.classList.remove('scrolled');
-        sharedNav.style.background = navWasScrolled ? '#f1f2f3' : '';
-      }
+      if (sharedNav) sharedNav.classList.remove('scrolled');
+      var classPaneBg = document.getElementById('vd-pane-nav-bg-class');
+      if (classPaneBg) classPaneBg.classList.remove('scrolled');
       venueDetailSheet.classList.add('show-class');
-      setTimeout(function() {
-        if (!classDetailOpen) return;
-        if (sharedNav) sharedNav.style.background = '';
-      }, 320);
       // Position the tab indicator after layout settles
       if (window.__resetClassDetailTabs) {
         requestAnimationFrame(function() {
@@ -3819,26 +3838,16 @@
       if (!classDetailOpen) return;
       if (window.__closeCheckoutIfOpen) window.__closeCheckoutIfOpen();
       classDetailOpen = false;
-      // If the venue pane will need a gray nav once it slides back in (it
-      // was scrolled past the header), set .scrolled now so the nav stays
-      // gray through the slide. If the venue is at the top, defer dropping
-      // Decouple bg from title during slide-back too: clear .scrolled
-      // (hides both titles), pin grey bg via inline if venue should land
-      // scrolled. After the slide, clear inline + restore .scrolled state
-      // based on venue scroll position.
+      // The class pane's own grey backdrop slides out with the class pane,
+      // and the venue pane's grey backdrop is already in the right state
+      // (it never lost it — venuePaneBg tracks venue scroll independently
+      // of pane visibility). All we have to do is sync the shared nav's
+      // .scrolled flag to the venue's scroll position so the icons + title
+      // styling matches the now-active pane.
       var sharedNav = document.getElementById('vd-sticky-nav');
-      var venueWasScrolled = venueDetailScroll.scrollTop > 10;
-      if (sharedNav) {
-        sharedNav.classList.remove('scrolled');
-        sharedNav.style.background = venueWasScrolled ? '#f1f2f3' : '';
-      }
+      var venueIsScrolled = venueDetailScroll.scrollTop > 10;
+      if (sharedNav) sharedNav.classList.toggle('scrolled', venueIsScrolled);
       venueDetailSheet.classList.remove('show-class');
-      setTimeout(function() {
-        if (classDetailOpen) return;
-        if (!sharedNav) return;
-        sharedNav.style.background = '';
-        if (venueDetailScroll.scrollTop > 10) sharedNav.classList.add('scrolled');
-      }, 320);
       // Booking bar: slide back down alongside the pane swap
       cdBookingBar.classList.remove('cd-booking-visible');
       if (motionAnimate) {
@@ -4067,18 +4076,20 @@
       if (scheduleStack) {
         scheduleStack.style.display = name === 'reviews' ? 'none' : '';
       }
-      // Recompute pin offset after the layout change and snap so the tabs
-      // land exactly at top:80 — otherwise the schedule show/hide shifts the
-      // tabs out of the sticky position when switching.
+      // Snap scroll back to the pin so the user always lands at the top of
+      // the incoming tab. Reset to 0 first to unstick the tabs — otherwise
+      // their sticky position pins them at top:80 and the rect-based
+      // measurement just echoes the current scrollTop, leaving the user
+      // wherever they had scrolled to.
       var tabsEl = classDetailEl.querySelector('.cd-tabs');
       if (tabsEl) {
+        classDetailScroll.scrollTop = 0;
         var scrollRect = classDetailScroll.getBoundingClientRect();
         var tabsRect = tabsEl.getBoundingClientRect();
-        var newPinOffset = (tabsRect.top - scrollRect.top)
-          + classDetailScroll.scrollTop - 80;
+        var newPinOffset = tabsRect.top - scrollRect.top - 80;
         window.__cdPinOffset = newPinOffset;
         if (newPinOffset > 0) {
-          classDetailScroll.scrollTo({ top: newPinOffset, behavior: 'auto' });
+          classDetailScroll.scrollTop = newPinOffset;
         }
       }
       // Reset horizontal scroll on review carousels so each tab opens cleanly
@@ -4124,9 +4135,11 @@
     };
 
     // ===== Shared sticky nav: fade title in on scroll =====
-    // The shared nav at the top of the sheet now handles BOTH panes' scrolled
-    // state. This handler only writes to it when the class pane is active.
+    // The shared nav at the top of the sheet handles BOTH panes' icon and
+    // title styling via .scrolled. The grey backdrop now lives in the pane
+    // itself (.vd-pane-nav-bg), so it slides with the class pane.
     var cdStickyNav = document.getElementById('vd-sticky-nav');
+    var cdPaneBg = document.getElementById('vd-pane-nav-bg-class');
     var cdTitleEl = document.getElementById('cd-title');
     var cdTitleScrollThreshold = 0; // computed on open
 
@@ -4143,9 +4156,12 @@
     classDetailScroll.addEventListener('scroll', function() {
       if (!classDetailOpen) return;
       var st = classDetailScroll.scrollTop;
-      // Sticky nav title fade-in — only when the class title has scrolled off screen
-      if (st > cdTitleScrollThreshold) cdStickyNav.classList.add('scrolled');
-      else cdStickyNav.classList.remove('scrolled');
+      var scrolled = st > cdTitleScrollThreshold;
+      // Per-pane backdrop: fades to grey once the user scrolls past the
+      // class title. Slides horizontally with the pane on push/pop.
+      if (cdPaneBg) cdPaneBg.classList.toggle('scrolled', scrolled);
+      // Shared nav title fade-in + icon white-bg state.
+      cdStickyNav.classList.toggle('scrolled', scrolled);
     }, { passive: true });
 
     // Class detail no longer has its own drag-to-dismiss — the venue sheet's
@@ -4404,13 +4420,17 @@
         var destRect = morphSlide.getBoundingClientRect();
         var fromTransform = flipFromThumb(thumbRect, destRect);
         morphSlide.style.transform = fromTransform;
+        // Quicker, snappier ease-out for the thumb → lightbox expansion so
+        // the open feels responsive instead of drifting in. The quart-out
+        // curve front-loads the motion: most of the distance is covered
+        // early, then it eases into rest.
         if (motionAnimate) {
           motionAnimate(morphSlide,
             { transform: [fromTransform, 'translate(0px, 0px) scale(1, 1)'] },
-            { duration: 0.28, easing: [0.25, 0.46, 0.45, 0.94] }
+            { duration: 0.22, easing: [0.22, 1, 0.36, 1] }
           );
         } else {
-          morphSlide.style.transition = 'transform 0.28s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+          morphSlide.style.transition = 'transform 0.22s cubic-bezier(0.22, 1, 0.36, 1)';
           requestAnimationFrame(function() { morphSlide.style.transform = ''; });
         }
       });
@@ -4475,55 +4495,105 @@
         slideImage.getAnimations().forEach(function(a) { a.cancel(); });
       }
       // Pin the from-transform, force a reflow, then transition transform
-      // AND opacity together. The opacity fade runs faster than the
-      // transform morph so the slide is mostly invisible by the time it
-      // reaches the thumb's rect — the FLIP serves as a quick spatial
-      // anchor while the fade carries the visual weight of the dismiss.
+      // AND opacity together over the same window. Hold the image opaque
+      // through most of the FLIP and let it fade in the back half so the
+      // dismiss reads as the image flying back to the thumb rather than
+      // disappearing mid-air.
       slideImage.style.transition = 'none';
       slideImage.style.transform = fromTransform;
       slideImage.style.opacity = '1';
       void slideImage.offsetHeight;
-      // Match the fade duration to the morph so the slide stays partially
-      // visible through most of the FLIP and fades fully out as it lands
-      // at the thumb's rect.
       slideImage.style.transition =
-        'transform 0.28s cubic-bezier(0.25, 0.46, 0.45, 0.94), opacity 0.28s ease-out';
+        'transform 0.45s cubic-bezier(0.25, 0.46, 0.45, 0.94), opacity 0.45s ease-in';
       slideImage.style.transform = toTransform;
       slideImage.style.opacity = '0';
-      // Drop inline chrome opacities and close — CSS transitions everything to 0.
+      // Override the chrome's default 0.2s CSS transition with a 0.45s fade
+      // so the bg + status + close + header don't disappear before the slide
+      // finishes its morph. The dismiss should read as one cohesive motion;
+      // a fast chrome fade made the chrome vanish too soon, leaving the
+      // slide flying alone over the bare page behind.
+      var headerElEarly = lightboxTitle.parentElement;
+      var dismissChromeEls = [lightboxBg, lightboxStatusBar, lightboxClose, headerElEarly];
+      dismissChromeEls.forEach(function(el) {
+        if (el) el.style.transition = 'opacity 0.45s ease-out';
+      });
       clearChromeOpacities();
       lightboxEl.classList.remove('open');
       setTimeout(function() {
         closeLightbox(true);
         slideImage.style.transition = '';
-      }, 280);
+        dismissChromeEls.forEach(function(el) {
+          if (el) el.style.transition = '';
+        });
+      }, 450);
     }
 
-    // Snap back to the natural in-lightbox position using a Web Animations
-    // call instead of a CSS transition. The CSS-transition path could pick
-    // up a stale animation from the lightbox open, or interleave with the
-    // chrome's opacity recovery, producing a small "second" animation
-    // (down → up) after the snap-back finished. WAAPI gives us a single,
-    // self-contained animation; clearing the inline transform makes the
-    // element rest at identity once the animation ends.
+    // Snap back to the natural in-lightbox position. Drives the slide
+    // transform AND the chrome opacities with WAAPI on the same duration +
+    // easing so the recovery reads as one motion. Two subtle issues this
+    // fixes vs a CSS-transition path:
+    //   1) Don't clear the inline transform before starting the animation
+    //      — there's a 1-frame window between the JS-side clear and the
+    //      WAAPI keyframe taking effect, and during that frame the element
+    //      paints at identity, producing a visible flash. Keep the inline
+    //      transform pinned at fromTransform; the animation overrides
+    //      during playback; onfinish clears it so the element rests at
+    //      identity with no leftover state.
+    //   2) Animate chrome opacity with WAAPI rather than letting CSS
+    //      transitions take over after `clearChromeOpacities()`. CSS gave
+    //      chrome 0.2s ease-out vs the slide's 0.28s cubic-bezier — close
+    //      but enough mismatch to feel like two staggered animations.
     function snapBack(slideImage) {
-      clearChromeOpacities();
+      var headerEl = lightboxTitle.parentElement;
+      // Cancel any in-flight animations on the slide AND the chrome so a
+      // mid-flight snap-back / open animation can't fight the new ones.
       if (slideImage.getAnimations) {
         slideImage.getAnimations().forEach(function(a) { a.cancel(); });
       }
+      var chromeEls = [lightboxBg, lightboxStatusBar, lightboxClose, headerEl];
+      chromeEls.forEach(function(el) {
+        if (el && el.getAnimations) el.getAnimations().forEach(function(a) { a.cancel(); });
+      });
+
       var fromTransform = slideImage.style.transform || 'translate(0px, 0px) scale(1)';
-      // Clear inline transform so once the WAAPI animation finishes
-      // (fill: 'none'), the element returns to its CSS resting state with
-      // no leftover transform.
-      slideImage.style.transform = '';
+
+      // Restore chrome opacity INSTANTLY — no transition, no animation.
+      // Even a fast quart-out fade-back reads as a "fade in," and the user
+      // wants the snap-back to feel like the slide moving home, not a fade.
+      // Using `transition: none` for one frame, then clearing it, snaps the
+      // chrome to its CSS .lightbox.open opacity (1) without triggering the
+      // CSS transition on the inline-clear.
+      chromeEls.forEach(function(el) {
+        if (el) el.style.transition = 'none';
+      });
+      lightboxBg.style.opacity = '';
+      lightboxStatusBar.style.opacity = '';
+      lightboxClose.style.opacity = '';
+      if (headerEl) headerEl.style.opacity = '';
+      // Force a reflow to commit the no-transition state before restoring
+      // the default transitions for future state changes (e.g. lightbox close).
+      void lightboxBg.offsetHeight;
+      chromeEls.forEach(function(el) {
+        if (el) el.style.transition = '';
+      });
+
       slideImage.style.transition = '';
-      slideImage.animate(
+
+      // Snappy quart-out for the slide — 240ms keeps the gesture tight.
+      var imgAnim = slideImage.animate(
         [
           { transform: fromTransform },
           { transform: 'translate(0px, 0px) scale(1)' }
         ],
-        { duration: 280, easing: 'cubic-bezier(0.25, 0.46, 0.45, 0.94)', fill: 'none' }
+        { duration: 240, easing: 'cubic-bezier(0.22, 1, 0.36, 1)', fill: 'forwards' }
       );
+      imgAnim.onfinish = function() {
+        // Clear inline transform first so the element's resting state is
+        // identity, then cancel the (forwards-filled) animation so its
+        // override is removed. Both synchronous — no paint between them.
+        slideImage.style.transform = '';
+        imgAnim.cancel();
+      };
     }
 
     // Combined drag handler: detects axis on first ~6px movement and locks
