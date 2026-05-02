@@ -4447,12 +4447,30 @@
           s.style.opacity = '0';
         });
       }
-      // Fade the source thumbs back in while the chrome fades out — the
-      // 0.2s opacity transition was set on open, so just clearing the
-      // inline style transitions them from 0 → 1.
+      // Fade the source thumbs back in.
+      //   • Drag-dismiss (skipSlideFade=true): trigger immediately, using
+      //     the inline 0.2s transition installed on open. The thumb fades
+      //     in behind the still-opaque morphed slide (invisible to the
+      //     user, but in place by the time the slide is removed).
+      //   • X-close (skipSlideFade=false): wait until the lightbox has
+      //     dissolved (~200ms) BEFORE clearing the thumb's inline opacity.
+      //     Otherwise the thumb fade-in runs in parallel with the lightbox
+      //     fade-out and the user only registers the lightbox vanishing.
+      //     We also lengthen the duration to 0.4s ease-out so the thumb
+      //     visibly materializes after the lightbox is gone.
       var thumbsToRestore = currentThumbs.slice();
-      thumbsToRestore.forEach(function(t) { t.style.opacity = ''; });
+      if (skipSlideFade) {
+        thumbsToRestore.forEach(function(t) { t.style.opacity = ''; });
+      } else {
+        thumbsToRestore.forEach(function(t) {
+          t.style.transition = 'opacity 0.4s ease-out';
+        });
+        setTimeout(function() {
+          thumbsToRestore.forEach(function(t) { t.style.opacity = ''; });
+        }, 200);
+      }
       lightboxEl.classList.remove('open');
+      var cleanupDelay = skipSlideFade ? 220 : 620;
       setTimeout(function() {
         lightboxTrack.innerHTML = '';
         lightboxTrack.style.transform = '';
@@ -4464,7 +4482,7 @@
         slidesCount = 0;
         currentPage = 0;
         currentThumbs = [];
-      }, 220);
+      }, cleanupDelay);
     }
 
     // Clear inline opacities so CSS transitions take over the chrome fade.
@@ -4477,7 +4495,14 @@
 
     // Commit dismiss: FLIP slide image back to the thumb's rect, fade the
     // chrome out by removing .open. CSS transitions drive chrome.
-    function dismissToThumb(slideImage, fromTransform) {
+    // opts: { duration: ms, easing: cssEasingString } — defaults match the
+    // drag-dismiss feel (450ms cubic-bezier). X-close passes a faster
+    // configuration that matches the open animation.
+    function dismissToThumb(slideImage, fromTransform, opts) {
+      opts = opts || {};
+      var DURATION = opts.duration || 450;
+      var EASING = opts.easing || 'cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+      var DURATION_S = (DURATION / 1000) + 's';
       var thumb = currentThumbs[currentPage];
       slideImage.style.transform = '';
       var destRect = slideImage.getBoundingClientRect();
@@ -4495,27 +4520,39 @@
         slideImage.getAnimations().forEach(function(a) { a.cancel(); });
       }
       // Pin the from-transform, force a reflow, then transition transform
-      // AND opacity together over the same window. Hold the image opaque
-      // through most of the FLIP and let it fade in the back half so the
-      // dismiss reads as the image flying back to the thumb rather than
-      // disappearing mid-air.
+      // Keep the slide fully opaque through the entire morph — it shouldn't
+      // start fading out until it has actually landed at the thumb's rect.
+      // Once the morph completes, a separate timed fade-out hides the slide
+      // at its resting position. The source thumb is fading in alongside,
+      // so by the time the slide vanishes the thumb is already there to
+      // take over visually with no perceivable handoff.
       slideImage.style.transition = 'none';
       slideImage.style.transform = fromTransform;
       slideImage.style.opacity = '1';
       void slideImage.offsetHeight;
-      slideImage.style.transition =
-        'transform 0.45s cubic-bezier(0.25, 0.46, 0.45, 0.94), opacity 0.55s ease-in';
-      slideImage.style.transform = toTransform;
-      slideImage.style.opacity = '0';
-      // Start fading the source thumb back in NOW, in parallel with the
-      // dismiss animation. Match the 0.45s window of the slide morph so the
-      // thumb eases in gradually rather than popping. ease-out shapes most
-      // of the visibility into the first half of the dismiss, so the thumb
-      // is mostly visible well before the slide lands and fades.
+      // Animate the slide's border-radius alongside the transform so the
+      // VISUAL radius (post-scale) ends the morph matching the thumb's own
+      // border-radius. Otherwise the slide lands at a smaller scaled radius
+      // (e.g. 24px * 0.46 = ~11px) and the swap to the 16px-radius thumb
+      // produces a small "radius pop" 220ms later — which reads as a
+      // delayed radius change.
+      var slideStartRadiusPx = parseFloat(window.getComputedStyle(slideImage).borderTopLeftRadius) || 24;
+      var slideTargetRadiusPx = slideStartRadiusPx;
       if (thumb) {
-        thumb.style.transition = 'opacity 0.95s ease-out';
-        thumb.style.opacity = '';
+        var thumbRadiusPx = parseFloat(window.getComputedStyle(thumb).borderTopLeftRadius) || 0;
+        var scaleX = destRect.width > 0 ? thumbRect.width / destRect.width : 1;
+        if (scaleX > 0) slideTargetRadiusPx = thumbRadiusPx / scaleX;
       }
+      slideImage.style.transition =
+        'transform ' + DURATION_S + ' ' + EASING +
+        ', border-radius ' + DURATION_S + ' ' + EASING;
+      slideImage.style.transform = toTransform;
+      slideImage.style.borderRadius = slideTargetRadiusPx + 'px';
+      // Don't touch the source thumb here. The closeLightbox call at t=650
+      // is what restores it — clearing its inline opacity there triggers
+      // the 0.2s ease transition installed on open, which is the only
+      // thumb fade-in we want. No parallel/instant restoration during the
+      // dismiss morph.
       // Override the chrome's default 0.2s CSS transition with a 0.45s fade
       // so the bg + status + close + header don't disappear before the slide
       // finishes its morph. The dismiss should read as one cohesive motion;
@@ -4524,17 +4561,24 @@
       var headerElEarly = lightboxTitle.parentElement;
       var dismissChromeEls = [lightboxBg, lightboxStatusBar, lightboxClose, headerElEarly];
       dismissChromeEls.forEach(function(el) {
-        if (el) el.style.transition = 'opacity 0.45s ease-out';
+        if (el) el.style.transition = 'opacity ' + DURATION_S + ' ease-out';
       });
       clearChromeOpacities();
       lightboxEl.classList.remove('open');
+      // Once the slide has landed at the thumb's rect (t=450), hand off to
+      // closeLightbox: it triggers the thumb's 0.2s fade-in (behind the
+      // still-opaque slide) and schedules the lightbox track to be cleared
+      // ~220ms later, at which point the slide is removed from the DOM
+      // and the now-visible thumb takes its place. The slide itself never
+      // fades — keeping it opaque through to its removal avoids the
+      // out-then-in "flash" that a fade-out + thumb fade-in produced.
       setTimeout(function() {
         closeLightbox(true);
         slideImage.style.transition = '';
         dismissChromeEls.forEach(function(el) {
           if (el) el.style.transition = '';
         });
-      }, 450);
+      }, DURATION);
     }
 
     // Snap back to the natural in-lightbox position. Drives the slide
@@ -4700,7 +4744,27 @@
       dragEnd(t ? t.clientX : dragState.startX, t ? t.clientY : dragState.startY);
     });
 
-    lightboxClose.addEventListener('click', function() { closeLightbox(); });
+    lightboxClose.addEventListener('click', function() {
+      // Run the same FLIP-back-to-thumb animation as drag-dismiss instead of
+      // a flat fade-out. The slide morphs from its lightbox-state position
+      // (identity) to the source thumb's rect, then closeLightbox cleans up
+      // — the user visually sees the image return to its original size and
+      // place, matching the drag-dismiss feel.
+      var slideImages = lightboxTrack.querySelectorAll('.lightbox-slide-image');
+      var morphSlide = slideImages[currentPage];
+      if (morphSlide && currentThumbs[currentPage]) {
+        var fromTransform = morphSlide.style.transform || 'translate(0px, 0px) scale(1, 1)';
+        // Match the open animation's 220ms quart-out so the close feels
+        // like the inverse of the expand-out instead of the slower
+        // drag-dismiss morph.
+        dismissToThumb(morphSlide, fromTransform, {
+          duration: 220,
+          easing: 'cubic-bezier(0.22, 1, 0.36, 1)'
+        });
+      } else {
+        closeLightbox();
+      }
+    });
 
     // Wire venue-detail thumbnails (3 placeholders in the header carousel).
     // Guard with wasDragging so a horizontal drag-scroll that ends on a
