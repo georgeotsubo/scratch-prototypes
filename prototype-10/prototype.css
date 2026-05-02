@@ -15,16 +15,19 @@
     overflow: hidden;
   }
 
-  /* iPhone frame for desktop */
+  /* iPhone frame for desktop. Stronger border + soft shadow so the device
+     reads as a distinct surface against a white page; the previous 1px
+     #e4e5e7 against #fff body was effectively invisible (especially on
+     high-DPI displays where 1px sub-pixels). */
   .device-frame {
     width: 393px;
     height: 852px;
     background: #fff;
-    border: 1px solid #e4e5e7;
+    border: 1px solid #d1d5db;
     border-radius: 40px;
     overflow: hidden;
     position: relative;
-    box-shadow: none;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.08);
   }
 
   /* On mobile, go full screen */
