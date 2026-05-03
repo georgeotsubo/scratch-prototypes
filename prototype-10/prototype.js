@@ -4514,6 +4514,25 @@
       var EASING = opts.easing || 'cubic-bezier(0.25, 0.46, 0.45, 0.94)';
       var DURATION_S = (DURATION / 1000) + 's';
       var thumb = currentThumbs[currentPage];
+      // If the source thumb has been scrolled out of view inside its parent
+      // scroll container (e.g. class-detail-scroll scrolled down before the
+      // user tapped the cd-hero), the FLIP target rect's top is negative
+      // and the slide morphs *above* the viewport. Scroll the parent so
+      // the thumb is back on screen before computing the target. Snapping
+      // here is fine — the lightbox sits on top so the user doesn't see
+      // the underlying scroll jump, and it lands the slide where the user
+      // expects it.
+      if (thumb) {
+        var preRect = thumb.getBoundingClientRect();
+        if (preRect.top < 0 || preRect.bottom > window.innerHeight) {
+          var scrollParent = thumb.closest('.class-detail-scroll, .venue-detail-scroll');
+          if (scrollParent) {
+            var parentRect = scrollParent.getBoundingClientRect();
+            // Align the thumb's top with the scroll container's top edge.
+            scrollParent.scrollTop += (preRect.top - parentRect.top);
+          }
+        }
+      }
       slideImage.style.transform = '';
       var destRect = slideImage.getBoundingClientRect();
       slideImage.style.transform = fromTransform;
