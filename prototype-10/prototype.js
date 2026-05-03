@@ -4403,6 +4403,16 @@
       currentThumbs = thumbEls.slice();
       lightboxTitle.textContent = title || '';
       buildSlides(thumbEls.length);
+      // Carry each source thumb's computed background onto its matching
+      // lightbox slide so the gallery image colors match the carousel
+      // they came from (e.g. the class-detail hero's varying greys).
+      var lightboxSlideImgs = lightboxTrack.querySelectorAll('.lightbox-slide-image');
+      thumbEls.forEach(function(t, i) {
+        var slideImg = lightboxSlideImgs[i];
+        if (!slideImg) return;
+        var bg = window.getComputedStyle(t).background;
+        if (bg) slideImg.style.background = bg;
+      });
       setPage(startIdx, false);
       lightboxEl.classList.add('open');
       // Hide ONLY the active source thumb while the lightbox is open so a
@@ -4532,22 +4542,30 @@
       void slideImage.offsetHeight;
       // Animate the slide's border-radius alongside the transform so the
       // VISUAL radius (post-scale) ends the morph matching the thumb's own
-      // border-radius. Otherwise the slide lands at a smaller scaled radius
-      // (e.g. 24px * 0.46 = ~11px) and the swap to the 16px-radius thumb
-      // produces a small "radius pop" 220ms later — which reads as a
-      // delayed radius change.
+      // border-radius. But ONLY if the thumb actually has rounded corners
+      // — for thumbs with `border-radius: 0` (e.g. the class-detail
+      // cd-hero-slide which is edge-to-edge), animating the slide to 0
+      // makes the image "go sharp" mid-morph, which reads worse than
+      // staying rounded. In that case we leave the radius alone; the
+      // mismatch when the slide is later removed is hidden behind the
+      // hero's full-width framing and reads as a clean handoff.
       var slideStartRadiusPx = parseFloat(window.getComputedStyle(slideImage).borderTopLeftRadius) || 24;
       var slideTargetRadiusPx = slideStartRadiusPx;
       if (thumb) {
         var thumbRadiusPx = parseFloat(window.getComputedStyle(thumb).borderTopLeftRadius) || 0;
-        var scaleX = destRect.width > 0 ? thumbRect.width / destRect.width : 1;
-        if (scaleX > 0) slideTargetRadiusPx = thumbRadiusPx / scaleX;
+        if (thumbRadiusPx > 0) {
+          var scaleX = destRect.width > 0 ? thumbRect.width / destRect.width : 1;
+          if (scaleX > 0) slideTargetRadiusPx = thumbRadiusPx / scaleX;
+        }
       }
+      var animateRadius = slideTargetRadiusPx !== slideStartRadiusPx;
       slideImage.style.transition =
         'transform ' + DURATION_S + ' ' + EASING +
-        ', border-radius ' + DURATION_S + ' ' + EASING;
+        (animateRadius ? ', border-radius ' + DURATION_S + ' ' + EASING : '');
       slideImage.style.transform = toTransform;
-      slideImage.style.borderRadius = slideTargetRadiusPx + 'px';
+      if (animateRadius) {
+        slideImage.style.borderRadius = slideTargetRadiusPx + 'px';
+      }
       // Don't touch the source thumb here. The closeLightbox call at t=650
       // is what restores it — clearing its inline opacity there triggers
       // the 0.2s ease transition installed on open, which is the only
@@ -4624,7 +4642,7 @@
           { transform: fromTransform },
           { transform: 'translate(0px, 0px) scale(1)' }
         ],
-        { duration: 240, easing: 'cubic-bezier(0.22, 1, 0.36, 1)', fill: 'forwards' }
+        { duration: 180, easing: 'cubic-bezier(0.22, 1, 0.36, 1)', fill: 'forwards' }
       );
       imgAnim.onfinish = function() {
         // Clear inline transform first so the element's resting state is
@@ -4670,6 +4688,19 @@
         if (dragState.mode === 'dismiss') {
           var slideImages = lightboxTrack.querySelectorAll('.lightbox-slide-image');
           dragState.morphSlide = slideImages[currentPage];
+          // Fade out the X close + the header (title + counter) fully when
+          // the dismiss gesture starts. Their opacity is no longer tied to
+          // drag distance — they just slide out cleanly at gesture-begin
+          // and stay gone for the rest of the drag. Inline transition
+          // overrides the .lightbox.dragging `transition: none` so the
+          // fade actually animates instead of popping.
+          lightboxClose.style.transition = 'opacity 0.2s ease-out';
+          lightboxClose.style.opacity = '0';
+          var dismissHeaderEl = lightboxTitle.parentElement;
+          if (dismissHeaderEl) {
+            dismissHeaderEl.style.transition = 'opacity 0.2s ease-out';
+            dismissHeaderEl.style.opacity = '0';
+          }
         }
       }
       if (absX > 4 || absY > 4) { dragState.moved = true; wasDragging = true; }
@@ -4680,13 +4711,12 @@
         var downDy = Math.max(0, dy);
         var scale = Math.max(0.6, 1 - downDy / 800);
         dragState.morphSlide.style.transform = 'translate(' + dx + 'px, ' + dy + 'px) scale(' + scale + ')';
-        // Background + chrome fade in proportion to downward drag (caps at 0).
+        // Bg + status bar fade in proportion to downward drag (caps at 0).
+        // Close + header don't follow the drag — they fully faded on
+        // gesture-begin (above).
         var fade = Math.max(0, 1 - downDy / 400);
         lightboxBg.style.opacity = fade;
         lightboxStatusBar.style.opacity = fade;
-        lightboxClose.style.opacity = fade;
-        var headerEl = lightboxTitle.parentElement;
-        headerEl.style.opacity = fade;
       }
     }
     function dragEnd(clientX, clientY) {
