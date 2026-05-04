@@ -3578,12 +3578,14 @@
     /* Height is controlled by JS; CSS default keeps it invisible offscreen. */
     height: 130px;
     border-radius: 0;
-    /* Closed and open share flush left/right/bottom + solid white bg now;
-       padding animates 16 → 24 to keep the Book button pinned in place while
-       the sheet grows in height. Bottom padding reserves CTA space (52px
-       button + 16px offset + 16px breathing room) so the absolutely-positioned
-       CTA doesn't overlap the flex content above it. */
-    padding: 16px 16px 84px 16px;
+    /* Padding is shared with .is-open so it doesn't transition during the
+       morph. Earlier this animated 16 → 24, which shifted the header (and
+       its close button) by 8px during close — visible as jitter while the
+       content was still partially opaque. CTA-reserved space lives on
+       .cd-checkout-body (padding-bottom 72) instead of here so the sheet's
+       own padding-bottom is small enough to fit inside its closed height
+       (~96px) without forcing the box taller than `style.height` lets it. */
+    padding: 24px 24px 24px 24px;
     display: flex;
     flex-direction: column;
     gap: 16px;
@@ -3600,15 +3602,12 @@
       right 0.44s cubic-bezier(.32,.72,0,1),
       bottom 0.44s cubic-bezier(.32,.72,0,1),
       border-radius 0.44s cubic-bezier(.32,.72,0,1),
-      padding 0.44s cubic-bezier(.32,.72,0,1),
       height 0.44s cubic-bezier(.32,.72,0,1);
   }
   .cd-checkout-sheet.is-open {
     left: 0;
     right: 0;
     bottom: 0;
-    /* Bottom padding 96 = 32 (CTA bottom) + 48 (CTA height) + 16 breathing. */
-    padding: 24px 24px 96px 24px;
     border-radius: 24px 24px 0 0;
     background: #fff;
     box-shadow: 0 -2px 16px rgba(0, 0, 0, 0.12);
@@ -3670,6 +3669,12 @@
     flex: 1 1 auto;
     overflow: hidden;
     min-height: 0;
+    /* Reserves space below body content so the absolutely-positioned CTA
+       (bottom:32 + height 48 = 80 from sheet bottom) doesn't overlap it.
+       Lives on body — not on the sheet — so the sheet itself can shrink to
+       the bar's ~96px height during close without padding-bottom forcing
+       the rendered box taller than style.height. */
+    padding-bottom: 72px;
   }
   .cd-checkout-info {
     display: flex;
@@ -3807,6 +3812,50 @@
   .cd-checkout-cta:active {
     background: #c00b0b;
   }
+  /* Compact info inside the sheet that mirrors .cd-booking-info. Hidden
+     while the sheet is open; fades in during the close so the sheet's
+     end-of-morph state visually matches the bar (price + meta on the left)
+     instead of showing an empty white card. The bar takes over once the
+     sheet hides — both display the same content in the same position so
+     the swap is invisible. */
+  .cd-checkout-mini-summary {
+    position: absolute;
+    /* 20 matches the bar's padding-left so the swap from mini-summary to
+       the actual booking bar's info doesn't shift content horizontally. */
+    left: 20px;
+    /* 34 = bar info's distance from bar bottom: bar height 96 - info bottom
+       (centered in 48px content area between padding-top 16 and padding-bottom
+       32 → info top y=18, bottom y=62 from bar top → 34 from bar bottom). */
+    bottom: 34px;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.16s ease;
+  }
+  .cd-checkout-sheet.is-collapsing .cd-checkout-mini-summary {
+    /* Fade in starts after the sheet's body has finished its 0.22s
+       fade-out so the two don't overlap visually. */
+    opacity: 1;
+    transition: opacity 0.14s ease 0.18s;
+  }
+  .cd-mini-price {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 24px;
+    color: #020203;
+  }
+  .cd-mini-meta {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 20px;
+    color: #020203;
+    white-space: nowrap;
+  }
+
   /* Hide original booking card while the sheet covers it. The sheet's
      CTA closed-state matches the bar's Next exactly, so the hand-off is
      visually seamless. Opacity is applied to the children (not the bar
@@ -3818,6 +3867,16 @@
   }
   .cd-booking-bar.is-under-checkout {
     pointer-events: none;
+  }
+  /* Bar's shadow is suppressed for the entire time the sheet is on top —
+     including the close animation. Otherwise the bar's shadow + sheet's
+     shadow stack along the same edge as the sheet morphs into bar
+     geometry, producing a visibly darker shadow at the end of close.
+     This class lives on the bar separately from is-under-checkout (which
+     is released at close start so the children can fade in invisibly
+     behind the sheet) and is only released at transitionend. */
+  .cd-booking-bar.is-sheet-overlay {
+    box-shadow: none;
   }
   .cd-booking-bar.is-under-checkout .cd-booking-info,
   .cd-booking-bar.is-under-checkout .cd-booking-cta {

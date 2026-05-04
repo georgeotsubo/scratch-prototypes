@@ -3943,16 +3943,26 @@
     // same CSS transition rule so they all land on the same frame — no
     // Motion/CSS timing mismatch, no jitter on close.
     var cdCheckoutEndHandler = null;
+    var cdCheckoutHideTimer = null;
 
     function openCheckout() {
       if (cdCheckoutOpen) return;
       cdCheckoutOpen = true;
       populateCheckout();
-      // Clear any lingering transitionend listener from a cancelled close.
+      // Clear any lingering transitionend listener or pending hide timer
+      // from a cancelled close.
       if (cdCheckoutEndHandler) {
         cdCheckoutSheet.removeEventListener('transitionend', cdCheckoutEndHandler);
         cdCheckoutEndHandler = null;
       }
+      if (cdCheckoutHideTimer) {
+        clearTimeout(cdCheckoutHideTimer);
+        cdCheckoutHideTimer = null;
+      }
+      cdCheckoutSheet.classList.remove('is-collapsing');
+      // Strip any lingering sheet-overlay flag (e.g. from an interrupted
+      // close) before re-applying it below.
+      cdBookingBar.classList.remove('is-sheet-overlay');
       // Measure the sheet's natural content height while still hidden. The
       // sheet uses border-box + extra padding when open, so we briefly add
       // is-open (with transitions disabled) to get the true open-state
@@ -3980,6 +3990,7 @@
       cdCheckoutSheet.style.visibility = 'visible';
       cdCheckoutSheet.setAttribute('aria-hidden', 'false');
       cdBookingBar.classList.add('is-under-checkout');
+      cdBookingBar.classList.add('is-sheet-overlay');
       cdCheckoutScrim.classList.add('is-visible');
       // Add is-open to trigger the coordinated CSS transitions.
       cdCheckoutSheet.classList.add('is-open');
@@ -3996,7 +4007,23 @@
     function closeCheckout() {
       if (!cdCheckoutOpen) return;
       cdCheckoutOpen = false;
-      var targetH = cdBookingBar.getBoundingClientRect().height || 130;
+      // Round to whole px so the sheet lands at exactly the bar's rendered
+      // height — sub-pixel mismatch between the animated target and the
+      // bar's integer-rounded height shows up as a 1px jitter at the end
+      // of the close.
+      var targetH = Math.round(cdBookingBar.getBoundingClientRect().height) || 130;
+      // Mirror the bar's price + meta into the sheet's mini-summary so the
+      // sheet's end-of-morph visual matches the bar exactly.
+      var miniPrice = document.getElementById('cd-mini-price');
+      var miniMeta = document.getElementById('cd-mini-meta');
+      var barPriceEl = document.getElementById('cd-booking-price');
+      var barTimeEl = document.getElementById('cd-booking-time');
+      var barInstrEl = document.getElementById('cd-booking-instructor');
+      if (miniPrice && barPriceEl) miniPrice.innerHTML = barPriceEl.innerHTML;
+      if (miniMeta && barTimeEl && barInstrEl) {
+        miniMeta.textContent = barTimeEl.textContent + ' · ' + barInstrEl.textContent;
+      }
+      cdCheckoutSheet.classList.add('is-collapsing');
       cdCheckoutSheet.classList.remove('is-open');
       cdCheckoutScrim.classList.remove('is-visible');
       cdCheckoutSheet.style.height = targetH + 'px';
@@ -4010,18 +4037,27 @@
       // Swap CTA label as the morph starts so by the time the pill has
       // shrunk back to bar-shape, the label already reads "Book".
       cdCheckoutCta.textContent = 'Book';
-      // Use transitionend on `height` as the single source of truth for
-      // "animation complete" — all properties share the same 0.36s curve.
+      // Wait for the full height transitionend (440ms) before hiding the
+      // sheet. The mini-summary fades in mid-close so the user sees a bar-
+      // looking sheet by the time the sheet swaps to the actual bar — no
+      // empty-card gap, no visible height mismatch from snapping early.
       if (cdCheckoutEndHandler) {
         cdCheckoutSheet.removeEventListener('transitionend', cdCheckoutEndHandler);
+        cdCheckoutEndHandler = null;
+      }
+      if (cdCheckoutHideTimer) {
+        clearTimeout(cdCheckoutHideTimer);
+        cdCheckoutHideTimer = null;
       }
       cdCheckoutEndHandler = function(ev) {
         if (ev.target !== cdCheckoutSheet || ev.propertyName !== 'height') return;
         cdCheckoutSheet.removeEventListener('transitionend', cdCheckoutEndHandler);
         cdCheckoutEndHandler = null;
         cdCheckoutSheet.style.visibility = 'hidden';
-        cdCheckoutSheet.style.height = '';
         cdCheckoutSheet.setAttribute('aria-hidden', 'true');
+        cdCheckoutSheet.classList.remove('is-collapsing');
+        // Sheet is now invisible — return the bar's shadow.
+        cdBookingBar.classList.remove('is-sheet-overlay');
       };
       cdCheckoutSheet.addEventListener('transitionend', cdCheckoutEndHandler);
     }

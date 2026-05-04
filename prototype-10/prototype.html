@@ -769,6 +769,14 @@
       </div>
     </div>
     <button class="cd-checkout-cta" id="cd-checkout-cta">Book</button>
+    <!-- Compact summary that mirrors the booking bar's left content. Hidden
+         while the sheet is open; fades in during the close so the sheet's
+         end-of-morph state visually matches the booking bar instead of
+         showing an empty white card. -->
+    <div class="cd-checkout-mini-summary" id="cd-checkout-mini-summary">
+      <div class="cd-mini-price" id="cd-mini-price"></div>
+      <div class="cd-mini-meta" id="cd-mini-meta"></div>
+    </div>
   </div>
 
   <!-- Blurred overlay behind the persistent tab bar -->
