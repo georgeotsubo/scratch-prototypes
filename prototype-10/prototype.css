@@ -3484,10 +3484,7 @@
     align-items: center;
     justify-content: space-between;
     gap: 12px;
-    /* Sits above the checkout sheet (z 36) so the bar's content can fade
-       back in over the still-shrinking sheet on close. The shared white bg
-       + shadow makes the overlap visually seamless. */
-    z-index: 37;
+    z-index: 35;
     pointer-events: none;
     visibility: hidden;
     transform: translateY(calc(100% + 24px));
@@ -3810,10 +3807,11 @@
   .cd-checkout-cta:active {
     background: #c00b0b;
   }
-  /* Hide the bar's content (left info + CTA) while the sheet covers it.
-     The bar itself stays at full opacity and sits above the sheet (see
-     z-index above) so the children can fade back in on close while the
-     sheet is still shrinking — eliminating the pop-in lag at end of close. */
+  /* Hide original booking card while the sheet covers it. The sheet's
+     CTA closed-state matches the bar's Next exactly, so the hand-off is
+     visually seamless. Opacity is applied to the children (not the bar
+     itself) so removing is-under-checkout at end-of-close fades the info
+     and CTA back in over 0.18s instead of snapping them in. */
   .cd-booking-bar .cd-booking-info,
   .cd-booking-bar .cd-booking-cta {
     transition: opacity 0.18s ease;

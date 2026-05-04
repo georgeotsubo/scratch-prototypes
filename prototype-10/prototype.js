@@ -4000,11 +4000,6 @@
       cdCheckoutSheet.classList.remove('is-open');
       cdCheckoutScrim.classList.remove('is-visible');
       cdCheckoutSheet.style.height = targetH + 'px';
-      // Reveal the booking bar's content NOW (while the sheet still covers
-      // it visually) so it's already at full opacity by the time the sheet
-      // finishes shrinking. Removing this class on transitionend caused a
-      // perceptible flash where the bar popped in after the sheet was hidden.
-      cdBookingBar.classList.remove('is-under-checkout');
       // Swap CTA label as the morph starts so by the time the pill has
       // shrunk back to bar-shape, the label already reads "Book".
       cdCheckoutCta.textContent = 'Book';
@@ -4020,6 +4015,10 @@
         cdCheckoutSheet.style.visibility = 'hidden';
         cdCheckoutSheet.style.height = '';
         cdCheckoutSheet.setAttribute('aria-hidden', 'true');
+        // Reveal the bar's content as the sheet vanishes. The 0.18s opacity
+        // transition on .cd-booking-info/.cd-booking-cta turns this into a
+        // quick fade-in rather than a snap.
+        cdBookingBar.classList.remove('is-under-checkout');
       };
       cdCheckoutSheet.addEventListener('transitionend', cdCheckoutEndHandler);
     }
