@@ -3406,9 +3406,18 @@
       // must always reflect the venue schedule exactly so a user comparing
       // the two doesn't see fabricated entries here that aren't on the
       // schedule tab. The schedule generator clusters titles so each tapped
-      // class has multiple real siblings.
+      // class has multiple real siblings. Keep the tapped slot in-window so
+      // it survives the cap.
       var MAX_SLOTS = 5;
-      if (data.length > MAX_SLOTS) data = data.slice(0, MAX_SLOTS);
+      if (data.length > MAX_SLOTS) {
+        var selectedIdx = data.findIndex(function(s) { return s.selected; });
+        if (selectedIdx >= MAX_SLOTS) {
+          var selected = data[selectedIdx];
+          data = data.slice(0, MAX_SLOTS - 1).concat(selected);
+        } else {
+          data = data.slice(0, MAX_SLOTS);
+        }
+      }
 
       slots.innerHTML = data.map(function(s) {
         var priceHtml = s.strikePrice
@@ -3442,8 +3451,10 @@
           syncCdBookingBarVisibility();
         });
       });
-      // Initial booking bar state reflects the pre-selected first slot
-      updateBookingBar(data[0]);
+      // Initial booking bar state reflects the slot the user actually tapped
+      // on the Schedule tab — fall back to the earliest slot if no match.
+      var selectedSlot = data.find(function(s) { return s.selected; }) || data[0];
+      updateBookingBar(selectedSlot);
       syncCdBookingBarVisibility();
     }
 
@@ -3897,7 +3908,11 @@
 
     function populateCheckout() {
       var instructor = document.getElementById('cd-booking-instructor').textContent;
-      var slotTime = document.getElementById('cd-booking-time').textContent;
+      // The booking-bar time element renders "{shortDate} · {time}", so
+      // take only the trailing time portion to avoid duplicating the date.
+      var bookingTimeText = document.getElementById('cd-booking-time').textContent;
+      var slotTime = (cdLastSlot && cdLastSlot.time)
+        || bookingTimeText.split(' · ').pop();
       // Compute the date from the day index the user picked in the
       // cd-date-picker (0 = today, 1 = tomorrow, ...). The booking bar
       // dataset.fullTime is captured at slot-tap time and would go stale
@@ -3985,6 +4000,11 @@
       cdCheckoutSheet.classList.remove('is-open');
       cdCheckoutScrim.classList.remove('is-visible');
       cdCheckoutSheet.style.height = targetH + 'px';
+      // Reveal the booking bar's content NOW (while the sheet still covers
+      // it visually) so it's already at full opacity by the time the sheet
+      // finishes shrinking. Removing this class on transitionend caused a
+      // perceptible flash where the bar popped in after the sheet was hidden.
+      cdBookingBar.classList.remove('is-under-checkout');
       // Swap CTA label as the morph starts so by the time the pill has
       // shrunk back to bar-shape, the label already reads "Book".
       cdCheckoutCta.textContent = 'Book';
@@ -4000,7 +4020,6 @@
         cdCheckoutSheet.style.visibility = 'hidden';
         cdCheckoutSheet.style.height = '';
         cdCheckoutSheet.setAttribute('aria-hidden', 'true');
-        cdBookingBar.classList.remove('is-under-checkout');
       };
       cdCheckoutSheet.addEventListener('transitionend', cdCheckoutEndHandler);
     }
