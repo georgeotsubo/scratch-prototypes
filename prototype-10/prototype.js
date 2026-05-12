@@ -1062,6 +1062,12 @@
   const searchAutocomplete = document.getElementById('search-autocomplete');
   const searchAutocompleteList = document.getElementById('search-autocomplete-list');
   const searchSubmitBtn = document.getElementById('search-submit-btn');
+
+  function focusAtEnd(input) {
+    input.focus();
+    const len = input.value.length;
+    try { input.setSelectionRange(len, len); } catch (_) {}
+  }
   const searchBackspace = document.getElementById('search-backspace');
   let searchInputFocused = false;
 
@@ -1217,7 +1223,7 @@
     searchInput.value = '';
     searchTerm = '';
     updateSearchUI();
-    searchInput.focus();
+    focusAtEnd(searchInput);
   });
 
   searchClose.addEventListener('click', () => {
@@ -1494,7 +1500,7 @@
     locationInput.value = '';
     locationInput.placeholder = 'Enter neighborhood or zip';
     updateLocationUI();
-    locationInput.focus();
+    focusAtEnd(locationInput);
   });
 
   // Recent location chips
@@ -1559,7 +1565,7 @@
     setActiveTab('search');
     searchThisAreaBtn.classList.remove('visible');
     showScreen('screen-search-focused', 'fade-in');
-    setTimeout(() => searchInput.focus(), 300);
+    setTimeout(() => focusAtEnd(searchInput), 300);
   });
 
   // Search results → search focused (search tab)
@@ -1573,7 +1579,7 @@
     setActiveTab('search');
     searchThisAreaBtn.classList.remove('visible');
     showScreen('screen-search-focused', 'fade-in');
-    setTimeout(() => searchInput.focus(), 300);
+    setTimeout(() => focusAtEnd(searchInput), 300);
   });
 
   // Location results → unified search screen, location tab
@@ -1584,7 +1590,7 @@
     setActiveTab('location');
     searchThisAreaBtn.classList.remove('visible');
     showScreen('screen-search-focused', 'fade-in');
-    setTimeout(() => { locationInput.focus(); updateLocationUI(); }, 150);
+    setTimeout(() => { focusAtEnd(locationInput); updateLocationUI(); }, 150);
   });
 
   // Both results → search focused (search tab)
@@ -1598,7 +1604,7 @@
     setActiveTab('search');
     searchThisAreaBtn.classList.remove('visible');
     showScreen('screen-search-focused', 'fade-in');
-    setTimeout(() => searchInput.focus(), 300);
+    setTimeout(() => focusAtEnd(searchInput), 300);
   });
 
   // Search tab hotspots
@@ -1608,7 +1614,7 @@
     setActiveTab('search');
     searchThisAreaBtn.classList.remove('visible');
     showScreen('screen-search-focused', 'fade-in');
-    setTimeout(() => searchInput.focus(), 300);
+    setTimeout(() => focusAtEnd(searchInput), 300);
   });
   document.getElementById('hotspot-x-tab').addEventListener('click', () => {
     searchTerm = '';
@@ -1635,11 +1641,11 @@
     if (tab === 'search') {
       searchContent.classList.remove('hidden');
       locationContent.classList.add('hidden');
-      searchInput.focus();
+      focusAtEnd(searchInput);
     } else {
       locationContent.classList.remove('hidden');
       searchContent.classList.add('hidden');
-      locationInput.focus();
+      focusAtEnd(locationInput);
       updateLocationUI();
     }
   }
@@ -1651,6 +1657,48 @@
   locationInput.addEventListener('focus', () => {
     if (activeTab !== 'location') setActiveTab('location');
   });
+
+  // ========== DRAG-TO-SCROLL (desktop only) ==========
+  // Lets the mouse pan a scrollable region like a finger on touch. Click-only
+  // interactions (chips, autocomplete rows) still work — we only treat motion
+  // beyond a small threshold as a drag and suppress the trailing click.
+  function enableDragScroll(el) {
+    if (!el) return;
+    let down = false, startY = 0, startScroll = 0, moved = false;
+    el.addEventListener('mousedown', (e) => {
+      if (e.button !== 0) return;
+      if (e.target.closest('input, textarea, button, .key, .keyboard')) return;
+      down = true;
+      moved = false;
+      startY = e.clientY;
+      startScroll = el.scrollTop;
+    });
+    document.addEventListener('mousemove', (e) => {
+      if (!down) return;
+      const dy = e.clientY - startY;
+      if (!moved && Math.abs(dy) > 4) moved = true;
+      if (moved) el.scrollTop = startScroll - dy;
+    });
+    document.addEventListener('mouseup', () => { down = false; });
+    el.addEventListener('click', (e) => {
+      if (moved) { e.stopPropagation(); e.preventDefault(); moved = false; }
+    }, true);
+  }
+  enableDragScroll(document.getElementById('search-tab-content'));
+  enableDragScroll(document.getElementById('location-tab-content'));
+
+  // Show scrollbar only while scrolling, then fade out
+  function enableAutoHideScrollbar(el, idleMs = 500) {
+    if (!el) return;
+    let timer = null;
+    el.addEventListener('scroll', () => {
+      el.classList.add('is-scrolling');
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(() => el.classList.remove('is-scrolling'), idleMs);
+    }, { passive: true });
+  }
+  enableAutoHideScrollbar(document.getElementById('search-tab-content'));
+  enableAutoHideScrollbar(document.getElementById('location-tab-content'));
 
   // ========== SEARCH THIS AREA ==========
   const searchThisAreaBtn = document.getElementById('search-this-area');
@@ -2030,7 +2078,7 @@
   // iOS sheet spring: slightly underdamped for that bouncy feel
   var iosSheetSpring = { type: 'spring', stiffness: 400, damping: 35 };
   // iOS snap-back spring: stiffer for quick snap
-  var iosSnapSpring = { type: 'spring', stiffness: 500, damping: 30 };
+  var iosSnapSpring = { type: 'spring', stiffness: 1400, damping: 45 };
   // iOS tab indicator spring: fast, no bounce
   var iosTabSpring = { type: 'spring', stiffness: 600, damping: 50 };
 
@@ -4814,7 +4862,10 @@
         // Commit dismissal when the user has dragged down past 20% of the
         // viewport height; otherwise spring everything back to rest.
         if (dy > lightboxViewport.clientHeight * 0.2) {
-          dismissToThumb(slideImage, fromTransform);
+          dismissToThumb(slideImage, fromTransform, {
+            duration: 300,
+            easing: 'cubic-bezier(0.33, 1, 0.68, 1)'
+          });
         } else {
           snapBack(slideImage);
         }
@@ -4860,12 +4911,11 @@
       var morphSlide = slideImages[currentPage];
       if (morphSlide && currentThumbs[currentPage]) {
         var fromTransform = morphSlide.style.transform || 'translate(0px, 0px) scale(1, 1)';
-        // Match the open animation's 220ms quart-out so the close feels
-        // like the inverse of the expand-out instead of the slower
-        // drag-dismiss morph.
+        // Softer ease-out cubic so the close feels gentle rather than
+        // snappy; drag-dismiss release uses the same curve/duration.
         dismissToThumb(morphSlide, fromTransform, {
-          duration: 220,
-          easing: 'cubic-bezier(0.22, 1, 0.36, 1)'
+          duration: 300,
+          easing: 'cubic-bezier(0.33, 1, 0.68, 1)'
         });
       } else {
         closeLightbox();

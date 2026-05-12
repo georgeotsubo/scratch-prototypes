@@ -474,9 +474,27 @@
   /* Content area */
   .content-area {
     flex: 1;
+    min-height: 0;
     overflow-y: auto;
+    overscroll-behavior: contain;
     -webkit-overflow-scrolling: touch;
     padding-bottom: 20px;
+    scrollbar-width: thin;
+    scrollbar-color: transparent transparent;
+    transition: scrollbar-color 0.25s ease;
+  }
+  .content-area.is-scrolling {
+    scrollbar-color: rgba(0, 0, 0, 0.28) transparent;
+  }
+  .content-area::-webkit-scrollbar { width: 4px; }
+  .content-area::-webkit-scrollbar-track { background: transparent; }
+  .content-area::-webkit-scrollbar-thumb {
+    background-color: transparent;
+    border-radius: 4px;
+    transition: background-color 0.25s ease;
+  }
+  .content-area.is-scrolling::-webkit-scrollbar-thumb {
+    background-color: rgba(0, 0, 0, 0.28);
   }
 
   /* Section heading — Figma heading/h3: 20px, black */
