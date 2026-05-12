@@ -3506,7 +3506,6 @@
       syncCdBookingBarVisibility();
     }
 
-    var cdBookingEnterPending = false;
     // Hidden-state translation: computed in pixels at animate time so Motion's
     // keyframe pipeline gets a clean numeric interpolation. calc() expressions
     // have been flaky in this bundle and tend to collapse to step/ease-out.
@@ -3532,17 +3531,12 @@
       if (shouldShow) {
         cdBookingBar.classList.add('cd-booking-visible');
         cdBookingBar.style.visibility = 'visible';
-        // First reveal after class-detail open gets a delay so the bar slides
-        // up after the sheet lands. Later toggles animate immediately.
-        // Uses a plain CSS transition with an overshoot cubic-bezier because
-        // Motion's keyframe pipeline silently flattens the bounce in this bundle.
-        var delay = cdBookingEnterPending ? 0.35 : 0;
-        cdBookingEnterPending = false;
+        // Match the class-detail push curve/duration so the booking bar
+        // slides up in sync with the pane — feels like one motion.
         cdBookingBar.style.transition = 'none';
         cdBookingBar.style.transform = cdBookingHiddenY();
         void cdBookingBar.offsetHeight;
-        cdBookingBar.style.transition =
-          'transform 0.3s cubic-bezier(.25,.46,.45,.94) ' + delay + 's';
+        cdBookingBar.style.transition = 'transform 0.4s cubic-bezier(0.32, 0.72, 0, 1)';
         cdBookingBar.style.transform = CD_BOOKING_VISIBLE_Y;
       } else {
         cdBookingBar.classList.remove('cd-booking-visible');
@@ -3854,11 +3848,8 @@
       if (classDetailOpen) return;
       // Mark open BEFORE populate so syncCdBookingBarVisibility (called from
       // renderCdTimeSlots during populate) can reveal the booking bar when
-      // the default first slot is pre-selected. The pending flag tells the
-      // sync to apply the entrance-delay so the pane has finished sliding
-      // before the bar slides up.
+      // the default first slot is pre-selected.
       classDetailOpen = true;
-      cdBookingEnterPending = true;
       populateClassDetail(cls);
       // Reset class scroll to the top so the hero is visible on every push.
       classDetailScroll.scrollTop = 0;
