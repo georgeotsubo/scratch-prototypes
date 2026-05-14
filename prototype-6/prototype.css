@@ -1919,6 +1919,9 @@
     flex-direction: column;
     gap: 16px;
   }
+  #vd-section-reviews {
+    gap: 24px;
+  }
   .vd-section-title {
     font-family: 'DM Sans', sans-serif;
     font-size: 20px;
@@ -2668,6 +2671,9 @@
     display: flex;
     flex-direction: column;
     gap: 16px;
+  }
+  #cd-rating-card-reviews {
+    gap: 24px;
   }
   .cd-rating-card-top {
     display: flex;

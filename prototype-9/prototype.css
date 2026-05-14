@@ -1586,7 +1586,7 @@
   .vd-panel {
     display: none;
     flex-direction: column;
-    gap: 32px;
+    gap: 40px;
   }
   .vd-panel-schedule {
     gap: 0;
@@ -2039,6 +2039,9 @@
     display: flex;
     flex-direction: column;
     gap: 16px;
+  }
+  #vd-section-reviews {
+    gap: 24px;
   }
   /* Available today preview — sits between the carousel and the tabs. */
   .vd-available-today {
@@ -2850,7 +2853,7 @@
   .cd-panel.active {
     display: flex;
     flex-direction: column;
-    gap: 32px;
+    gap: 40px;
     animation: cd-panel-fade 200ms cubic-bezier(.25,.46,.45,.94);
   }
   @keyframes cd-panel-fade {
@@ -2944,6 +2947,9 @@
     display: flex;
     flex-direction: column;
     gap: 16px;
+  }
+  #cd-rating-card-reviews {
+    gap: 24px;
   }
   /* Scoped to .cd-rating-card so the Overview tab's inline .cd-rating-summary
      (which reuses .cd-rating-big / .cd-rating-summary-count) stays unchanged. */

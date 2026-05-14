@@ -1989,6 +1989,9 @@
     flex-direction: column;
     gap: 16px;
   }
+  #vd-section-reviews {
+    gap: 24px;
+  }
   .vd-see-schedule-btn {
     width: 100%;
     background: #e10e0e;
@@ -2724,7 +2727,7 @@
   .cd-panel.active {
     display: flex;
     flex-direction: column;
-    gap: 32px;
+    gap: 40px;
     animation: cd-panel-fade 200ms cubic-bezier(.25,.46,.45,.94);
   }
   @keyframes cd-panel-fade {

@@ -1609,7 +1609,7 @@
     padding: 84px 20px 32px;
     display: flex;
     flex-direction: column;
-    gap: 32px;
+    gap: 40px;
     margin-top: 0;
     box-sizing: border-box;
   }
@@ -1768,7 +1768,7 @@
   .vd-panel {
     display: none;
     flex-direction: column;
-    gap: 32px;
+    gap: 40px;
   }
   .vd-panel-schedule {
     gap: 0;
@@ -2024,7 +2024,7 @@
   .vd-rev-summary {
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: 24px;
   }
   .vd-rev-top {
     display: flex;
@@ -2059,7 +2059,8 @@
     line-height: 16px;
     color: #4F5159;
     /* Pulls the source line 8px closer to the rating so the gap above
-       it is 8px while the other .vd-rev-summary gaps stay at 16px. */
+       it is 16px (24px column gap minus this offset) while the other
+       .vd-rev-summary gaps stay at 24px. */
     margin-top: -8px;
   }
 
@@ -2222,6 +2223,9 @@
     display: flex;
     flex-direction: column;
     gap: 16px;
+  }
+  #vd-section-reviews {
+    gap: 24px;
   }
   /* Available today preview — sits between the carousel and the tabs. */
   .vd-available-today {
@@ -2510,7 +2514,7 @@
     gap: 4px;
     /* Pulls the about copy 8px closer to the image carousel so the gap
        between carousel and copy is 24px while all other
-       .venue-detail-content gaps stay at 32px. */
+       .venue-detail-content gaps stay at 40px. */
     margin-top: -8px;
   }
 
@@ -3127,7 +3131,7 @@
   .cd-panel.active {
     display: flex;
     flex-direction: column;
-    gap: 32px;
+    gap: 40px;
     animation: cd-panel-fade 200ms cubic-bezier(.25,.46,.45,.94);
   }
   @keyframes cd-panel-fade {
@@ -3175,6 +3179,17 @@
   .cd-section.cd-header-section {
     gap: 20px;
   }
+  .cd-section.cd-section-reviews {
+    gap: 24px;
+  }
+  .cd-section-heading-group {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .cd-section-heading-group .cd-section-subtitle {
+    margin: 0;
+  }
   .cd-section-header {
     display: flex;
     align-items: center;
@@ -3221,6 +3236,9 @@
     display: flex;
     flex-direction: column;
     gap: 16px;
+  }
+  #cd-rating-card-reviews {
+    gap: 24px;
   }
   /* Scoped to .cd-rating-card so the Overview tab's inline .cd-rating-summary
      (which reuses .cd-rating-big / .cd-rating-summary-count) stays unchanged. */
