@@ -2507,9 +2507,6 @@
     }
 
     function activateTab(tab) {
-      // Use cached pin offset (measured when venue detail opened at scrollTop=0)
-      var pinOffset = window.__vdPinOffset || 0;
-
       tabs.forEach(function(t) { t.classList.remove('active'); });
       tab.classList.add('active');
       moveIndicator(tab);
@@ -2519,25 +2516,18 @@
         else p.classList.remove('active');
       });
 
-      // Tapping a tab brings the tabs to the pinned position. When the user
-      // is far above the pin (e.g. at the header), an instant scroll feels
-      // violent — glide with a short ease-out so the tabs rise into place
-      // alongside the 200ms panel fade. When already pinned, the delta is
-      // ~0 and the loop exits on the first frame.
-      if (pinOffset > 0) {
-        var startTop = venueDetailScroll.scrollTop;
-        var delta = pinOffset - startTop;
-        if (Math.abs(delta) < 1) {
-          venueDetailScroll.scrollTop = pinOffset;
-        } else {
-          var startTime = performance.now();
-          var duration = 250;
-          (function glide() {
-            var t = Math.min(1, (performance.now() - startTime) / duration);
-            var eased = 1 - Math.pow(1 - t, 3);
-            venueDetailScroll.scrollTop = startTop + delta * eased;
-            if (t < 1) requestAnimationFrame(glide);
-          })();
+      // Snap scroll back to the pin so the user always lands at the top of
+      // the incoming tab. Reset to 0 first to unstick the tabs, then
+      // re-measure the pin offset and snap.
+      var tabsEl = venueDetailEl.querySelector('.vd-tabs');
+      if (tabsEl) {
+        venueDetailScroll.scrollTop = 0;
+        var scrollRect = venueDetailScroll.getBoundingClientRect();
+        var tabsRect = tabsEl.getBoundingClientRect();
+        var newPinOffset = tabsRect.top - scrollRect.top - 80;
+        window.__vdPinOffset = newPinOffset;
+        if (newPinOffset > 0) {
+          venueDetailScroll.scrollTop = newPinOffset;
         }
       }
 
