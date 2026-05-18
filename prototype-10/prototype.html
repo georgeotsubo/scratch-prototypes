@@ -436,6 +436,7 @@
                 <h3 class="vd-section-title">Ratings &amp; Reviews</h3>
                 <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M8 4L13.6742 10.147C13.8562 10.3442 13.8501 10.6499 13.6603 10.8397L8 16.5" stroke="#020203" stroke-width="2" stroke-linecap="round"/></svg>
               </div>
+              <div class="vd-reviews-group">
               <div class="vd-rating-summary">
                 <span class="vd-rating-big" id="vd-rating-big">4.7</span>
                 <div class="vd-rating-stars-group">
@@ -521,6 +522,13 @@
                   <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M8 4L13.6742 10.147C13.8562 10.3442 13.8501 10.6499 13.6603 10.8397L8 16.5" stroke="#020203" stroke-width="2" stroke-linecap="round"/></svg>
                 </div>
               </div>
+              </div>
+            </div>
+
+            <!-- Amenities -->
+            <div class="vd-section">
+              <h3 class="vd-section-title">Amenities</h3>
+              <div class="vd-amenities" id="vd-amenities"></div>
             </div>
 
             <!-- Location -->
@@ -553,14 +561,16 @@
 
             <!-- Rating summary -->
             <div class="vd-rev-summary">
-              <div class="vd-rev-top">
-                <div class="vd-rev-score" id="vd-rev-score">4.7</div>
-                <div class="vd-rev-stars-group">
-                  <div class="vd-rev-stars" id="vd-rev-stars"></div>
-                  <span class="vd-rev-count" id="vd-rev-count">(2500)</span>
+              <div class="vd-rev-summary-head">
+                <div class="vd-rev-top">
+                  <div class="vd-rev-score" id="vd-rev-score">4.7</div>
+                  <div class="vd-rev-stars-group">
+                    <div class="vd-rev-stars" id="vd-rev-stars"></div>
+                    <span class="vd-rev-count" id="vd-rev-count">(2500)</span>
+                  </div>
                 </div>
+                <div class="vd-rev-source">Ratings based from ClassPass and Playlist</div>
               </div>
-              <div class="vd-rev-source">Ratings based from ClassPass and Playlist</div>
               <div class="vd-rev-bars-card">
                 <div class="vd-rev-bars" id="vd-rev-bars"></div>
               </div>
@@ -664,14 +674,16 @@
                 </div>
                 <p class="cd-section-subtitle" id="cd-reviews-subtitle">Reviews for this class</p>
               </div>
-              <div class="cd-rating-summary">
-                <span class="cd-rating-big" id="cd-rating-big">4.7</span>
-                <div class="cd-rating-stars-row">
-                  <div class="cd-stars" id="cd-stars"></div>
-                  <span class="cd-rating-summary-count" id="cd-rating-summary-count">(250)</span>
+              <div class="cd-reviews-group">
+                <div class="cd-rating-summary">
+                  <span class="cd-rating-big" id="cd-rating-big">4.7</span>
+                  <div class="cd-rating-stars-row">
+                    <div class="cd-stars" id="cd-stars"></div>
+                    <span class="cd-rating-summary-count" id="cd-rating-summary-count">(250)</span>
+                  </div>
                 </div>
+                <div class="cd-review-cards vd-hscroll" id="cd-review-cards"></div>
               </div>
-              <div class="cd-review-cards vd-hscroll" id="cd-review-cards"></div>
             </div>
 
             <!-- How to prepare -->
@@ -688,20 +700,41 @@
               <h3 class="cd-section-title">Cancellation policy</h3>
               <p class="cd-section-body" id="cd-cancel-body"></p>
             </div>
+
+            <!-- Amenities -->
+            <div class="cd-section">
+              <h3 class="cd-section-title">Amenities</h3>
+              <div class="cd-amenities" id="cd-amenities"></div>
+            </div>
+
+            <!-- Location -->
+            <div class="cd-section">
+              <h3 class="cd-section-title">Location</h3>
+              <div class="cd-map-card">
+                <div class="cd-map-thumb" id="cd-map-thumb">
+                  <div class="cd-map-pin">
+                    <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M16.026 30.6666C7.93923 30.6666 1.35938 24.0868 1.35938 16C1.35938 7.91317 7.93923 1.33331 16.026 1.33331C24.1129 1.33331 30.6927 7.91317 30.6927 16C30.6927 24.0868 24.1129 30.6666 16.026 30.6666ZM12.475 10.8077C12.475 12.3594 13.4747 13.6575 14.8324 14.1349V21.1922C14.8324 23.117 15.3099 25.0417 16.026 25.0417C16.7422 25.0417 17.2047 23.1468 17.2047 21.1922V14.1349C18.5774 13.6724 19.5771 12.3594 19.5771 10.8077C19.5771 8.85315 17.9806 7.2716 16.026 7.2716C14.0715 7.2716 12.475 8.86807 12.475 10.8077ZM14.0416 9.86773C14.0416 9.256 14.5788 8.73379 15.1607 8.73379C15.7873 8.73379 16.2946 9.256 16.2946 9.86773C16.2946 10.4795 15.7873 11.0166 15.1607 11.0166C14.5788 11.0166 14.0416 10.4795 14.0416 9.86773Z" fill="url(#paint0_linear_cd_loc)"/><defs><linearGradient id="paint0_linear_cd_loc" x1="16.026" y1="1.33331" x2="16.026" y2="30.6666" gradientUnits="userSpaceOnUse"><stop stop-color="#FF7F7F"/><stop offset="1" stop-color="#E10E0E"/></linearGradient></defs></svg>
+                  </div>
+                </div>
+                <div class="cd-map-address" id="cd-map-address">172 Allen St, New York, NY</div>
+              </div>
+            </div>
           </div>
 
           <!-- Reviews panel -->
           <div class="cd-panel" data-cdpanel="reviews">
             <!-- Summary (mirrors venue-detail format: transparent outer, only the bars get a white card) -->
             <div class="cd-rating-card" id="cd-rating-card-reviews">
-              <div class="cd-rating-card-top">
-                <span class="cd-rating-big cd-rating-big-rev" id="cd-rating-big-rev"></span>
-                <div class="cd-rating-stars-row">
-                  <div class="cd-stars" id="cd-stars-rev"></div>
-                  <span class="cd-rating-summary-count" id="cd-rating-summary-count-rev"></span>
+              <div class="cd-rating-summary-head">
+                <div class="cd-rating-card-top">
+                  <span class="cd-rating-big cd-rating-big-rev" id="cd-rating-big-rev"></span>
+                  <div class="cd-rating-stars-row">
+                    <div class="cd-stars" id="cd-stars-rev"></div>
+                    <span class="cd-rating-summary-count" id="cd-rating-summary-count-rev"></span>
+                  </div>
                 </div>
+                <div class="cd-rating-source">Ratings based from ClassPass and Playlist</div>
               </div>
-              <div class="cd-rating-source">Ratings based from ClassPass and Playlist</div>
               <div class="cd-rating-bars-card">
                 <div class="cd-rating-bars" id="cd-rating-bars-rev"></div>
               </div>
@@ -739,7 +772,7 @@
   <div class="cd-checkout-scrim" id="cd-checkout-scrim"></div>
   <div class="cd-checkout-sheet" id="cd-checkout-sheet" aria-hidden="true">
     <div class="cd-checkout-header">
-      <h2 class="cd-checkout-title">Review and pay</h2>
+      <h2 class="cd-checkout-title">Review and confirm</h2>
       <button class="cd-checkout-close" id="cd-checkout-close" aria-label="Close">
         <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M5 5l10 10M15 5l-10 10" stroke="#020203" stroke-width="2" stroke-linecap="round"/></svg>
       </button>

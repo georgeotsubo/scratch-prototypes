@@ -327,6 +327,111 @@
     studios.forEach(s => { if (!STUDIO_TAGS[s.name]) STUDIO_TAGS[s.name] = category; });
   }
 
+  // Per-category studio image library. Each studio is a triple
+  // [thumbnail+slide1, slide2, slide3] — the first entry is used as the
+  // venue-list thumbnail. Boxing has 3 studios; the rest have 4.
+  const STUDIO_IMAGES = {
+    'Yoga': [
+      ['../images/yoga/studio_1/image01.jpg', '../images/yoga/studio_1/image02.jpg', '../images/yoga/studio_1/image03.jpg'],
+      ['../images/yoga/studio_2/image01.jpg', '../images/yoga/studio_2/image02.jpg', '../images/yoga/studio_2/image03.jpg'],
+      ['../images/yoga/studio_3/image01.jpg', '../images/yoga/studio_3/image02.jpg', '../images/yoga/studio_3/image03.jpg'],
+      ['../images/yoga/studio_4/image01.png', '../images/yoga/studio_4/image02.png', '../images/yoga/studio_4/image03.png'],
+    ],
+    'Pilates': [
+      ['../images/pilates/studio_1/image01.jpg', '../images/pilates/studio_1/image02.jpg', '../images/pilates/studio_1/image03.jpg'],
+      ['../images/pilates/studio_2/image01.jpg', '../images/pilates/studio_2/image02.png', '../images/pilates/studio_2/image03.jpg'],
+      ['../images/pilates/studio_3/image01.jpg', '../images/pilates/studio_3/image02.jpg', '../images/pilates/studio_3/image03.jpg'],
+      ['../images/pilates/studio_4/image01.jpg', '../images/pilates/studio_4/image02.jpg', '../images/pilates/studio_4/image03.jpg'],
+    ],
+    'Barre': [
+      ['../images/barre/studio_1/image01.jpg', '../images/barre/studio_1/image02.jpg', '../images/barre/studio_1/image03.jpg'],
+      ['../images/barre/studio_2/image01.jpg', '../images/barre/studio_2/image02.jpg', '../images/barre/studio_2/image03.jpg'],
+      ['../images/barre/studio_3/image01.jpg', '../images/barre/studio_3/image02.jpg', '../images/barre/studio_3/image03.jpg'],
+      ['../images/barre/studio_4/image01.png', '../images/barre/studio_4/image02.png', '../images/barre/studio_4/image03.png'],
+    ],
+    'Cycling': [
+      ['../images/cycling/studio_1/image01.png', '../images/cycling/studio_1/image02.png', '../images/cycling/studio_1/image03.png'],
+      ['../images/cycling/studio_2/image01.jpg', '../images/cycling/studio_2/image02.jpg', '../images/cycling/studio_2/image03.jpg'],
+      ['../images/cycling/studio_3/image01.jpg', '../images/cycling/studio_3/image02.jpg', '../images/cycling/studio_3/image03.jpg'],
+      ['../images/cycling/studio_4/image01.png', '../images/cycling/studio_4/image02.png', '../images/cycling/studio_4/image03.png'],
+    ],
+    'Boxing': [
+      ['../images/boxing/studio_1/image01.png', '../images/boxing/studio_1/image02.png', '../images/boxing/studio_1/image03.png'],
+      ['../images/boxing/studio_2/image01.png', '../images/boxing/studio_2/image02.png', '../images/boxing/studio_2/image03.png'],
+      ['../images/boxing/studio_3/image01.png', '../images/boxing/studio_3/image02.png', '../images/boxing/studio_3/image03.png'],
+    ],
+  };
+
+  // Simple deterministic string hash (djb2-ish, 32-bit).
+  function hashStr(s) {
+    var h = 0;
+    for (var i = 0; i < s.length; i++) h = ((h << 5) - h + s.charCodeAt(i)) | 0;
+    return Math.abs(h);
+  }
+
+  // Deterministic per-venue studio pick + rotation. Two layers of variation:
+  //   1. Studio index — picks one of the 3–4 image sets in the category.
+  //   2. Rotation — rotates the 3-photo triple so even when two pins land
+  //      on the same studio, the thumbnail and carousel order differ
+  //      (e.g. one shows [01, 02, 03], another shows [02, 03, 01]).
+  // Key includes lat/lng so Foursquare duplicates (same name, different
+  // location) pick different studios instead of colliding.
+  function pickVenueImages(pin, idx) {
+    if (!pin) return null;
+    // Map raw category strings ("Pilates Studio", "Boxing Gym", etc.) onto
+    // one of the 5 keyed image categories. If the category doesn't match
+    // (e.g. Foursquare returns a generic "Gym" for "Feel Good Pilates"),
+    // fall back to scanning the venue name itself for the keyword.
+    var rawCat = STUDIO_TAGS[pin.name] || pin.category || '';
+    var name = pin.name || '';
+    // The current search query is a strong category hint: if the user
+    // searched "yoga", every result in this view should be visually treated
+    // as yoga (Foursquare often returns generic-category pins like cafés
+    // mixed in with a category-keyword query).
+    var searchHint = currentSearchLabel || '';
+    // Cache the first resolution on the pin so the detail/class views stay
+    // consistent if the user later clears the search.
+    var category = pin._resolvedImageCategory || null;
+    if (!category) {
+      var keys = Object.keys(STUDIO_IMAGES);
+      for (var k = 0; k < keys.length; k++) {
+        var kw = keys[k].toLowerCase();
+        if ((rawCat && rawCat.toLowerCase().indexOf(kw) !== -1)
+            || (name && name.toLowerCase().indexOf(kw) !== -1)
+            || (searchHint && searchHint.toLowerCase().indexOf(kw) !== -1)) {
+          category = keys[k];
+          break;
+        }
+      }
+      if (category) pin._resolvedImageCategory = category;
+    }
+    if (!category) return null;
+    var studios = STUDIO_IMAGES[category];
+    if (!studios || !studios.length) return null;
+    // Include the list index as a tiebreaker so Foursquare duplicates
+    // (same name + same coords appearing twice in results) still differ.
+    var key = name + '|' + (pin.lat || '') + '|' + (pin.lng || '') + '|' + (idx != null ? idx : '');
+    var hStudio = hashStr(key);
+    var hRot = hashStr(key + '#rot');
+    var idx = (hStudio * 7) % studios.length;
+    var triple = studios[idx];
+    var rot = hRot % triple.length;
+    return [triple[rot], triple[(rot + 1) % triple.length], triple[(rot + 2) % triple.length]];
+  }
+
+  // Inline background-shorthand setter. Using the shorthand so it overrides
+  // the CSS placeholder rules (which themselves use `background:` shorthand
+  // and reset background-size to auto). Passing null clears the inline style
+  // so the CSS cascade restores the grey placeholder.
+  function setVenuePhotoBg(el, url) {
+    if (!el) return;
+    if (url) {
+      el.style.background = "url('" + url + "') center/cover no-repeat";
+    } else {
+      el.style.background = '';
+    }
+  }
+
   // Shorten raw tag labels for UI: drop trailing " and …" phrases and the
   // trailing " Studio" qualifier so "Gym and Fitness Studio" → "Gym".
   function formatTag(tag) {
@@ -376,6 +481,54 @@
     return (Math.abs(h) % 2) === 0;
   }
   window.__hasVenueIntroOffer = hasVenueIntroOffer;
+
+  // Deterministic per-venue flag for the "Showers" amenity — roughly half
+  // of venues have showers. Different hash seed than intro offers so the
+  // two flags don't correlate.
+  function venueHasShowers(pin) {
+    if (!pin || !pin.name) return false;
+    var h = 7;
+    for (var i = 0; i < pin.name.length; i++) h = ((h << 5) - h) + pin.name.charCodeAt(i);
+    return (Math.abs(h) % 2) === 0;
+  }
+
+  // iOS-style adaptive title sizing: measure the text width at the default
+  // font size using a canvas (deterministic regardless of layout timing or
+  // -webkit-line-clamp quirks) and toggle .is-compact when the text won't
+  // fit on a single line. Shared by the venue/class sticky nav title and
+  // the gallery lightbox title so they behave identically.
+  function fitTitleToWidth(el, defaultFontSize) {
+    if (!el) return;
+    var canvas = fitTitleToWidth._canvas;
+    if (!canvas) {
+      canvas = document.createElement('canvas');
+      fitTitleToWidth._canvas = canvas;
+    }
+    var ctx = canvas.getContext('2d');
+    ctx.font = '700 ' + defaultFontSize + 'px "DM Sans", -apple-system, sans-serif';
+    var textWidth = ctx.measureText(el.textContent).width;
+    // The element's own clientWidth is the available width because the
+    // title's CSS pins it to a max width (either via left:0/right:0 inside
+    // a sized wrap, or width: calc() on the element itself).
+    var availableWidth = el.clientWidth;
+    if (availableWidth > 0 && textWidth > availableWidth - 1) {
+      el.classList.add('is-compact');
+    } else {
+      el.classList.remove('is-compact');
+    }
+  }
+  // Preserved name for the sticky nav callers — same logic, 17px default.
+  function fitStickyTitle(el) { fitTitleToWidth(el, 17); }
+  window.__fitStickyTitle = fitStickyTitle;
+  window.__fitTitleToWidth = fitTitleToWidth;
+
+  function renderAmenities(containerId, amenities, pillClass) {
+    var el = document.getElementById(containerId);
+    if (!el) return;
+    el.innerHTML = amenities
+      .map(function(a) { return '<span class="' + pillClass + '">' + a + '</span>'; })
+      .join('');
+  }
 
   // Average center of the hardcoded NYC studio data
   const STUDIOS_CENTER_LAT = 40.7380, STUDIOS_CENTER_LNG = -73.9855;
@@ -567,12 +720,16 @@
       const rating = (4.5 + (i % 5) * 0.1).toFixed(1);
       const reviews = 50 + i * 37;
       const desc = getVenueDescription(pin.name, tags);
+      const venueImgs = pickVenueImages(pin, i);
+      const venueImageStyle = venueImgs
+        ? ` style="background:url('${venueImgs[0]}') center/cover no-repeat"`
+        : '';
       const introBadge = hasVenueIntroOffer(pin)
         ? `<div class="venue-intro-badge"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M5.38223 17.1763C4.62285 17.1763 4.05596 16.9891 3.68154 16.6147C3.30713 16.2403 3.11992 15.6708 3.11992 14.9061V13.2529C3.11992 13.1263 3.0751 13.0156 2.98545 12.9207L1.81475 11.75C1.27158 11.2121 1 10.6795 1 10.1521C1 9.62478 1.27158 9.08953 1.81475 8.54636L2.98545 7.36775C3.0751 7.2781 3.11992 7.17 3.11992 7.04343V5.3823C3.11992 4.61238 3.30449 4.04285 3.67363 3.67371C4.04805 3.30457 4.61758 3.12 5.38223 3.12H7.04336C7.17519 3.12 7.2833 3.07517 7.36768 2.98552L8.54629 1.81482C9.08945 1.27166 9.62207 1.00008 10.1441 1.00008C10.6715 0.994802 11.2067 1.26638 11.7499 1.81482L12.9285 2.98552C13.0182 3.07517 13.1263 3.12 13.2528 3.12H14.914C15.6786 3.12 16.2455 3.3072 16.6146 3.68162C16.9891 4.05603 17.1763 4.62293 17.1763 5.3823V7.04343C17.1763 7.17 17.2237 7.2781 17.3187 7.36775L18.4894 8.54636C19.0272 9.08953 19.2962 9.62478 19.2962 10.1521C19.2962 10.6795 19.0272 11.2121 18.4894 11.75L17.3187 12.9207C17.2237 13.0156 17.1763 13.1263 17.1763 13.2529V14.9061C17.1763 15.6761 16.9891 16.2456 16.6146 16.6147C16.2455 16.9891 15.6786 17.1763 14.914 17.1763H13.2528C13.1263 17.1763 13.0182 17.2212 12.9285 17.3108L11.7499 18.4815C11.212 19.0247 10.6794 19.2963 10.1521 19.2963C9.62471 19.2963 9.08945 19.0247 8.54629 18.4815L7.36768 17.3108C7.2833 17.2212 7.17519 17.1763 7.04336 17.1763H5.38223Z" fill="#379062"/><path d="M7.38359 10.2655C6.85889 10.2655 6.43965 10.0875 6.12588 9.73154C5.81475 9.37295 5.65918 8.87988 5.65918 8.25234C5.65918 7.61689 5.81606 7.12515 6.12983 6.7771C6.4436 6.42905 6.86152 6.25503 7.38359 6.25503C7.9083 6.25503 8.32754 6.42905 8.64131 6.7771C8.95508 7.12251 9.11196 7.61294 9.11196 8.24839C9.11196 8.87593 8.9564 9.36899 8.64526 9.72759C8.33413 10.0862 7.91357 10.2655 7.38359 10.2655ZM7.38359 9.32812C7.55762 9.32812 7.68813 9.23848 7.77515 9.05918C7.86216 8.87988 7.90566 8.61094 7.90566 8.25234C7.90566 7.89902 7.86216 7.63403 7.77515 7.45737C7.68813 7.28071 7.55762 7.19238 7.38359 7.19238C7.21221 7.19238 7.08169 7.28071 6.99204 7.45737C6.90503 7.63403 6.86152 7.89902 6.86152 8.25234C6.86152 8.61094 6.90503 8.87988 6.99204 9.05918C7.08169 9.23848 7.21221 9.32812 7.38359 9.32812ZM12.9167 13.7618C12.3894 13.7618 11.9688 13.5838 11.6551 13.2278C11.3439 12.8719 11.1884 12.3788 11.1884 11.7486C11.1884 11.1132 11.3453 10.6214 11.659 10.2734C11.9728 9.92534 12.392 9.75132 12.9167 9.75132C13.4388 9.75132 13.8567 9.92534 14.1705 10.2734C14.4843 10.6214 14.6412 11.1132 14.6412 11.7486C14.6412 12.3735 14.4856 12.8653 14.1745 13.2239C13.8633 13.5825 13.4441 13.7618 12.9167 13.7618ZM12.9167 12.8284C13.0881 12.8284 13.2173 12.7387 13.3043 12.5594C13.394 12.3775 13.4388 12.1072 13.4388 11.7486C13.4388 11.3927 13.394 11.1277 13.3043 10.9537C13.2173 10.777 13.0881 10.6887 12.9167 10.6887C12.7427 10.6887 12.6122 10.777 12.5252 10.9537C12.4382 11.1303 12.3947 11.3953 12.3947 11.7486C12.3947 12.1072 12.4382 12.3775 12.5252 12.5594C12.6122 12.7387 12.7427 12.8284 12.9167 12.8284ZM7.70395 13.7064C7.56157 13.6247 7.4772 13.5073 7.45083 13.3544C7.42446 13.2015 7.46006 13.0512 7.55762 12.9035L11.8251 6.49629C11.9201 6.35654 12.04 6.26953 12.1851 6.23525C12.3301 6.19834 12.4672 6.2168 12.5964 6.29062C12.7414 6.36973 12.8297 6.48838 12.8614 6.64658C12.893 6.80215 12.8601 6.95376 12.7625 7.10142L8.49497 13.5284C8.40532 13.6629 8.28271 13.7446 8.12715 13.7736C7.97422 13.8053 7.83315 13.7829 7.70395 13.7064Z" fill="white"/></svg><span class="venue-intro-badge-label">Drop in for $25</span></div>`
         : '';
       return `<div class="venue-card" data-venue-index="${i}">
         <div class="venue-header">
-          <div class="venue-image"></div>
+          <div class="venue-image"${venueImageStyle}></div>
           <div class="venue-info">
             <div class="venue-info-text">
               <div class="venue-title">${pin.name}</div>
@@ -2112,6 +2269,7 @@
     const pin = currentPins[index];
     if (!pin) return;
     window.__currentVenuePin = pin;
+    window.__currentVenueIndex = index;
     // Re-render the Schedule tab so prices reflect this venue's intro-offer flag
     if (window.__renderVdSchedule) window.__renderVdSchedule();
     // Render the Overview's "Available today" list from the same generated
@@ -2153,6 +2311,15 @@
     if (ratingBigEl) ratingBigEl.textContent = rating;
     if (reviewsCountEl) reviewsCountEl.textContent = '(' + reviews + ')';
 
+    // Venue header image carousel — 3 photos per venue, drawn from
+    // STUDIO_IMAGES via deterministic per-name hash. Falls back to the CSS
+    // grey placeholder for venues whose category has no image folder.
+    var vdImageEls = document.querySelectorAll('#vd-section-images .vd-image-placeholder');
+    var vdTriple = pickVenueImages(pin, index);
+    for (var vi = 0; vi < vdImageEls.length; vi++) {
+      setVenuePhotoBg(vdImageEls[vi], vdTriple ? vdTriple[vi] : null);
+    }
+
     // Static map thumbnail
     const mapThumb = document.getElementById('vd-map-thumb');
     if (pin.lat && pin.lng && window.MAPBOX_TOKEN) {
@@ -2162,6 +2329,11 @@
       mapThumb.style.backgroundSize = 'cover';
       mapThumb.style.backgroundPosition = 'center';
     }
+    // Amenities — Mats + Towels for all venues, Showers for some.
+    var vdAmenities = ['Mats', 'Towels'];
+    if (venueHasShowers(pin)) vdAmenities.push('Showers');
+    renderAmenities('vd-amenities', vdAmenities, 'vd-amenity-pill');
+
     // Address footer under the map thumbnail
     const addressEl = document.getElementById('vd-map-address');
     if (addressEl) {
@@ -2171,7 +2343,9 @@
       addressEl.textContent = parts.length ? parts.join(', ') : neighborhood + ', NY';
     }
 
-    document.getElementById('vd-sticky-title').textContent = pin.name;
+    var vdStickyTitleEl = document.getElementById('vd-sticky-title');
+    vdStickyTitleEl.textContent = pin.name;
+    fitStickyTitle(vdStickyTitleEl);
     document.getElementById('vd-sticky-nav').classList.remove('scrolled');
     var vdVenueBg = document.getElementById('vd-pane-nav-bg-venue');
     if (vdVenueBg) vdVenueBg.classList.remove('scrolled');
@@ -3726,7 +3900,9 @@
       // Header
       document.getElementById('cd-title').textContent = cls.title;
       // The class title now lives in the shared sticky nav (#vd-sticky-nav).
-      document.getElementById('cd-sticky-title').textContent = cls.title;
+      var cdStickyTitleEl = document.getElementById('cd-sticky-title');
+      cdStickyTitleEl.textContent = cls.title;
+      fitStickyTitle(cdStickyTitleEl);
       // NOTE: do NOT clear .scrolled here. If the venue nav was scrolled
       // (grey bg), removing it now would fade the bg out mid-slide and
       // expose the class hero's lighter gradient through the transparent
@@ -3744,6 +3920,31 @@
       var venueName = (currentPins[0] && currentPins[0].name) || pick(CD_VENUE_NAMES);
       var hood = (currentPins[0] && currentPins[0].locality) || pick(CD_NEIGHBORHOODS);
       document.getElementById('cd-venue-text').textContent = venueName + ' · ' + hood;
+      // Amenities — inherit the venue's amenity set so a class shows the
+      // same Mats / Towels / Showers as its venue.
+      var cdAmenitiesList = ['Mats', 'Towels'];
+      if (venueHasShowers(window.__currentVenuePin || currentPins[0])) cdAmenitiesList.push('Showers');
+      renderAmenities('cd-amenities', cdAmenitiesList, 'cd-amenity-pill');
+
+      // Location card — mirror the venue's static map thumb + address.
+      var cdMapThumb = document.getElementById('cd-map-thumb');
+      var cdAddressEl = document.getElementById('cd-map-address');
+      var venuePin = window.__currentVenuePin || currentPins[0];
+      if (cdMapThumb && venuePin && venuePin.lat && venuePin.lng && window.MAPBOX_TOKEN) {
+        var cdStaticUrl = 'https://api.mapbox.com/styles/v1/mapbox/streets-v12/static/'
+          + venuePin.lng + ',' + venuePin.lat + ',14,0/353x204@2x?access_token=' + MAPBOX_TOKEN;
+        cdMapThumb.style.backgroundImage = 'url(' + cdStaticUrl + ')';
+        cdMapThumb.style.backgroundSize = 'cover';
+        cdMapThumb.style.backgroundPosition = 'center';
+      } else if (cdMapThumb) {
+        cdMapThumb.style.backgroundImage = '';
+      }
+      if (cdAddressEl) {
+        var cdParts = [];
+        if (venuePin && venuePin.address) cdParts.push(venuePin.address);
+        if (venuePin && venuePin.locality) cdParts.push(venuePin.locality + ', NY');
+        cdAddressEl.textContent = cdParts.length ? cdParts.join(', ') : (hood + ', NY');
+      }
       // Price strings in the class detail display dollars with cents ($25.00).
       function cdFormatPrice(p) {
         if (!p) return p;
@@ -3851,6 +4052,13 @@
       // the default first slot is pre-selected.
       classDetailOpen = true;
       populateClassDetail(cls);
+      // Sync the class hero carousel to the current venue's photos so a
+      // class pushed from venue A matches the thumbnail you tapped through.
+      var cdHeroSlideEls = document.querySelectorAll('#cd-hero-track .cd-hero-slide');
+      var cdTriple = pickVenueImages(window.__currentVenuePin, window.__currentVenueIndex);
+      for (var ci = 0; ci < cdHeroSlideEls.length; ci++) {
+        setVenuePhotoBg(cdHeroSlideEls[ci], cdTriple ? cdTriple[ci] : null);
+      }
       // Reset class scroll to the top so the hero is visible on every push.
       classDetailScroll.scrollTop = 0;
       // Drop .scrolled on the shared nav — class scroll is at 0, so the
@@ -4035,11 +4243,11 @@
       cdCheckoutSheet.classList.add('is-open');
       cdCheckoutSheet.style.height = targetH + 'px';
       // Delay the label swap until the pill has grown wide enough to fit
-      // "Confirm and reserve" — the closed Book-shape pill is only 100px
-      // wide, which would clip/wrap the longer label until the morph
-      // completes. ~200ms in, the pill is roughly halfway and the text fits.
+      // "Book and Pay" — the closed Book-shape pill is only 100px wide,
+      // which would clip/wrap the longer label until the morph completes.
+      // ~200ms in, the pill is roughly halfway and the text fits.
       setTimeout(function() {
-        if (cdCheckoutOpen) cdCheckoutCta.textContent = 'Confirm and reserve';
+        if (cdCheckoutOpen) cdCheckoutCta.textContent = 'Book and Pay';
       }, 200);
     }
 
@@ -4477,6 +4685,19 @@
             && typeof window.__setCdHeroPage === 'function') {
           window.__setCdHeroPage(page);
         }
+        // Same idea for the venue-detail thumbnail carousel: scroll it so
+        // the current page's thumb sits at the carousel's initial left
+        // position. Subtract thumb[0].offsetLeft so the padding-left isn't
+        // double-counted — for page 0 this yields scrollLeft = 0, matching
+        // the carousel's natural state when the venue detail first opened.
+        // Without this, a drag-dismiss back to image 0 from a scrolled
+        // carousel state lands the FLIP at an offscreen thumb.
+        else if (currentThumbs[page] && currentThumbs[page].classList.contains('vd-image-placeholder')) {
+          var venueCarousel = currentThumbs[page].parentElement;
+          if (venueCarousel && currentThumbs[0]) {
+            venueCarousel.scrollLeft = currentThumbs[page].offsetLeft - currentThumbs[0].offsetLeft;
+          }
+        }
       }
     }
 
@@ -4498,11 +4719,22 @@
       var thumbRect = startThumb.getBoundingClientRect();
       currentThumbs = thumbEls.slice();
       lightboxTitle.textContent = title || '';
+      fitTitleToWidth(lightboxTitle, 16);
       buildSlides(thumbEls.length);
       // Carry each source thumb's computed background onto its matching
       // lightbox slide so the gallery image colors match the carousel
       // they came from (e.g. the class-detail hero's varying greys).
       var lightboxSlideImgs = lightboxTrack.querySelectorAll('.lightbox-slide-image');
+      // Match the lightbox slide's aspect ratio to the source thumb so the
+      // FLIP scale during open/dismiss is uniform (sx === sy). Without this,
+      // morphing from a square thumb to a 4:3 slide visibly stretches the
+      // image horizontally during the animation.
+      var thumbAspect = thumbRect.width / thumbRect.height;
+      if (isFinite(thumbAspect) && thumbAspect > 0) {
+        lightboxSlideImgs.forEach(function(slideImg) {
+          slideImg.style.aspectRatio = String(thumbAspect);
+        });
+      }
       thumbEls.forEach(function(t, i) {
         var slideImg = lightboxSlideImgs[i];
         if (!slideImg) return;
@@ -4566,7 +4798,15 @@
       //     visibly materializes after the lightbox is gone.
       var thumbsToRestore = currentThumbs.slice();
       if (skipSlideFade) {
-        thumbsToRestore.forEach(function(t) { t.style.opacity = ''; });
+        // Drag-dismiss: the morph just landed the slide pixel-identical
+        // to the thumb (matched aspect-ratio + border-radius). Bring the
+        // thumb back instantly (no fade) so the slide can be removed on
+        // the very next frame without any visible "linger" at rest.
+        thumbsToRestore.forEach(function(t) {
+          t.style.transition = 'none';
+          t.style.opacity = '';
+        });
+        if (thumbsToRestore[0]) void thumbsToRestore[0].offsetHeight;
       } else {
         thumbsToRestore.forEach(function(t) {
           t.style.transition = 'opacity 0.4s ease-out';
@@ -4576,7 +4816,7 @@
         }, 200);
       }
       lightboxEl.classList.remove('open');
-      var cleanupDelay = skipSlideFade ? 220 : 620;
+      var cleanupDelay = skipSlideFade ? 20 : 620;
       setTimeout(function() {
         lightboxTrack.innerHTML = '';
         lightboxTrack.style.transform = '';
@@ -4657,26 +4897,32 @@
       void slideImage.offsetHeight;
       // Animate the slide's border-radius alongside the transform so the
       // VISUAL radius (post-scale) ends the morph matching the thumb's own
-      // border-radius. But ONLY if the thumb actually has rounded corners
-      // — for thumbs with `border-radius: 0` (e.g. the class-detail
-      // cd-hero-slide which is edge-to-edge), animating the slide to 0
-      // makes the image "go sharp" mid-morph, which reads worse than
-      // staying rounded. In that case we leave the radius alone; the
-      // mismatch when the slide is later removed is hidden behind the
-      // hero's full-width framing and reads as a clean handoff.
+      // border-radius. This includes thumbs with `border-radius: 0` — once
+      // the slide carries real photos (not flat gradients), the rounded
+      // slide visibly mismatches a sharp-cornered thumb after the morph
+      // and reads as the image "lingering" before the slide is removed.
       var slideStartRadiusPx = parseFloat(window.getComputedStyle(slideImage).borderTopLeftRadius) || 24;
       var slideTargetRadiusPx = slideStartRadiusPx;
       if (thumb) {
         var thumbRadiusPx = parseFloat(window.getComputedStyle(thumb).borderTopLeftRadius) || 0;
-        if (thumbRadiusPx > 0) {
-          var scaleX = destRect.width > 0 ? thumbRect.width / destRect.width : 1;
-          if (scaleX > 0) slideTargetRadiusPx = thumbRadiusPx / scaleX;
-        }
+        var scaleX = destRect.width > 0 ? thumbRect.width / destRect.width : 1;
+        if (scaleX > 0) slideTargetRadiusPx = thumbRadiusPx / scaleX;
       }
       var animateRadius = slideTargetRadiusPx !== slideStartRadiusPx;
+      // Delay the radius animation so corners stay visually rounded for
+      // most of the morph, then sharpen only as the slide settles into the
+      // thumb's rect. Without this delay the slide reads as "sharp and
+      // mid-flight" through the back half of the morph — the user's
+      // "sharp corners before initial state" complaint.
+      var radiusDelayMs = Math.round(DURATION * 0.1);
+      var radiusDurationMs = DURATION - radiusDelayMs;
+      var RADIUS_DURATION_S = (radiusDurationMs / 1000) + 's';
+      var RADIUS_DELAY_S = (radiusDelayMs / 1000) + 's';
       slideImage.style.transition =
         'transform ' + DURATION_S + ' ' + EASING +
-        (animateRadius ? ', border-radius ' + DURATION_S + ' ' + EASING : '');
+        (animateRadius
+          ? ', border-radius ' + RADIUS_DURATION_S + ' ' + EASING + ' ' + RADIUS_DELAY_S
+          : '');
       slideImage.style.transform = toTransform;
       if (animateRadius) {
         slideImage.style.borderRadius = slideTargetRadiusPx + 'px';
@@ -4854,8 +5100,8 @@
         // viewport height; otherwise spring everything back to rest.
         if (dy > lightboxViewport.clientHeight * 0.2) {
           dismissToThumb(slideImage, fromTransform, {
-            duration: 300,
-            easing: 'cubic-bezier(0.33, 1, 0.68, 1)'
+            duration: 320,
+            easing: 'cubic-bezier(0.4, 0, 0.2, 1)'
           });
         } else {
           snapBack(slideImage);
@@ -4902,11 +5148,10 @@
       var morphSlide = slideImages[currentPage];
       if (morphSlide && currentThumbs[currentPage]) {
         var fromTransform = morphSlide.style.transform || 'translate(0px, 0px) scale(1, 1)';
-        // Softer ease-out cubic so the close feels gentle rather than
-        // snappy; drag-dismiss release uses the same curve/duration.
+        // Match drag-dismiss timing so the X-close feels equally snappy.
         dismissToThumb(morphSlide, fromTransform, {
-          duration: 300,
-          easing: 'cubic-bezier(0.33, 1, 0.68, 1)'
+          duration: 320,
+          easing: 'cubic-bezier(0.4, 0, 0.2, 1)'
         });
       } else {
         closeLightbox();
