@@ -24,10 +24,22 @@
       max-width: 480px;
     }
 
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 32px;
+    }
+
+    .header .app-icon {
+      width: 32px;
+      height: 32px;
+      flex-shrink: 0;
+    }
+
     h1 {
       font-size: 20px;
       font-weight: 600;
-      margin-bottom: 6px;
     }
 
     h2 {
@@ -62,9 +74,39 @@
     a.proto-link {
       font-weight: 500;
       padding-top: 8px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .proto-link .caret {
+      transition: transform 0.2s ease;
+      flex-shrink: 0;
+      padding: 8px;
+      box-sizing: content-box;
+      cursor: pointer;
+      margin: -8px;
+    }
+
+    .proto-item.expanded .proto-link .caret {
+      transform: rotate(180deg);
+    }
+
+    .proto-item > p,
+    .proto-item > .changelog {
+      display: none;
+    }
+
+    .proto-item.expanded > p,
+    .proto-item.expanded > .changelog {
+      display: revert;
     }
 
     .proto-item {
+      padding-bottom: 8px;
+    }
+
+    .proto-item.expanded {
       padding-bottom: 24px;
     }
 
@@ -174,13 +216,19 @@
 </head>
 <body>
   <div class="page">
-    <h1>Playlist App</h1>
-    <p class="subtitle">Scratch prototypes built with Claude Code.</p>
+    <div class="header">
+      <svg class="app-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <rect width="24" height="24" rx="6.71805" fill="#E10E0E"/>
+        <path d="M19.6743 5.89746L16.6326 18.0968H11.579L14.6207 5.89746H19.6743Z" fill="white"/>
+        <path d="M11.3908 7.96289L9.37926 16.0305H4.32568L6.33723 7.96289H11.3908Z" fill="white"/>
+      </svg>
+      <h1>Playlist App</h1>
+    </div>
    <div class="list">
       <div class="item">
         <h2>Prototypes</h2>
         <div class="proto-item">
-          <a href="/prototype-10/prototype.html" class="proto-link">Venue + Class Detail UX v6</a>
+          <a href="/prototype-10/prototype.html" class="proto-link">Booking Flow v5</a>
           <p>Forked from v5 for the next round of iteration.</p>
           <ul class="changelog">
             <li>Updated modal UX to push transition</li>
@@ -190,7 +238,7 @@
           </ul>
         </div>
         <div class="proto-item">
-          <a href="/prototype-9/prototype.html" class="proto-link">Venue + Class Detail UX v5</a>
+          <a href="/prototype-9/prototype.html" class="proto-link">Booking Flow v4</a>
           <p>Figma-aligned venue list cards and unified review cards.</p>
           <ul class="changelog">
             <li>Review cards unified across carousel + Reviews tab in venue and class detail</li>
@@ -199,14 +247,14 @@
           </ul>
         </div>
         <div class="proto-item">
-          <a href="/prototype-8/prototype.html" class="proto-link">Venue + Class Detail UX v3</a>
+          <a href="/prototype-8/prototype.html" class="proto-link">Booking Flow v3</a>
           <p>New design exploration leading with schedule for venue detail.</p>
           <ul class="changelog">
             <li>Structural tab changes</li>
           </ul>
         </div>
         <div class="proto-item">
-          <a href="/prototype-7/prototype.html" class="proto-link">Venue + Class Detail UX v2</a>
+          <a href="/prototype-7/prototype.html" class="proto-link">Booking Flow v2</a>
           <p>Updated class detail design.</p>
               <ul class="changelog">
                 <li>New class detail hero header</li>
@@ -214,11 +262,11 @@
               </ul>
         </div>
         <div class="proto-item">
-          <a href="/prototype-6/prototype.html" class="proto-link">Venue + Class Detail UX v1</a>
+          <a href="/prototype-6/prototype.html" class="proto-link">Booking Flow v1</a>
           <p>Venue detail modal with schedule, reviews, and class detail modal for booking flow.</p>
         </div>
         <div class="proto-item">
-          <a href="/prototype-5/prototype.html" class="proto-link">Search UX v3</a>
+          <a href="/prototype-5/prototype.html" class="proto-link">Search v3</a>
           <p>Added a global X button to clear results in the main search bar.</p>
           <ul class="changelog">
             <li>Added "Search this area" button UX when moving the map</li>
@@ -226,12 +274,12 @@
           </ul>
         </div>
         <div class="proto-item">
-          <a href="/prototype-3/prototype.html" class="proto-link">Search UX v2</a>
+          <a href="/prototype-3/prototype.html" class="proto-link">Search v2</a>
           <p>Double search input UX similar to ClassPass. Added back button on main search input to navigate back to search.</p>        
           </ul>
         </div>
         <div class="proto-item">
-          <a href="/prototype-2/prototype.html" class="proto-link">Search UX v1</a>
+          <a href="/prototype-2/prototype.html" class="proto-link">Search v1</a>
           <p>iOS 26 bottom search input pattern exploration for keyword and location search.</p>
         </div>
       </div>
@@ -239,14 +287,14 @@
     </div>
   </div>
 
-  <div class="preview-panel" id="preview-panel">
+  <div class="preview-panel open" id="preview-panel">
     <div class="preview-panel-inner">
-      <iframe id="preview-frame"></iframe>
-      <p class="preview-hint">Tap the search bar to begin</p>
+      <iframe id="preview-frame" src="prototype-10/prototype.html"></iframe>
+      <p class="preview-hint" style="display:none">Tap the search bar to begin</p>
     </div>
   </div>
 
-  <button class="close-btn" id="close-btn" aria-label="Close">
+  <button class="close-btn" id="close-btn" aria-label="Close" style="display:flex">
     <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
       <line x1="1" y1="1" x2="13" y2="13"/>
       <line x1="13" y1="1" x2="1" y2="13"/>
@@ -260,12 +308,23 @@
 
     const hint = document.querySelector('.preview-hint');
 
-    document.querySelectorAll('.proto-link').forEach(link => {
+    const caretSvg = '<svg class="caret" width="9" height="6" viewBox="0 0 9 6" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M4.95175 4.94975C4.56123 5.34027 3.92806 5.34027 3.53754 4.94975L0.294898 1.70711C-0.335067 1.07714 0.1111 8.42938e-08 1.002 8.42938e-08L7.48729 0C8.37819 0 8.82436 1.07714 8.19439 1.70711L4.95175 4.94975Z" fill="#D9D9D9"/></svg>';
+
+    document.querySelectorAll('.proto-link').forEach((link, i) => {
+      link.insertAdjacentHTML('beforeend', ' ' + caretSvg);
+      if (i === 0) link.closest('.proto-item').classList.add('expanded');
       link.addEventListener('click', e => {
         e.preventDefault();
+        // Caret toggles expand/collapse for this item only, no iframe load
+        if (e.target.closest('.caret')) {
+          link.closest('.proto-item').classList.toggle('expanded');
+          return;
+        }
         frame.src = link.href;
         panel.classList.add('open');
         closeBtn.style.display = 'flex';
+        document.querySelectorAll('.proto-item').forEach(item => item.classList.remove('expanded'));
+        link.closest('.proto-item').classList.add('expanded');
         // Only show search hint for search prototypes, not venue detail
         if (link.href.includes('prototype-6') || link.href.includes('prototype-7') || link.href.includes('prototype-8') || link.href.includes('prototype-9') || link.href.includes('prototype-10')) {
           hint.style.display = 'none';
@@ -282,6 +341,7 @@
       closeBtn.style.display = 'none';
       frame.src = '';
     });
+
   </script>
 </body>
 </html>
