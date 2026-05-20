@@ -4141,7 +4141,38 @@
     var cdCheckoutCloseBtn = document.getElementById('cd-checkout-close');
     var cdBookingCta = document.getElementById('cd-booking-cta');
     var cdCheckoutCta = document.getElementById('cd-checkout-cta');
+    var cdCheckoutCtaLabel = cdCheckoutCta && cdCheckoutCta.querySelector('.cd-cta-label');
     var cdCheckoutOpen = false;
+    // Tapping "Book and Pay" (sheet open) shows a spinner for 2s, then
+    // transitions to the success state: body fades out, success video
+    // plays in the center, CTA label swaps to "You're all set". No real
+    // booking call — pure prototype timing.
+    var cdCheckoutSuccessTimer = null;
+    var cdCheckoutSuccessVideo = document.getElementById('cd-checkout-success-video');
+    if (cdCheckoutCta) {
+      cdCheckoutCta.addEventListener('click', function() {
+        if (!cdCheckoutOpen) return;
+        // Ignore taps once we're already in the success state.
+        if (cdCheckoutSheet.classList.contains('is-success')) return;
+        cdCheckoutCta.classList.add('is-loading');
+        if (cdCheckoutSuccessTimer) clearTimeout(cdCheckoutSuccessTimer);
+        cdCheckoutSuccessTimer = setTimeout(function() {
+          if (!cdCheckoutOpen) return;
+          if (cdCheckoutCtaLabel) cdCheckoutCtaLabel.textContent = "You're all set";
+          cdCheckoutCta.classList.remove('is-loading');
+          cdCheckoutSheet.classList.add('is-success');
+          // Hug the success content: header + 180px centered video + CTA.
+          // The sheet already has `transition: height 0.44s ...` so this
+          // animates alongside the body fade.
+          cdCheckoutSheet.style.height = '420px';
+          if (cdCheckoutSuccessVideo) {
+            try { cdCheckoutSuccessVideo.currentTime = 0; } catch (e) {}
+            var p = cdCheckoutSuccessVideo.play();
+            if (p && p.catch) p.catch(function() {});
+          }
+        }, 2000);
+      });
+    }
 
     function populateCheckout() {
       var instructor = document.getElementById('cd-booking-instructor').textContent;
@@ -4159,7 +4190,7 @@
       var dayShort = date.toLocaleDateString('en-US', { weekday: 'short' });
       var monthShort = date.toLocaleDateString('en-US', { month: 'short' });
       var dateStr = dayShort + ', ' + monthShort + ' ' + date.getDate();
-      var time = dateStr + ' · ' + slotTime;
+      var time = dateStr + ' · ' + slotTime + ' · ET';
       var titleEl = document.getElementById('cd-title');
       var classTitle = titleEl ? titleEl.textContent : '';
       var venueText = document.getElementById('cd-venue-text');
@@ -4168,6 +4199,30 @@
       document.getElementById('cd-checkout-time').textContent = time;
       document.getElementById('cd-checkout-instructor').textContent = instructor;
       document.getElementById('cd-checkout-venue').textContent = venueStr;
+      // "Free cancellation until <date> at <time> ET" — exactly 12 hours
+      // before the class start. Computed from the same date/slotTime we
+      // populated above so it always stays in sync with the booking.
+      var cancelCutoffEl = document.getElementById('cd-checkout-cancel-cutoff');
+      if (cancelCutoffEl) {
+        var slotMatch = slotTime && slotTime.match(/(\d+):(\d+)\s*(AM|PM)/i);
+        if (slotMatch) {
+          var slotHour = parseInt(slotMatch[1], 10);
+          var slotMin = parseInt(slotMatch[2], 10);
+          var slotPeriod = slotMatch[3].toUpperCase();
+          if (slotPeriod === 'PM' && slotHour !== 12) slotHour += 12;
+          if (slotPeriod === 'AM' && slotHour === 12) slotHour = 0;
+          var cutoff = new Date(date);
+          cutoff.setHours(slotHour, slotMin, 0, 0);
+          cutoff.setHours(cutoff.getHours() - 12);
+          var cDay = cutoff.toLocaleDateString('en-US', { weekday: 'short' });
+          var cMonth = cutoff.toLocaleDateString('en-US', { month: 'short' });
+          var cH = cutoff.getHours();
+          var cPeriod = cH >= 12 ? 'PM' : 'AM';
+          cH = (cH % 12) || 12;
+          var cMin = String(cutoff.getMinutes()).padStart(2, '0');
+          cancelCutoffEl.textContent = 'Free cancellation until ' + cDay + ', ' + cMonth + ' ' + cutoff.getDate() + ' at ' + cH + ':' + cMin + ' ' + cPeriod + ' ET.';
+        }
+      }
       // Price: prefer the intro-offer final price, else the plain price.
       var priceFinalEl = document.querySelector('.cd-booking-price-final, .cd-booking-price-plain');
       var priceText = priceFinalEl ? priceFinalEl.textContent.trim() : '$30.00';
@@ -4237,7 +4292,7 @@
       // which would clip/wrap the longer label until the morph completes.
       // ~200ms in, the pill is roughly halfway and the text fits.
       setTimeout(function() {
-        if (cdCheckoutOpen) cdCheckoutCta.textContent = 'Book and Pay';
+        if (cdCheckoutOpen && cdCheckoutCtaLabel) cdCheckoutCtaLabel.textContent = 'Book and Pay';
       }, 200);
     }
 
@@ -4272,8 +4327,21 @@
       // happens if we kick off the fade at sheet-hide.
       cdBookingBar.classList.remove('is-under-checkout');
       // Swap CTA label as the morph starts so by the time the pill has
-      // shrunk back to bar-shape, the label already reads "Book".
-      cdCheckoutCta.textContent = 'Book';
+      // shrunk back to bar-shape, the label already reads "Book". Also
+      // clear the spinner/success state so re-opening starts clean.
+      if (cdCheckoutCtaLabel) cdCheckoutCtaLabel.textContent = 'Book';
+      cdCheckoutCta.classList.remove('is-loading');
+      cdCheckoutSheet.classList.remove('is-success');
+      if (cdCheckoutSuccessTimer) {
+        clearTimeout(cdCheckoutSuccessTimer);
+        cdCheckoutSuccessTimer = null;
+      }
+      if (cdCheckoutSuccessVideo) {
+        try {
+          cdCheckoutSuccessVideo.pause();
+          cdCheckoutSuccessVideo.currentTime = 0;
+        } catch (e) {}
+      }
       // Wait for the full height transitionend (440ms) before hiding the
       // sheet. The mini-summary fades in mid-close so the user sees a bar-
       // looking sheet by the time the sheet swaps to the actual bar — no
@@ -4488,7 +4556,7 @@
         var parentSheet = el.closest('.results-sheet');
         if (parentSheet && !parentSheet.classList.contains('expanded')) return;
       }
-      if (e.target.closest('button, a, .venue-action-btn, .vd-action-pill, .vd-slot-btn, .vd-quick-btn, .venue-detail-close, .vd-nav-back, .venue-detail-handle, .vd-sticky-nav, .vd-actions-pill, .cd-tab')) return;
+      if (e.target.closest('button, a, .venue-action-btn, .vd-action-pill, .vd-slot-btn, .vd-quick-btn, .venue-detail-close, .vd-nav-back, .venue-detail-handle, .vd-sticky-nav, .vd-actions-pill, .cd-tab, .cd-hero')) return;
       var hscrollChild = e.target.closest('.vd-hscroll, .vd-date-picker, .cd-date-picker');
       if (hscrollChild) {
         pendingDrag = { el: el, x: e.clientX, y: e.clientY, scroll: el.scrollTop, time: Date.now(), hscroll: hscrollChild };
@@ -4722,6 +4790,11 @@
       var thumbAspect = thumbRect.width / thumbRect.height;
       if (isFinite(thumbAspect) && thumbAspect > 0) {
         lightboxSlideImgs.forEach(function(slideImg) {
+          // Disable the CSS aspect-ratio transition while we set the
+          // initial thumb-aspect — otherwise the change from CSS-default
+          // 4/3 to thumb's aspect triggers a transition that fires before
+          // the morph begins. Re-enabled inside expandAspect.
+          slideImg.style.transition = 'none';
           slideImg.style.aspectRatio = String(thumbAspect);
         });
       }
@@ -4752,13 +4825,31 @@
         // the open feels responsive instead of drifting in. The quart-out
         // curve front-loads the motion: most of the distance is covered
         // early, then it eases into rest.
+        function expandAspect() {
+          // Drop the thumb-aspect override on every slide so the CSS
+          // aspect-ratio transition (matched to the morph duration/easing)
+          // expands them to the natural 4/3 in lockstep with the morph.
+          // Re-enable the CSS transition first, force a reflow so the
+          // browser commits the transition change before the aspect-ratio
+          // change, then clear the inline aspect — the change-to-default
+          // is what triggers the transition.
+          lightboxSlideImgs.forEach(function(slideImg) {
+            slideImg.style.transition = '';
+          });
+          void lightboxTrack.offsetHeight;
+          lightboxSlideImgs.forEach(function(slideImg) {
+            slideImg.style.aspectRatio = '';
+          });
+        }
         if (motionAnimate) {
+          expandAspect();
           motionAnimate(morphSlide,
             { transform: [fromTransform, 'translate(0px, 0px) scale(1, 1)'] },
             { duration: 0.22, easing: [0.22, 1, 0.36, 1] }
           );
         } else {
           morphSlide.style.transition = 'transform 0.22s cubic-bezier(0.22, 1, 0.36, 1)';
+          expandAspect();
           requestAnimationFrame(function() { morphSlide.style.transform = ''; });
         }
       });
@@ -4860,7 +4951,26 @@
         }
       }
       slideImage.style.transform = '';
+      // The slide is currently at its natural aspect (e.g. 4/3). For the
+      // FLIP to land uniformly on the square thumb, measure destRect as if
+      // the slide were already at the thumb's aspect, then restore the
+      // natural aspect. Disable transitions during this measurement dance
+      // so the CSS aspect-ratio transition doesn't pick up the temporary
+      // change and run in the background.
+      var thumbAspectForDest = null;
+      if (thumb) {
+        var tRect0 = thumb.getBoundingClientRect();
+        if (tRect0.height > 0) thumbAspectForDest = tRect0.width / tRect0.height;
+      }
+      var savedAspect = slideImage.style.aspectRatio;
+      slideImage.style.transition = 'none';
+      if (thumbAspectForDest && isFinite(thumbAspectForDest) && thumbAspectForDest > 0) {
+        slideImage.style.aspectRatio = String(thumbAspectForDest);
+        void slideImage.offsetHeight;
+      }
       var destRect = slideImage.getBoundingClientRect();
+      slideImage.style.aspectRatio = savedAspect;
+      void slideImage.offsetHeight;
       slideImage.style.transform = fromTransform;
       var toTransform;
       if (thumb) {
@@ -4910,10 +5020,14 @@
       var RADIUS_DELAY_S = (radiusDelayMs / 1000) + 's';
       slideImage.style.transition =
         'transform ' + DURATION_S + ' ' + EASING +
+        ', aspect-ratio ' + DURATION_S + ' ' + EASING +
         (animateRadius
           ? ', border-radius ' + RADIUS_DURATION_S + ' ' + EASING + ' ' + RADIUS_DELAY_S
           : '');
       slideImage.style.transform = toTransform;
+      if (thumbAspectForDest && isFinite(thumbAspectForDest) && thumbAspectForDest > 0) {
+        slideImage.style.aspectRatio = String(thumbAspectForDest);
+      }
       if (animateRadius) {
         slideImage.style.borderRadius = slideTargetRadiusPx + 'px';
       }
@@ -5243,6 +5357,10 @@
 
       cdHeroTrack.addEventListener('mousedown', function(e) {
         e.preventDefault();
+        // Stop the addVerticalDragScroll handler on .class-detail-scroll
+        // from also starting a drag — otherwise the carousel swipe and a
+        // parallel vertical scroll-drag both fire and the page scrolls.
+        e.stopPropagation();
         cdHeroDragStart(e.clientX, e.clientY);
       });
       document.addEventListener('mousemove', function(e) {
@@ -5259,7 +5377,13 @@
         if (!cdHeroDrag) return;
         var t = e.touches[0];
         cdHeroDragMove(t.clientX, t.clientY);
-      }, { passive: true });
+        // Once we've committed to a horizontal page swipe, actively block
+        // the browser's default vertical scroll so it can't shift the
+        // class-detail-scroll position while the user is paging.
+        if (cdHeroDrag && cdHeroDrag.mode === 'page' && e.cancelable) {
+          e.preventDefault();
+        }
+      }, { passive: false });
       cdHeroTrack.addEventListener('touchend', function(e) {
         if (!cdHeroDrag) return;
         var t = e.changedTouches[0];

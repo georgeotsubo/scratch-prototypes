@@ -810,7 +810,7 @@
     width: 22px;
     height: 22px;
     border-radius: 50%;
-    background: linear-gradient(to bottom, #bdbdbd, #5b5b5b);
+    background: linear-gradient(to bottom, #FF5858, #E10E0E);
     border: 3px solid white;
     box-shadow: 0 3px 3px rgba(0,0,0,0.25);
   }
@@ -818,7 +818,7 @@
     width: 28px;
     height: 28px;
     border-radius: 50%;
-    background: linear-gradient(to bottom, #bdbdbd, #5b5b5b);
+    background: linear-gradient(to bottom, #FF5858, #E10E0E);
     border: 3px solid white;
     box-shadow: 0 3px 3px rgba(0,0,0,0.25);
     display: flex;
@@ -2783,6 +2783,9 @@
     margin-top: 0;
     flex-shrink: 0;
     overflow: hidden;
+    /* Lock the entire hero region to horizontal panning so any touch in
+       it (slides, gaps, counter area) can't leak into the page scroll. */
+    touch-action: pan-x;
   }
   /* Transform-based pagination (mirrors the lightbox track). The track is
      a flex row of full-width slides; drag updates `transform` directly and
@@ -2808,6 +2811,9 @@
     background-position: center;
     background-repeat: no-repeat;
     cursor: pointer;
+    /* Lock to horizontal-only so vertical movement on the slide doesn't
+       leak into the class-detail scroll while the user is swiping. */
+    touch-action: pan-x;
   }
   /* Distinct gray gradients per slide so the carousel reads as 3 separate
      images and swiping is visually obvious until real photos are wired. */
@@ -3814,6 +3820,31 @@
        the bar's ~96px height during close without padding-bottom forcing
        the rendered box taller than style.height. */
     padding-bottom: 72px;
+    transition: opacity 0.18s ease;
+  }
+  .cd-checkout-sheet.is-success .cd-checkout-body {
+    opacity: 0;
+    pointer-events: none;
+  }
+  /* Success-state video: centered in the sheet at 180x180. Hidden by
+     default; fades in AFTER the body has finished fading out (180ms
+     delay) so the two don't visually overlap mid-transition. */
+  .cd-checkout-success-video {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 180px;
+    height: 180px;
+    transform: translate(-50%, -50%);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s ease;
+    object-fit: contain;
+    background: transparent;
+  }
+  .cd-checkout-sheet.is-success .cd-checkout-success-video {
+    opacity: 1;
+    transition: opacity 0.25s ease 0.18s;
   }
   .cd-checkout-info {
     display: flex;
@@ -3863,10 +3894,25 @@
   .cd-checkout-cancellation-body {
     font-family: 'DM Sans', sans-serif;
     font-size: 13px;
-    font-weight: 500;
+    font-weight: 400;
     line-height: 16px;
-    color: #4f5159;
+    color: #020203;
   }
+  .cd-checkout-cancellation-body strong {
+    font-weight: 700;
+  }
+  .cd-checkout-terms {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 400;
+    line-height: 16px;
+    color: #020203;
+  }
+  .cd-checkout-link {
+    color: #0032d7;
+    text-decoration: underline;
+  }
+  .cd-checkout-link:active { opacity: 0.6; }
   .cd-checkout-lines {
     display: flex;
     flex-direction: column;
@@ -3892,6 +3938,13 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
+    gap: 16px;
+  }
+  .cd-checkout-payment-left {
+    display: inline-flex;
+    align-items: center;
+    gap: 16px;
+    min-width: 0;
   }
   .cd-checkout-payment-label {
     font-family: 'DM Sans', sans-serif;
@@ -3900,21 +3953,43 @@
     line-height: 20px;
     color: #020203;
   }
-  .cd-checkout-payment-value {
-    display: flex;
+  .cd-checkout-payment-card {
+    display: inline-flex;
     align-items: center;
     gap: 8px;
     font-family: 'DM Sans', sans-serif;
     font-size: 13px;
-    font-weight: 500;
+    font-weight: 400;
     line-height: 16px;
     color: #020203;
   }
-  .cd-checkout-applepay-mark {
+  .cd-checkout-card-mark {
     display: inline-flex;
-    width: 32px;
+    width: 29px;
     height: 20px;
+    flex-shrink: 0;
   }
+  .cd-checkout-card-mark svg { display: block; }
+  .cd-checkout-card-last4 {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 400;
+    line-height: 16px;
+    color: #020203;
+    letter-spacing: 0.5px;
+  }
+  .cd-checkout-payment-change {
+    background: none;
+    border: none;
+    padding: 0;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 20px;
+    color: #0032d7;
+    cursor: pointer;
+  }
+  .cd-checkout-payment-change:active { opacity: 0.6; }
   .cd-checkout-applepay-mark svg {
     width: 100%;
     height: 100%;
@@ -3950,6 +4025,56 @@
   }
   .cd-checkout-cta:active {
     background: #c00b0b;
+  }
+  /* Loading state: hide the label and reveal a centered iOS-style spinner.
+     The button keeps its position/size so only the inner content changes. */
+  .cd-checkout-cta .cd-cta-label {
+    transition: opacity 0.15s ease;
+  }
+  .cd-checkout-cta.is-loading .cd-cta-label {
+    opacity: 0;
+  }
+  .cd-cta-spinner {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 20px;
+    height: 20px;
+    transform: translate(-50%, -50%);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.15s ease;
+  }
+  .cd-checkout-cta.is-loading .cd-cta-spinner {
+    opacity: 1;
+  }
+  .cd-cta-spinner > span {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    width: 2px;
+    height: 6px;
+    margin-left: -1px;
+    background: #fff;
+    border-radius: 1px;
+    transform-origin: 50% 10px;
+    animation: cd-cta-spinner-fade 1s linear infinite;
+  }
+  .cd-cta-spinner > span:nth-child(1)  { transform: rotate(0deg);   animation-delay: -1.0000s; }
+  .cd-cta-spinner > span:nth-child(2)  { transform: rotate(30deg);  animation-delay: -0.9167s; }
+  .cd-cta-spinner > span:nth-child(3)  { transform: rotate(60deg);  animation-delay: -0.8333s; }
+  .cd-cta-spinner > span:nth-child(4)  { transform: rotate(90deg);  animation-delay: -0.7500s; }
+  .cd-cta-spinner > span:nth-child(5)  { transform: rotate(120deg); animation-delay: -0.6667s; }
+  .cd-cta-spinner > span:nth-child(6)  { transform: rotate(150deg); animation-delay: -0.5833s; }
+  .cd-cta-spinner > span:nth-child(7)  { transform: rotate(180deg); animation-delay: -0.5000s; }
+  .cd-cta-spinner > span:nth-child(8)  { transform: rotate(210deg); animation-delay: -0.4167s; }
+  .cd-cta-spinner > span:nth-child(9)  { transform: rotate(240deg); animation-delay: -0.3333s; }
+  .cd-cta-spinner > span:nth-child(10) { transform: rotate(270deg); animation-delay: -0.2500s; }
+  .cd-cta-spinner > span:nth-child(11) { transform: rotate(300deg); animation-delay: -0.1667s; }
+  .cd-cta-spinner > span:nth-child(12) { transform: rotate(330deg); animation-delay: -0.0833s; }
+  @keyframes cd-cta-spinner-fade {
+    0%   { opacity: 1; }
+    100% { opacity: 0.15; }
   }
   /* Compact info inside the sheet that mirrors .cd-booking-info. Hidden
      while the sheet is open; fades in during the close so the sheet's
@@ -4168,5 +4293,5 @@
     border-radius: 24px;
     transform-origin: center center;
     will-change: transform, opacity;
-    transition: opacity 0.2s ease-out;
+    transition: opacity 0.2s ease-out, aspect-ratio 0.22s cubic-bezier(0.22, 1, 0.36, 1);
   }
