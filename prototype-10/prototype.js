@@ -4153,6 +4153,20 @@
     // booking call — pure prototype timing.
     var cdCheckoutSuccessTimer = null;
     var cdCheckoutSuccessVideo = document.getElementById('cd-checkout-success-video');
+    var cdCancelConfirmTimer = null;
+    var cdCancelToastTimer = null;
+    var cdCancelToastEl = document.getElementById('cd-cancel-toast');
+    function showCancelToast() {
+      if (!cdCancelToastEl) return;
+      if (cdCancelToastTimer) clearTimeout(cdCancelToastTimer);
+      cdCancelToastEl.classList.add('is-visible');
+      cdCancelToastEl.setAttribute('aria-hidden', 'false');
+      cdCancelToastTimer = setTimeout(function() {
+        cdCancelToastEl.classList.remove('is-visible');
+        cdCancelToastEl.setAttribute('aria-hidden', 'true');
+        cdCancelToastTimer = null;
+      }, 2000);
+    }
     // Reservation record drives BOTH the "Reserved · $X" price prefix on
     // matching time-slot / schedule cards AND the booking-bar CTA state
     // (black "Cancel" when the currently-viewed class+slot matches the
@@ -4214,11 +4228,31 @@
           closeCheckout();
           return;
         }
+        // Cancel-mode tap ("Confirm and cancel"): show the iOS spinner
+        // for 2s, then clear the reservation, close the sheet, and pop a
+        // confirmation toast that self-dismisses in 2s.
+        if (cdCheckoutSheet.classList.contains('is-cancel-mode')) {
+          cdCheckoutCta.classList.add('is-loading');
+          if (cdCancelConfirmTimer) clearTimeout(cdCancelConfirmTimer);
+          cdCancelConfirmTimer = setTimeout(function() {
+            window.__reservation = null;
+            if (window.__applyReservedHighlights) window.__applyReservedHighlights();
+            if (window.__syncBookingBarCta) window.__syncBookingBarCta();
+            closeCheckout();
+            showCancelToast();
+          }, 2000);
+          return;
+        }
         cdCheckoutCta.classList.add('is-loading');
         if (cdCheckoutSuccessTimer) clearTimeout(cdCheckoutSuccessTimer);
         cdCheckoutSuccessTimer = setTimeout(function() {
           if (!cdCheckoutOpen) return;
           if (cdCheckoutCtaLabel) cdCheckoutCtaLabel.textContent = "You're all set";
+          // Swap the sheet title to confirm the booking succeeded. The
+          // close handler restores it to "Review and confirm" so the
+          // next open starts clean.
+          var successTitleEl = document.getElementById('cd-checkout-title');
+          if (successTitleEl) successTitleEl.textContent = 'Reservation confirmed';
           cdCheckoutCta.classList.remove('is-loading');
           cdCheckoutSheet.classList.add('is-success');
           // Hug the success content: header + 180px centered video + CTA.
@@ -4288,6 +4322,9 @@
       var priceText = priceFinalEl ? priceFinalEl.textContent.trim() : '$30.00';
       document.getElementById('cd-checkout-subtotal').textContent = priceText;
       document.getElementById('cd-checkout-total').textContent = priceText;
+      // Cancel-mode mirror: refund amount uses the same price.
+      var refundEl = document.getElementById('cd-cancel-refund-amount');
+      if (refundEl) refundEl.textContent = priceText;
     }
 
     // Pure CSS-driven morph: every animated property (height, left, right,
@@ -4348,12 +4385,26 @@
       cdCheckoutSheet.classList.add('is-open');
       cdCheckoutSheet.style.height = targetH + 'px';
       // Delay the label swap until the pill has grown wide enough to fit
-      // "Book and Pay" — the closed Book-shape pill is only 100px wide,
-      // which would clip/wrap the longer label until the morph completes.
-      // ~200ms in, the pill is roughly halfway and the text fits.
+      // the longer label — the closed Book-shape pill is only 100px wide,
+      // which would clip/wrap until the morph completes. ~200ms in, the
+      // pill is roughly halfway and the text fits.
       setTimeout(function() {
-        if (cdCheckoutOpen && cdCheckoutCtaLabel) cdCheckoutCtaLabel.textContent = 'Book and Pay';
+        if (!cdCheckoutOpen || !cdCheckoutCtaLabel) return;
+        cdCheckoutCtaLabel.textContent = cdCheckoutSheet.classList.contains('is-cancel-mode')
+          ? 'Confirm and cancel'
+          : 'Book and Pay';
       }, 200);
+    }
+
+    // Open the same sheet but in cancel-reservation mode — different
+    // title, different body content (refund summary + caption), different
+    // CTA copy. Shares the entire morph + close machinery with openCheckout.
+    function openCancelCheckout() {
+      if (cdCheckoutOpen) return;
+      cdCheckoutSheet.classList.add('is-cancel-mode');
+      var titleEl = document.getElementById('cd-checkout-title');
+      if (titleEl) titleEl.textContent = 'Cancel reservation?';
+      openCheckout();
     }
 
     function closeCheckout() {
@@ -4391,6 +4442,10 @@
       // clear the spinner/success state so re-opening starts clean.
       if (cdCheckoutCtaLabel) cdCheckoutCtaLabel.textContent = 'Book';
       cdCheckoutCta.classList.remove('is-loading');
+      // Reset the cancel-mode UI so the next open starts in checkout mode.
+      cdCheckoutSheet.classList.remove('is-cancel-mode');
+      var titleResetEl = document.getElementById('cd-checkout-title');
+      if (titleResetEl) titleResetEl.textContent = 'Review and confirm';
       // Dismissing while in the success state (X, scrim, or "You're
       // all set" CTA) all mean the reservation is committed — capture
       // the reservation so any close path produces the same outcome.
@@ -4412,6 +4467,12 @@
       if (cdCheckoutSuccessTimer) {
         clearTimeout(cdCheckoutSuccessTimer);
         cdCheckoutSuccessTimer = null;
+      }
+      // If the user X-closed during the cancel spinner, abandon the
+      // pending cancellation — they backed out of the confirm step.
+      if (cdCancelConfirmTimer) {
+        clearTimeout(cdCancelConfirmTimer);
+        cdCancelConfirmTimer = null;
       }
       if (cdCheckoutSuccessVideo) {
         try {
@@ -4446,12 +4507,11 @@
 
     if (cdBookingCta) cdBookingCta.addEventListener('click', function() {
       // If the user is currently viewing the reserved slot, the CTA is
-      // showing "Cancel" — tapping it clears the reservation. Otherwise
-      // open checkout.
+      // showing "Cancel" — open the cancel-reservation sheet so the user
+      // can confirm. The actual reservation-clear happens when they tap
+      // "Confirm and cancel" inside the sheet.
       if (currentSlotMatchesReservation()) {
-        window.__reservation = null;
-        if (window.__applyReservedHighlights) window.__applyReservedHighlights();
-        if (window.__syncBookingBarCta) window.__syncBookingBarCta();
+        openCancelCheckout();
         return;
       }
       openCheckout();

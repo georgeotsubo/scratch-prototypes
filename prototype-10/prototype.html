@@ -6,7 +6,7 @@
 <title>Playlist App – Venue Detail Prototype</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;900&display=swap" rel="stylesheet">
 <link href="https://api.mapbox.com/mapbox-gl-js/v3.4.0/mapbox-gl.css" rel="stylesheet">
 <script src="https://api.mapbox.com/mapbox-gl-js/v3.4.0/mapbox-gl.js"></script>
 <link rel="stylesheet" href="prototype.css">
@@ -767,12 +767,21 @@
     <button class="cd-booking-cta" id="cd-booking-cta">Book</button>
   </div>
 
+  <!-- Toast: confirms a cancellation succeeded. Appears just above the
+       booking bar after the spinner completes; auto-dismisses after 2s. -->
+  <div class="cd-toast" id="cd-cancel-toast" role="status" aria-hidden="true">
+    <span class="cd-toast-icon" aria-hidden="true">
+      <svg width="21" height="21" viewBox="0 0 21 21" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M10.1855 20.176C8.8177 20.176 7.52975 19.9139 6.32169 19.3898C5.11364 18.872 4.0494 18.1529 3.12898 17.2325C2.20856 16.3121 1.48628 15.2511 0.962153 14.0494C0.444416 12.8413 0.185547 11.5502 0.185547 10.176C0.185547 8.80811 0.444416 7.52335 0.962153 6.32169C1.48628 5.11364 2.20536 4.0494 3.11939 3.12898C4.03981 2.20856 5.10405 1.48948 6.3121 0.971741C7.52016 0.447611 8.80811 0.185547 10.176 0.185547C11.5438 0.185547 12.8318 0.447611 14.0398 0.971741C15.2543 1.48948 16.3185 2.20856 17.2325 3.12898C18.1529 4.0494 18.8752 5.11364 19.3994 6.32169C19.9235 7.52335 20.1855 8.80811 20.1855 10.176C20.1855 11.5502 19.9235 12.8413 19.3994 14.0494C18.8752 15.2511 18.1529 16.3121 17.2325 17.2325C16.3185 18.1529 15.2575 18.872 14.0494 19.3898C12.8413 19.9139 11.5534 20.176 10.1855 20.176ZM10.1855 17.9804C11.2658 17.9804 12.2757 17.779 13.2153 17.3763C14.1613 16.9737 14.9922 16.4176 15.7081 15.7081C16.424 14.9922 16.9832 14.1645 17.3859 13.2249C17.7886 12.2789 17.99 11.2626 17.99 10.176C17.99 9.09574 17.7854 8.08583 17.3763 7.14624C16.9737 6.20025 16.4144 5.36931 15.6985 4.65343C14.989 3.93754 14.1613 3.37826 13.2153 2.97558C12.2757 2.57289 11.2626 2.37155 10.176 2.37155C9.09574 2.37155 8.08264 2.57289 7.13665 2.97558C6.19705 3.37826 5.36931 3.93754 4.65343 4.65343C3.94394 5.36931 3.38785 6.20025 2.98516 7.14624C2.58887 8.08583 2.39072 9.09574 2.39072 10.176C2.39072 11.2626 2.58887 12.2789 2.98516 13.2249C3.38785 14.1645 3.94713 14.9922 4.66302 15.7081C5.3789 16.4176 6.20664 16.9737 7.14624 17.3763C8.09223 17.779 9.10533 17.9804 10.1855 17.9804ZM9.15007 14.7301C8.96471 14.7301 8.79533 14.6886 8.64192 14.6055C8.49491 14.5224 8.35429 14.401 8.22006 14.2412L6.0053 11.5566C5.82633 11.3329 5.73684 11.106 5.73684 10.8759C5.73684 10.6202 5.82633 10.4029 6.0053 10.2239C6.18427 10.0449 6.39839 9.95544 6.64768 9.95544C6.80108 9.95544 6.9385 9.9874 7.05995 10.0513C7.18139 10.1152 7.30284 10.2207 7.42428 10.3677L9.1309 12.5154L12.7646 6.65726C12.982 6.3121 13.2536 6.13953 13.5796 6.13953C13.8225 6.13953 14.0398 6.21942 14.2316 6.37922C14.4233 6.53901 14.5192 6.74675 14.5192 7.00242C14.5192 7.11108 14.4936 7.22294 14.4425 7.33799C14.3978 7.45304 14.3402 7.5649 14.2699 7.67356L10.0609 14.2316C9.83719 14.5639 9.53358 14.7301 9.15007 14.7301Z" fill="white"/></svg>
+    </span>
+    <span class="cd-toast-message">Your reservation has been canceled</span>
+  </div>
+
   <!-- Checkout scrim + sheet — sibling of booking bar so it anchors to the
        same bottom/left/right and morphs from the booking card's bounds. -->
   <div class="cd-checkout-scrim" id="cd-checkout-scrim"></div>
   <div class="cd-checkout-sheet" id="cd-checkout-sheet" aria-hidden="true">
     <div class="cd-checkout-header">
-      <h2 class="cd-checkout-title">Review and confirm</h2>
+      <h2 class="cd-checkout-title" id="cd-checkout-title">Review and confirm</h2>
       <button class="cd-checkout-close" id="cd-checkout-close" aria-label="Close">
         <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M5 5l10 10M15 5l-10 10" stroke="#020203" stroke-width="2" stroke-linecap="round"/></svg>
       </button>
@@ -784,12 +793,12 @@
         <div class="cd-checkout-instructor" id="cd-checkout-instructor">Carolyn</div>
         <div class="cd-checkout-venue" id="cd-checkout-venue">ID Hot Yoga &middot; Lower East Side</div>
       </div>
-      <div class="cd-checkout-lines">
+      <div class="cd-checkout-lines cd-checkout-mode-checkout">
         <div class="cd-checkout-line"><span>Subtotal</span><span id="cd-checkout-subtotal">$30.00</span></div>
         <div class="cd-checkout-line"><span>Taxes</span><span>$0.00</span></div>
         <div class="cd-checkout-line cd-checkout-line--total"><span>Total</span><span id="cd-checkout-total">$30.00</span></div>
       </div>
-      <div class="cd-checkout-payment">
+      <div class="cd-checkout-payment cd-checkout-mode-checkout">
         <span class="cd-checkout-payment-left">
           <span class="cd-checkout-payment-label">Payment method</span>
           <span class="cd-checkout-payment-card">
@@ -801,11 +810,27 @@
         </span>
         <button type="button" class="cd-checkout-payment-change">Change</button>
       </div>
-      <div class="cd-checkout-cancellation">
+      <div class="cd-checkout-cancellation cd-checkout-mode-checkout">
         <div class="cd-checkout-cancellation-title">Cancellation policy</div>
         <div class="cd-checkout-cancellation-body"><strong id="cd-checkout-cancel-cutoff">Free cancellation until Tue, Mar 3 at 1:00 AM ET.</strong> You must cancel your reservation at least 12 hours prior to the class start time in order to return the credit to your account with no late cancellation fee. Late cancellations with less than 12 hours notice will be assessed a $10 charge to your card. The credit will be returned to your account.</div>
       </div>
-      <p class="cd-checkout-terms">By tapping the button below, I agree to the <a href="#" class="cd-checkout-link">Booking Terms</a> and <a href="#" class="cd-checkout-link">Terms of Service</a> and <a href="#" class="cd-checkout-link">Privacy Policy</a>.</p>
+      <p class="cd-checkout-terms cd-checkout-mode-checkout">By tapping the button below, I agree to the <a href="#" class="cd-checkout-link">Booking Terms</a> and <a href="#" class="cd-checkout-link">Terms of Service</a> and <a href="#" class="cd-checkout-link">Privacy Policy</a>.</p>
+      <div class="cd-cancel-block cd-checkout-mode-cancel">
+        <div class="cd-cancel-line cd-cancel-line--amount">
+          <span class="cd-cancel-label">Refund amount</span>
+          <span class="cd-cancel-amount" id="cd-cancel-refund-amount">$25.00</span>
+        </div>
+        <div class="cd-cancel-line">
+          <span class="cd-cancel-label">Refund to</span>
+          <span class="cd-checkout-payment-card">
+            <span class="cd-checkout-card-mark" aria-label="Visa">
+              <svg width="29" height="20" viewBox="0 0 29 20" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="0.625" y="0.625" width="27.5" height="18.75" rx="2.5" fill="white" stroke="#D9D9D9" stroke-width="1.25"/><path fill-rule="evenodd" clip-rule="evenodd" d="M8.78146 13.5487H7.03977L5.73371 8.49381C5.67172 8.26128 5.5401 8.05572 5.34648 7.95883C4.86329 7.71535 4.33085 7.52158 3.75 7.42386V7.22924H6.55573C6.94296 7.22924 7.23339 7.52158 7.28179 7.8611L7.95944 11.5074L9.70029 7.22924H11.3936L8.78146 13.5487ZM12.3617 13.5487H10.7168L12.0712 7.22924H13.7161L12.3617 13.5487ZM15.8442 8.97992C15.8926 8.63956 16.183 8.44495 16.5219 8.44495C17.0543 8.39608 17.6343 8.49381 18.1183 8.73645L18.4088 7.37584C17.9247 7.18122 17.3923 7.0835 16.9091 7.0835C15.3126 7.0835 14.1509 7.95884 14.1509 9.1737C14.1509 10.0979 14.9738 10.5832 15.5546 10.8755C16.183 11.167 16.425 11.3616 16.3766 11.6531C16.3766 12.0904 15.8926 12.285 15.4094 12.285C14.8286 12.285 14.2477 12.1392 13.7161 11.8958L13.4257 13.2572C14.0065 13.4998 14.6349 13.5976 15.2158 13.5976C17.0059 13.6456 18.1183 12.7711 18.1183 11.4585C18.1183 9.80556 15.8442 9.70867 15.8442 8.97992ZM23.875 13.5487L22.569 7.22924H21.1661C20.8757 7.22924 20.5852 7.42386 20.4884 7.71535L18.0699 13.5487H19.7632L20.1012 12.6253H22.1817L22.3753 13.5487H23.875ZM21.4081 8.93106L21.8913 11.3128H20.5368L21.4081 8.93106Z" fill="#172B85"/></svg>
+            </span>
+            <span class="cd-checkout-card-last4">•••• 4242</span>
+          </span>
+        </div>
+      </div>
+      <p class="cd-cancel-caption cd-checkout-mode-cancel">We&rsquo;ll send the refund to your original payment method. Refunds typically appear in 5&ndash;10 business days.</p>
     </div>
     <video class="cd-checkout-success-video" id="cd-checkout-success-video" width="180" height="180" preload="auto" muted playsinline disablepictureinpicture aria-hidden="true">
       <source src="../images/checkout_2.mp4" type="video/mp4">
