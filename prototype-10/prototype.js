@@ -3070,7 +3070,7 @@
         var sParts = c.time.split(' · ');
         var sTime = sParts[0];
         var sDuration = sParts[1] || '';
-        return '<div class="vd-schedule-card' + (c.disabled ? ' disabled' : '') + '" data-class-idx="' + i + '">'
+        return '<div class="vd-schedule-card' + (c.disabled ? ' disabled' : '') + '" data-class-idx="' + i + '" data-title="' + c.title + '" data-time="' + sTime + '">'
           + '<div class="vd-schedule-top">'
           +   '<span class="vd-schedule-time">' + sTime + ' · ' + c.instructor + '</span>'
           +   (sDuration ? '<span class="vd-schedule-duration">' + sDuration + '</span>' : '')
@@ -3083,6 +3083,7 @@
           + '</div>';
       }).join('');
       scheduleList.innerHTML = html;
+      if (window.__applyReservedHighlights) window.__applyReservedHighlights();
     }
 
     // Delegated click handler — open class detail when a non-disabled card is tapped
@@ -3636,7 +3637,7 @@
           ? '<span class="cd-time-slot-price-final">' + s.price + '</span>'
             + '<span class="cd-time-slot-price-strike">' + s.strikePrice + '</span>'
           : s.price;
-        return '<div class="cd-time-slot' + (s.selected ? ' selected' : '') + '">'
+        return '<div class="cd-time-slot' + (s.selected ? ' selected' : '') + '" data-time="' + s.time + '">'
           +   '<div class="cd-time-slot-row">'
           +     '<div class="cd-time-slot-time">' + s.time + '</div>'
           +     '<div class="cd-time-slot-duration">' + s.duration + '</div>'
@@ -3651,6 +3652,7 @@
       // no-op. Tapping a different card selects it, and copies the date the
       // user was browsing into cdSelectedAbsIdx so the footer reflects the
       // slot's date.
+      if (window.__applyReservedHighlights) window.__applyReservedHighlights();
       slots.querySelectorAll('.cd-time-slot').forEach(function(slot, idx) {
         slot.addEventListener('click', function() {
           if (wasDragging) return;
@@ -3732,10 +3734,12 @@
       cdLastSlot = slot;
       var timeEl = document.getElementById('cd-booking-time');
       var instructorEl = document.getElementById('cd-booking-instructor');
-      var ctaEl = document.getElementById('cd-booking-cta');
       if (timeEl) timeEl.textContent = cdShortDate() + ' · ' + slot.time;
       if (instructorEl) instructorEl.textContent = slot.instructor;
-      if (ctaEl) ctaEl.textContent = 'Book';
+      // CTA label/style is driven by whether the currently-viewed slot
+      // matches the reservation — black "Cancel" for the reserved slot,
+      // red "Book" for any other.
+      if (window.__syncBookingBarCta) window.__syncBookingBarCta();
     }
 
     // Re-render only the date portion of the booking bar — used when the
@@ -4149,11 +4153,67 @@
     // booking call — pure prototype timing.
     var cdCheckoutSuccessTimer = null;
     var cdCheckoutSuccessVideo = document.getElementById('cd-checkout-success-video');
+    // Reservation record drives BOTH the "Reserved · $X" price prefix on
+    // matching time-slot / schedule cards AND the booking-bar CTA state
+    // (black "Cancel" when the currently-viewed class+slot matches the
+    // reservation; default red "Book" otherwise). Cleared when the user
+    // taps Cancel.
+    window.__reservation = null;
+    function currentSlotMatchesReservation() {
+      var r = window.__reservation;
+      if (!r) return false;
+      var p = window.__currentVenuePin;
+      var venueKey = p ? ((p.name || '') + '|' + (p.lat || '') + '|' + (p.lng || '')) : '';
+      if (venueKey !== r.venueKey) return false;
+      var cdTitleEl = document.getElementById('cd-title');
+      if (!cdTitleEl || cdTitleEl.textContent !== r.classTitle) return false;
+      if (!cdLastSlot || cdLastSlot.time !== r.slotTime) return false;
+      return true;
+    }
+    window.__syncBookingBarCta = function() {
+      if (!cdBookingCta) return;
+      if (currentSlotMatchesReservation()) {
+        cdBookingCta.textContent = 'Cancel';
+        cdBookingCta.classList.add('is-reserved');
+      } else {
+        cdBookingCta.textContent = 'Book';
+        cdBookingCta.classList.remove('is-reserved');
+      }
+    };
+    window.__applyReservedHighlights = function() {
+      var r = window.__reservation;
+      document.querySelectorAll('.cd-time-slot.is-reserved, .vd-schedule-card.is-reserved').forEach(function(el) {
+        el.classList.remove('is-reserved');
+      });
+      if (!r) return;
+      var p = window.__currentVenuePin;
+      var venueKey = p ? ((p.name || '') + '|' + (p.lat || '') + '|' + (p.lng || '')) : '';
+      if (venueKey !== r.venueKey) return;
+      // Class-detail time slots only highlight when the currently-viewed
+      // class is the reserved one (title check) — otherwise the same
+      // time slot on a sibling class would falsely show as reserved.
+      var cdTitleEl = document.getElementById('cd-title');
+      if (cdTitleEl && cdTitleEl.textContent === r.classTitle) {
+        document.querySelectorAll('.cd-time-slot').forEach(function(slot) {
+          if (slot.dataset.time === r.slotTime) slot.classList.add('is-reserved');
+        });
+      }
+      // Venue-detail schedule cards match on title + time.
+      document.querySelectorAll('.vd-schedule-card').forEach(function(card) {
+        if (card.dataset.title === r.classTitle && card.dataset.time === r.slotTime) {
+          card.classList.add('is-reserved');
+        }
+      });
+    };
     if (cdCheckoutCta) {
       cdCheckoutCta.addEventListener('click', function() {
         if (!cdCheckoutOpen) return;
-        // Ignore taps once we're already in the success state.
-        if (cdCheckoutSheet.classList.contains('is-success')) return;
+        // Success-state tap: close the sheet. closeCheckout detects the
+        // is-success class on its own and captures the reservation.
+        if (cdCheckoutSheet.classList.contains('is-success')) {
+          closeCheckout();
+          return;
+        }
         cdCheckoutCta.classList.add('is-loading');
         if (cdCheckoutSuccessTimer) clearTimeout(cdCheckoutSuccessTimer);
         cdCheckoutSuccessTimer = setTimeout(function() {
@@ -4331,7 +4391,24 @@
       // clear the spinner/success state so re-opening starts clean.
       if (cdCheckoutCtaLabel) cdCheckoutCtaLabel.textContent = 'Book';
       cdCheckoutCta.classList.remove('is-loading');
+      // Dismissing while in the success state (X, scrim, or "You're
+      // all set" CTA) all mean the reservation is committed — capture
+      // the reservation so any close path produces the same outcome.
+      if (cdCheckoutSheet.classList.contains('is-success')) {
+        var resPin = window.__currentVenuePin;
+        var resTitleEl = document.getElementById('cd-title');
+        window.__reservation = {
+          venueKey: resPin ? ((resPin.name || '') + '|' + (resPin.lat || '') + '|' + (resPin.lng || '')) : '',
+          classTitle: resTitleEl ? resTitleEl.textContent : '',
+          slotTime: cdLastSlot ? cdLastSlot.time : ''
+        };
+        if (window.__applyReservedHighlights) window.__applyReservedHighlights();
+      }
       cdCheckoutSheet.classList.remove('is-success');
+      // Sync the booking-bar CTA against the (possibly just-committed)
+      // reservation — black "Cancel" if the currently-viewed slot is
+      // the reserved one, red "Book" otherwise.
+      if (window.__syncBookingBarCta) window.__syncBookingBarCta();
       if (cdCheckoutSuccessTimer) {
         clearTimeout(cdCheckoutSuccessTimer);
         cdCheckoutSuccessTimer = null;
@@ -4367,7 +4444,18 @@
       cdCheckoutSheet.addEventListener('transitionend', cdCheckoutEndHandler);
     }
 
-    if (cdBookingCta) cdBookingCta.addEventListener('click', openCheckout);
+    if (cdBookingCta) cdBookingCta.addEventListener('click', function() {
+      // If the user is currently viewing the reserved slot, the CTA is
+      // showing "Cancel" — tapping it clears the reservation. Otherwise
+      // open checkout.
+      if (currentSlotMatchesReservation()) {
+        window.__reservation = null;
+        if (window.__applyReservedHighlights) window.__applyReservedHighlights();
+        if (window.__syncBookingBarCta) window.__syncBookingBarCta();
+        return;
+      }
+      openCheckout();
+    });
     if (cdCheckoutCloseBtn) cdCheckoutCloseBtn.addEventListener('click', closeCheckout);
     if (cdCheckoutScrim) cdCheckoutScrim.addEventListener('click', closeCheckout);
     // If class detail closes while checkout is open, dismiss checkout too.

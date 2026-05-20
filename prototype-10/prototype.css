@@ -810,7 +810,7 @@
     width: 22px;
     height: 22px;
     border-radius: 50%;
-    background: linear-gradient(to bottom, #FF5858, #E10E0E);
+    background: linear-gradient(to bottom, #FF5858, #CA0D0D);
     border: 3px solid white;
     box-shadow: 0 3px 3px rgba(0,0,0,0.25);
   }
@@ -818,7 +818,7 @@
     width: 28px;
     height: 28px;
     border-radius: 50%;
-    background: linear-gradient(to bottom, #FF5858, #E10E0E);
+    background: linear-gradient(to bottom, #FF5858, #CA0D0D);
     border: 3px solid white;
     box-shadow: 0 3px 3px rgba(0,0,0,0.25);
     display: flex;
@@ -3114,6 +3114,16 @@
     text-decoration: line-through;
     font-weight: 400;
   }
+  /* Reserved state: prepend "Reserved · " in secondary grey/regular weight
+     to the price wrapper. Applied to both class-detail time-slots and
+     venue-detail schedule cards via .is-reserved on the card root. */
+  .cd-time-slot.is-reserved .cd-time-slot-price::before,
+  .vd-schedule-card.is-reserved .vd-schedule-price::before,
+  .vd-schedule-card.is-reserved .vd-price-plain::before {
+    content: 'Reserved · ';
+    color: #696c77;
+    font-weight: 400;
+  }
 
   /* Class detail header simplification: when class detail lives inside the
      venue sheet, the venue link and intro chip are redundant (the user came
@@ -3697,6 +3707,15 @@
   .cd-booking-cta:active {
     background: #c00b0b;
   }
+  /* Reserved state: after a successful booking the bar CTA becomes a
+     black "Cancel" pill. Tapping it un-reserves and restores the
+     default red Book state. */
+  .cd-booking-cta.is-reserved {
+    background: #020203;
+  }
+  .cd-booking-cta.is-reserved:active {
+    background: #1a1a1c;
+  }
 
   /* Checkout: morph-in-place from the booking bar. Shares the same
      bottom/left/right/border-radius geometry as .cd-booking-bar so the
@@ -3835,16 +3854,21 @@
     left: 50%;
     width: 180px;
     height: 180px;
-    transform: translate(-50%, -50%);
+    /* translate keeps the video centered around (top:50%, left:50%);
+       scale drives the success-state pop-in. */
+    transform: translate(-50%, -50%) scale(0.6);
     opacity: 0;
     pointer-events: none;
-    transition: opacity 0.25s ease;
+    transition: opacity 0.25s ease, transform 0.25s ease;
     object-fit: contain;
     background: transparent;
   }
   .cd-checkout-sheet.is-success .cd-checkout-success-video {
     opacity: 1;
-    transition: opacity 0.25s ease 0.18s;
+    transform: translate(-50%, -50%) scale(1);
+    transition:
+      opacity 0.25s ease 0.18s,
+      transform 0.4s cubic-bezier(0.22, 1, 0.36, 1) 0.18s;
   }
   .cd-checkout-info {
     display: flex;
