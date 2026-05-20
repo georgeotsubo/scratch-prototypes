@@ -767,8 +767,8 @@
   }
 
   /* old tab bar styles removed — see new .tab-bar below */
-  .tab-item.active svg { color: #000; }
-  .tab-item.active span { color: #000; }
+  .tab-item.active svg { color: #E10E0E; }
+  .tab-item.active span { color: #E10E0E; }
   .tab-item:not(.active) svg { color: #000; }
   .tab-item:not(.active) span { color: #000; }
 
@@ -807,8 +807,8 @@
     border: none !important;
   }
   .pin-dot {
-    width: 22px;
-    height: 22px;
+    width: 24px;
+    height: 24px;
     border-radius: 50%;
     background: linear-gradient(to bottom, #FF5858, #CA0D0D);
     border: 3px solid white;
@@ -951,7 +951,10 @@
     transform: translateX(-50%);
     width: 349px;
     height: 62px;
-    background: white;
+    background: rgba(255,255,255,0.55);
+    -webkit-backdrop-filter: blur(20px) saturate(1.6);
+    backdrop-filter: blur(20px) saturate(1.6);
+    border: 1px solid rgba(255,255,255,0.5);
     border-radius: 100px;
     box-shadow: 0 4px 20px rgba(0,0,0,0.15);
     display: flex;
@@ -1332,7 +1335,10 @@
     transform: translateX(-50%);
     width: 349px;
     height: 62px;
-    background: white;
+    background: rgba(255,255,255,0.4);
+    -webkit-backdrop-filter: blur(20px) saturate(1.6);
+    backdrop-filter: blur(20px) saturate(1.6);
+    border: 1px solid rgba(255,255,255,0.5);
     border-radius: 100px;
     box-shadow: 0 4px 20px rgba(0,0,0,0.15);
     display: flex;
