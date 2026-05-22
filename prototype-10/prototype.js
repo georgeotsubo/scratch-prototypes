@@ -154,6 +154,7 @@
         openVenueDetail(i);
       });
     });
+    updateClusterSource();
     scheduleWaterCheck();
     populateVenueList(screenId, places, search, location);
   }
@@ -593,14 +594,226 @@
   function clearMarkers() {
     pinMarkers.forEach(m => m.remove());
     pinMarkers = [];
+    // Also empty the GeoJSON source feeding the cluster layer. We empty
+    // explicitly (not via updateClusterSource) because callers like
+    // initDefaultMap clear markers BEFORE currentPins is overwritten — using
+    // updateClusterSource here would repopulate with the stale prior set.
+    const src = map.getSource && map.getSource(CLUSTER_SOURCE_ID);
+    if (src) src.setData({ type: 'FeatureCollection', features: [] });
+  }
+
+  // ========== CLUSTERING ==========
+  // Hybrid: GeoJSON source w/ cluster:true feeds a Mapbox circle+text layer for
+  // cluster bubbles, while individual pins stay as HTML `mapboxgl.Marker`s so
+  // we keep our custom teardrop SVG + click handler. We hide markers whose
+  // features are currently inside a cluster, then show them when zoomed in
+  // past the cluster's expansion zoom.
+  const CLUSTER_SOURCE_ID = 'pins';
+  const CLUSTER_LAYER_ID = 'pin-clusters';
+  const CLUSTER_COUNT_LAYER_ID = 'pin-cluster-count';
+
+  function pinsToGeoJSON(pins) {
+    return {
+      type: 'FeatureCollection',
+      features: pins.map((p, i) => ({
+        type: 'Feature',
+        properties: { idx: i },
+        geometry: { type: 'Point', coordinates: [p.lng, p.lat] }
+      }))
+    };
+  }
+
+  function updateClusterSource() {
+    if (!map || !map.getSource) return;
+    const src = map.getSource(CLUSTER_SOURCE_ID);
+    if (!src) return; // not initialized yet — displayPlaces may run before map.on('load')
+    src.setData(pinsToGeoJSON(currentPins));
+  }
+
+  // Show only markers whose underlying feature is not inside a cluster at the
+  // current zoom. Re-queried on moveend + after source data changes.
+  // Geometric constants for cluster + pin SVGs — used by syncMarkerVisibility
+  // to compute screen-space overlap. The red bubble inside each SVG sits at
+  // a known vertical offset from the icon center, and Mapbox places the icon
+  // CENTER at the lng/lat (icon-anchor: 'center', HTML marker default).
+  //
+  // The canvases were enlarged from the original Figma exports to give the
+  // drop-shadow blur room to fall off cleanly (the old 52×59 / 37×48 sizes
+  // clipped the shadow at the canvas edge, producing visible rectangles).
+  // The artwork was translated inside the enlarged canvas, so the bubble
+  // offset is recomputed below.
+  // pin-cluster.svg (80×80): red bubble cx=40.375, cy=26 → offset from
+  // center (40, 40) is (~0, -14); red bubble radius ~14.
+  // pin-default.svg (64×64): red bubble cx=31.839, cy=24 → offset from
+  // center (32, 32) is (~0, -8); red bubble radius ~10.
+  const CLUSTER_BUBBLE_OFFSET_Y = -14;
+  const CLUSTER_BUBBLE_R = 14;
+  const PIN_BUBBLE_OFFSET_Y = -8;
+  const PIN_BUBBLE_R = 10;
+  const BUBBLE_OVERLAP_R = CLUSTER_BUBBLE_R + PIN_BUBBLE_R;
+
+  function syncMarkerVisibility() {
+    if (!map.getSource(CLUSTER_SOURCE_ID)) return;
+    const unclustered = map.querySourceFeatures(CLUSTER_SOURCE_ID, {
+      filter: ['!', ['has', 'point_count']]
+    });
+    const visibleIdxs = new Set();
+    unclustered.forEach(f => visibleIdxs.add(f.properties.idx));
+
+    // Mapbox layers render BELOW HTML markers (markers are DOM siblings of
+    // the map canvas), so without this an unclustered pin sitting near a
+    // cluster bubble visually pokes out from under the cluster. Compute each
+    // cluster's red-bubble screen center and hide any marker whose own red
+    // bubble would overlap — effectively "cluster appears in front."
+    const clusters = map.queryRenderedFeatures({ layers: [CLUSTER_LAYER_ID] });
+    const clusterBubbles = clusters.map(c => {
+      const p = map.project(c.geometry.coordinates);
+      return { x: p.x, y: p.y + CLUSTER_BUBBLE_OFFSET_Y };
+    });
+
+    pinMarkers.forEach((m, i) => {
+      let show = visibleIdxs.has(i);
+      if (show && clusterBubbles.length) {
+        const p = map.project(m.getLngLat());
+        const bx = p.x, by = p.y + PIN_BUBBLE_OFFSET_Y;
+        for (let c of clusterBubbles) {
+          const dx = c.x - bx, dy = c.y - by;
+          if (Math.sqrt(dx * dx + dy * dy) < BUBBLE_OVERLAP_R) {
+            show = false;
+            break;
+          }
+        }
+      }
+      m.getElement().style.display = show ? '' : 'none';
+    });
+  }
+
+  // Rasterize an SVG (loaded via URL) into a Mapbox-compatible image and
+  // register it under `name`. Renders at 2x pixel ratio so the icon stays
+  // crisp on retina displays. No-op if already registered.
+  function loadSvgAsMapImage(name, url, w, h) {
+    if (map.hasImage(name)) return;
+    const img = new Image(w, h);
+    img.onload = () => {
+      if (map.hasImage(name)) return;
+      const pr = 2;
+      const c = document.createElement('canvas');
+      c.width = w * pr;
+      c.height = h * pr;
+      c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+      const data = c.getContext('2d').getImageData(0, 0, c.width, c.height);
+      map.addImage(name, data, { pixelRatio: pr });
+      // Force a redraw so any symbol layer waiting on this icon paints
+      // immediately instead of after the next mapbox tick.
+      if (map.getLayer(CLUSTER_LAYER_ID)) map.triggerRepaint();
+    };
+    img.src = url;
+  }
+
+  function initClusterLayer() {
+    if (map.getSource(CLUSTER_SOURCE_ID)) return;
+    map.addSource(CLUSTER_SOURCE_ID, {
+      type: 'geojson',
+      data: { type: 'FeatureCollection', features: [] },
+      cluster: true,
+      clusterMaxZoom: 14, // pins individualize at zoom > 14
+      clusterRadius: 70   // wider net → more aggregation, fewer dangling pins
+    });
+    // Load the cluster artwork as a Mapbox image. Drop shadow is baked
+    // into the SVG, so no separate shadow layer is needed.
+    loadSvgAsMapImage('cluster-icon', PIN_CLUSTER_URL, PIN_CLUSTER_W, PIN_CLUSTER_H);
+    // Cluster bubble — single symbol layer using the Figma-exported icon.
+    map.addLayer({
+      id: CLUSTER_LAYER_ID,
+      type: 'symbol',
+      source: CLUSTER_SOURCE_ID,
+      filter: ['has', 'point_count'],
+      layout: {
+        'icon-image': 'cluster-icon',
+        'icon-size': 1,
+        'icon-allow-overlap': true,
+        'icon-ignore-placement': true
+        // icon-anchor defaults to 'center', so the icon's center sits at
+        // the lng/lat. The red bubble inside the SVG is ~15.5px above
+        // center; the count text below uses text-translate to land on it.
+      }
+    });
+    // Count label — translated up so the digits land on the red bubble
+    // (CLUSTER_BUBBLE_OFFSET_Y above the icon center / lng/lat).
+    map.addLayer({
+      id: CLUSTER_COUNT_LAYER_ID,
+      type: 'symbol',
+      source: CLUSTER_SOURCE_ID,
+      filter: ['has', 'point_count'],
+      layout: {
+        'text-field': ['get', 'point_count_abbreviated'],
+        'text-font': ['DIN Pro Medium', 'Arial Unicode MS Bold'],
+        'text-size': 13,
+        'text-allow-overlap': true,
+        'text-ignore-placement': true
+      },
+      paint: {
+        'text-color': '#ffffff',
+        'text-translate': [0, CLUSTER_BUBBLE_OFFSET_Y]
+      }
+    });
+    // Click a cluster → ease in to the zoom level at which it expands.
+    map.on('click', CLUSTER_LAYER_ID, function(e) {
+      const features = map.queryRenderedFeatures(e.point, { layers: [CLUSTER_LAYER_ID] });
+      if (!features.length) return;
+      const clusterId = features[0].properties.cluster_id;
+      const src = map.getSource(CLUSTER_SOURCE_ID);
+      src.getClusterExpansionZoom(clusterId, function(err, zoom) {
+        if (err) return;
+        map.easeTo({
+          center: features[0].geometry.coordinates,
+          zoom: zoom,
+          duration: 500
+        });
+      });
+    });
+    map.on('mouseenter', CLUSTER_LAYER_ID, () => { map.getCanvas().style.cursor = 'pointer'; });
+    map.on('mouseleave', CLUSTER_LAYER_ID, () => { map.getCanvas().style.cursor = ''; });
+    // Resync HTML marker visibility whenever the rendered cluster set changes.
+    // - `idle` is the most reliable signal — fires only after all tile
+    //   workers (including the clustering supercluster pass) have settled.
+    //   Without this the FIRST sync after initial data fetch fires too
+    //   early: `sourcedata` reports the source as loaded, but
+    //   `querySourceFeatures` still returns an empty unclustered set, so
+    //   every marker would be hidden until the user pans.
+    // - `moveend` is kept for snappier feedback while panning (idle waits
+    //   for tile loads, which can lag a beat behind the pan settling).
+    map.on('idle', syncMarkerVisibility);
+    map.on('moveend', syncMarkerVisibility);
   }
 
   const VENUE_PIN_SVG = '<svg width="58" height="62" viewBox="0 0 58 62" fill="none" xmlns="http://www.w3.org/2000/svg"><g filter="url(#filter0_d_4995_23746)"><path d="M42 23C42 30.1797 36.1797 36 29 36C21.8203 36 16 30.1797 16 23C16 15.8203 21.8203 10 29 10C36.1797 10 42 15.8203 42 23Z" fill="white"/><path d="M27.1274 38.7907C27.8453 39.7676 29.3048 39.7676 30.0227 38.7907L37.3637 28.8003C38.2355 27.6139 37.3883 25.9401 35.9161 25.9401H21.2341C19.7618 25.9401 18.9146 27.6139 19.7864 28.8003L27.1274 38.7907Z" fill="white"/><circle cx="29" cy="23" r="10" fill="url(#paint0_linear_4995_23746)"/><circle cx="29" cy="23" r="3" fill="white"/></g><defs><filter id="filter0_d_4995_23746" x="0" y="0" width="58" height="61.5234" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/><feOffset dy="6"/><feGaussianBlur stdDeviation="8"/><feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.14 0"/><feBlend mode="normal" in2="BackgroundImageFix" result="effect1_dropShadow_4995_23746"/><feBlend mode="normal" in="SourceGraphic" in2="effect1_dropShadow_4995_23746" result="shape"/></filter><linearGradient id="paint0_linear_4995_23746" x1="29" y1="13" x2="29" y2="33" gradientUnits="userSpaceOnUse"><stop stop-color="#FF5858"/><stop offset="1" stop-color="#E10E0E"/></linearGradient></defs></svg>';
 
+  // Pin / cluster artwork (Figma-exported). Same family — clusters are the
+  // larger version with room for a count overlay; default is for individual
+  // venues. Both include their own drop shadow inside the SVG so there's no
+  // separate shadow layer in the map.
+  const PIN_DEFAULT_URL = 'figma-screens/pin-default.svg';
+  const PIN_CLUSTER_URL = 'figma-screens/pin-cluster.svg';
+  // Natural intrinsic sizes (must match the SVG width/height attributes).
+  // Canvases were padded out from the original Figma exports (37×48 / 52×59)
+  // so the heavy drop-shadow blur has room to fall off without clipping at
+  // the canvas edge. Artwork is translated inside the padded canvas.
+  const PIN_DEFAULT_W = 64, PIN_DEFAULT_H = 64;
+  const PIN_CLUSTER_W = 80, PIN_CLUSTER_H = 80;
+
   function createPinElement() {
+    // Each marker uses an <img> (not inline SVG) so the SVG's filter IDs
+    // are scoped to the standalone image document — multiple inline copies
+    // would otherwise collide on `filter0_d_*` IDs and render incorrectly.
     const el = document.createElement('div');
     el.className = 'playlist-pin';
-    el.innerHTML = VENUE_PIN_SVG;
+    const img = document.createElement('img');
+    img.src = PIN_DEFAULT_URL;
+    img.width = PIN_DEFAULT_W;
+    img.height = PIN_DEFAULT_H;
+    img.draggable = false;
+    el.appendChild(img);
     return el;
   }
 
@@ -1000,6 +1213,7 @@
         }
       } catch(e) { /* layer may not support property */ }
     }
+    initClusterLayer();
     initDefaultMap(40.7380, -73.9855, DEFAULT_MAP_ZOOM, 'Manhattan');
     document.querySelectorAll('.map-nav-btn').forEach(b => b.classList.add('active'));
   });
@@ -3473,7 +3687,6 @@
               slotEls.forEach(function(s) { s.classList.remove('selected'); });
             }
           }
-          scrollCdTimeSlotsToTop();
         });
       });
       // Scroll to the week containing the day the user is viewing.
@@ -3740,19 +3953,23 @@
     // the slot.
     var cdLastSlot = null;
 
-    // Build "Mar 1" from the currently selected date-picker offset.
+    // Build "Tue, Mar 1" from the currently selected date-picker offset.
     function cdShortDate() {
       var date = new Date();
       date.setDate(date.getDate() + (cdSelectedAbsIdx || 0));
+      var dayShort = date.toLocaleDateString('en-US', { weekday: 'short' });
       var monthShort = date.toLocaleDateString('en-US', { month: 'short' });
-      return monthShort + ' ' + date.getDate();
+      return dayShort + ', ' + monthShort + ' ' + date.getDate();
     }
 
     function updateBookingBar(slot) {
       cdLastSlot = slot;
+      // Top row: "Tue, Mar 1 · 2:00 PM" (datetime only — no instructor).
       var timeEl = document.getElementById('cd-booking-time');
-      var instructorEl = document.getElementById('cd-booking-instructor');
       if (timeEl) timeEl.textContent = cdShortDate() + ' · ' + slot.time;
+      // Bottom row: instructor sits next to the price as a separator-prefixed
+      // suffix ("$25.00 $35 · Regina N.").
+      var instructorEl = document.getElementById('cd-booking-instructor');
       if (instructorEl) instructorEl.textContent = slot.instructor;
       // CTA label/style is driven by whether the currently-viewed slot
       // matches the reservation — black "Cancel" for the reserved slot,
@@ -4098,6 +4315,7 @@
             var tabsRect = tabsEl.getBoundingClientRect();
             window.__cdPinOffset = tabsRect.top - scrollRect.top - 80;
           }
+          if (window.__fitCdActivePanelHeight) window.__fitCdActivePanelHeight();
           // Cache the scroll offset where the class title leaves the viewport
           if (window.__cacheCdTitleThreshold) window.__cacheCdTitleThreshold();
         });
@@ -4456,17 +4674,21 @@
       // bar's integer-rounded height shows up as a 1px jitter at the end
       // of the close.
       var targetH = Math.round(cdBookingBar.getBoundingClientRect().height) || 130;
-      // Mirror the bar's price + meta into the sheet's mini-summary so the
-      // sheet's end-of-morph visual matches the bar exactly.
+      // Mirror the bar's datetime + price-row into the sheet's mini-summary
+      // so the sheet's end-of-morph visual matches the bar exactly.
+      // - mini-meta gets the datetime (bold black, top row)
+      // - mini-price gets the price HTML (preserves strike/final spans)
+      // - mini-instructor gets the instructor name (gray, suffix on the
+      //   bottom row after the "·" separator)
       var miniPrice = document.getElementById('cd-mini-price');
       var miniMeta = document.getElementById('cd-mini-meta');
+      var miniInstr = document.getElementById('cd-mini-instructor');
       var barPriceEl = document.getElementById('cd-booking-price');
       var barTimeEl = document.getElementById('cd-booking-time');
       var barInstrEl = document.getElementById('cd-booking-instructor');
       if (miniPrice && barPriceEl) miniPrice.innerHTML = barPriceEl.innerHTML;
-      if (miniMeta && barTimeEl && barInstrEl) {
-        miniMeta.textContent = barTimeEl.textContent + ' · ' + barInstrEl.textContent;
-      }
+      if (miniMeta && barTimeEl) miniMeta.textContent = barTimeEl.textContent;
+      if (miniInstr && barInstrEl) miniInstr.textContent = barInstrEl.textContent;
       cdCheckoutSheet.classList.add('is-collapsing');
       cdCheckoutSheet.classList.remove('is-open');
       cdCheckoutScrim.classList.remove('is-visible');
@@ -4622,31 +4844,81 @@
       }
     }
 
+    // Sizes the currently active panel just-tall-enough so that scrollTop can
+    // reach __cdPinOffset (enabling sticky tab pin), but no taller — short
+    // schedules with only a few slots otherwise scroll into a lot of empty
+    // grey space below the last slot.
+    function fitCdActivePanelHeight() {
+      var active = classDetailEl.querySelector('.cd-panel.active');
+      if (!active) return;
+      active.style.minHeight = '';
+      var pinOffset = window.__cdPinOffset || 0;
+      if (pinOffset <= 0) return;
+      var ch = classDetailScroll.clientHeight;
+      var sh = classDetailScroll.scrollHeight;
+      var required = pinOffset + ch;
+      if (sh < required) {
+        var currentH = active.getBoundingClientRect().height;
+        active.style.minHeight = Math.ceil(currentH + (required - sh)) + 'px';
+      }
+    }
+    window.__fitCdActivePanelHeight = fitCdActivePanelHeight;
+
+    // Animate classDetailScroll.scrollTop from current to target with an
+    // ease-out cubic. Cancels any in-flight tab-switch scroll animation.
+    // Any user-initiated scroll (wheel/touch) aborts the animation so the
+    // user can grab the scroll mid-glide.
+    var cdTabScrollRaf = null;
+    function cancelCdTabScroll() {
+      if (cdTabScrollRaf) {
+        cancelAnimationFrame(cdTabScrollRaf);
+        cdTabScrollRaf = null;
+      }
+    }
+    classDetailScroll.addEventListener('wheel', cancelCdTabScroll, { passive: true });
+    classDetailScroll.addEventListener('touchstart', cancelCdTabScroll, { passive: true });
+    classDetailScroll.addEventListener('mousedown', cancelCdTabScroll);
+    function smoothScrollCdTo(target, duration) {
+      cancelCdTabScroll();
+      var start = classDetailScroll.scrollTop;
+      var delta = target - start;
+      if (Math.abs(delta) < 1) {
+        classDetailScroll.scrollTop = target;
+        return;
+      }
+      var startTime = performance.now();
+      var d = duration || 360;
+      function step(now) {
+        var t = Math.min(1, (now - startTime) / d);
+        var eased = 1 - Math.pow(1 - t, 3);
+        classDetailScroll.scrollTop = start + delta * eased;
+        if (t < 1) {
+          cdTabScrollRaf = requestAnimationFrame(step);
+        } else {
+          cdTabScrollRaf = null;
+        }
+      }
+      cdTabScrollRaf = requestAnimationFrame(step);
+    }
+
     function activateCdTab(tab) {
       cdTabs.forEach(function(t) { t.classList.toggle('active', t === tab); });
       moveCdIndicator(tab);
       var name = tab.dataset.cdtab;
       cdPanels.forEach(function(p) { p.classList.toggle('active', p.dataset.cdpanel === name); });
-      // Snap scroll back to the pin so the user always lands at the top of
-      // the incoming tab. Reset to 0 first to unstick the tabs — otherwise
-      // their sticky position pins them at top:80 and the rect-based
-      // measurement just echoes the current scrollTop. Defer the measurement
-      // to next frame so the panel display:flex/none swap has actually
-      // committed layout (otherwise tabsRect reflects the previous panel's
-      // size and newPinOffset is wrong).
-      var tabsEl = classDetailEl.querySelector('.cd-tabs');
-      if (tabsEl) {
-        classDetailScroll.scrollTop = 0;
-        requestAnimationFrame(function() {
-          var scrollRect = classDetailScroll.getBoundingClientRect();
-          var tabsRect = tabsEl.getBoundingClientRect();
-          var newPinOffset = tabsRect.top - scrollRect.top - 80;
-          window.__cdPinOffset = newPinOffset;
-          if (newPinOffset > 0) {
-            classDetailScroll.scrollTop = newPinOffset;
-          }
-        });
-      }
+      // Animate scroll FROM the current position TO the cached pin offset
+      // (instead of two instant snaps via scrollTop=0 + scrollTop=pinOffset).
+      // Panel content appears instantly under the moving scroll — no fade.
+      // Deferred to next frame so the panel display: none → flex swap has
+      // committed layout before we fit the panel's min-height.
+      requestAnimationFrame(function() {
+        fitCdActivePanelHeight();
+        var pinOffset = window.__cdPinOffset || 0;
+        if (pinOffset > 0) {
+          var maxScroll = classDetailScroll.scrollHeight - classDetailScroll.clientHeight;
+          smoothScrollCdTo(Math.min(pinOffset, Math.max(0, maxScroll)), 360);
+        }
+      });
       // Reset horizontal scroll on review carousels so each tab opens cleanly
       classDetailEl.querySelectorAll('.cd-review-cards').forEach(function(s) { s.scrollLeft = 0; });
     }

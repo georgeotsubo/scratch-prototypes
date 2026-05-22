@@ -805,14 +805,21 @@
   .playlist-pin {
     background: none !important;
     border: none !important;
+    /* No explicit size — the child element (SVG <img> for venue pins,
+       .user-location-dot for the blue dot, inline SVG for location pin)
+       supplies its own intrinsic dimensions. The default pin SVG is 37×48
+       with its tip at y≈28 (rest is drop shadow). Mapbox markers default
+       to a center anchor, so the tip lands a few pixels below the actual
+       lng/lat — intentional, makes the pin look like it "rests on" the
+       location with its shadow on the ground. */
+    cursor: pointer;
+    line-height: 0; /* prevent inline-image whitespace from inflating the box */
   }
-  .pin-dot {
-    width: 24px;
-    height: 24px;
-    border-radius: 50%;
-    background: linear-gradient(to bottom, #FF5858, #CA0D0D);
-    border: 3px solid white;
-    box-shadow: 0 3px 3px rgba(0,0,0,0.25);
+  .playlist-pin img {
+    display: block;
+    pointer-events: none; /* clicks bubble up to .playlist-pin's click handler */
+    -webkit-user-drag: none;
+    user-select: none;
   }
   .pin-dot-numbered {
     width: 28px;
@@ -3304,13 +3311,13 @@
     display: flex;
     flex-direction: column;
     gap: 40px;
-    animation: cd-panel-fade 200ms cubic-bezier(.25,.46,.45,.94);
-    /* Guarantee enough scrollable height so the tab-switch pin scroll can
-       reach `__cdPinOffset` (otherwise scrollTop gets clamped and the
-       sticky cd-tabs / collapsed nav state never engage). The Schedule
-       panel has very little intrinsic content (date picker + a handful of
-       time slots), so we lean on a tall min-height. */
-    min-height: 800px;
+    /* Min-height is set dynamically in JS (`fitCdActivePanelHeight`) — just
+       enough to allow the tab-pin scroll to land but not so much that the
+       user can scroll into empty space below a short time-slot list. */
+    /* Content is intentionally NOT animated on tab switch — only the scroll
+       position animates (see `smoothScrollCdTo` in activateCdTab). The user
+       perception is "the view glides to the pin" while the new panel's
+       contents are simply already there. */
   }
   @keyframes cd-panel-fade {
     from { opacity: 0; }
@@ -3776,16 +3783,47 @@
     flex-direction: column;
     align-items: flex-start;
     min-width: 0;
-    gap: 0;
+    gap: 2px;
   }
-  .cd-booking-price {
+  /* Top row: bold black datetime — "Tue, Mar 1 · 2:00 PM" */
+  /* Booking bar AND checkout-sheet mini-summary share the same type stack
+     so the morph endpoint matches the bar pixel-for-pixel — drifted sizes
+     read as a visible font flicker at the end of the close animation. */
+  .cd-booking-datetime,
+  .cd-mini-meta {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 20px;
+    color: #020203;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+  }
+  /* Bottom row: green final price, optional strike, then "· {instructor}" */
+  .cd-booking-price-row,
+  .cd-mini-price-row {
     display: flex;
     align-items: baseline;
     gap: 4px;
     font-family: 'DM Sans', sans-serif;
-    font-size: 16px;
-    font-weight: 700;
-    line-height: 24px;
+    font-size: 15px;
+    font-weight: 500;
+    line-height: 20px;
+    color: #696c77;
+    max-width: 100%;
+    overflow: hidden;
+  }
+  .cd-booking-price,
+  .cd-mini-price {
+    display: flex;
+    align-items: baseline;
+    gap: 4px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    font-weight: 600;
+    line-height: 20px;
     color: #020203;
   }
   .cd-booking-price-strike {
@@ -3800,18 +3838,20 @@
   }
   .cd-booking-price-plain {
     color: #020203;
-    font-weight: 700;
-  }
-  .cd-booking-meta {
-    font-family: 'DM Sans', sans-serif;
     font-size: 14px;
-    font-weight: 500;
-    line-height: 20px;
-    color: #020203;
+    font-weight: 600;
+  }
+  .cd-booking-price-sep,
+  .cd-mini-price-sep {
+    color: #696c77;
+  }
+  .cd-booking-instructor,
+  .cd-mini-instructor {
+    color: #696c77;
+    font-size: 14px;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    max-width: 100%;
   }
   .cd-booking-cta {
     flex-shrink: 0;
@@ -4394,22 +4434,22 @@
   }
   /* Compact info inside the sheet that mirrors .cd-booking-info. Hidden
      while the sheet is open; fades in during the close so the sheet's
-     end-of-morph state visually matches the bar (price + meta on the left)
-     instead of showing an empty white card. The bar takes over once the
-     sheet hides — both display the same content in the same position so
-     the swap is invisible. */
+     end-of-morph state visually matches the bar (meta on top, price below
+     — same order as .cd-booking-info) instead of showing an empty white
+     card. The bar takes over once the sheet hides — both display the
+     same content in the same position so the swap is invisible. */
   .cd-checkout-mini-summary {
     position: absolute;
     /* 20 matches the bar's padding-left so the swap from mini-summary to
        the actual booking bar's info doesn't shift content horizontally. */
     left: 20px;
-    /* 34 = bar info's distance from bar bottom: bar height 96 - info bottom
-       (centered in 48px content area between padding-top 16 and padding-bottom
-       32 → info top y=18, bottom y=62 from bar top → 34 from bar bottom). */
-    bottom: 34px;
+    /* Bar height ≈ 96 (padding 16+32 + cta content 48). Info content
+       (datetime 20 + 2 gap + price-row 20 = 42) is centered in the 48px
+       content row, so info bottom is ~35px above the bar's bottom. */
+    bottom: 35px;
     display: flex;
     flex-direction: column;
-    gap: 0;
+    gap: 2px;
     pointer-events: none;
     opacity: 0;
     transition: opacity 0.16s ease;
@@ -4420,21 +4460,10 @@
     opacity: 1;
     transition: opacity 0.14s ease 0.18s;
   }
-  .cd-mini-price {
-    font-family: 'DM Sans', sans-serif;
-    font-size: 16px;
-    font-weight: 700;
-    line-height: 24px;
-    color: #020203;
-  }
-  .cd-mini-meta {
-    font-family: 'DM Sans', sans-serif;
-    font-size: 14px;
-    font-weight: 500;
-    line-height: 20px;
-    color: #020203;
-    white-space: nowrap;
-  }
+  /* Mini-summary type rules live alongside the booking-bar rules above
+     (combined selectors) so the two can never drift out of sync. The shared
+     rules cover .cd-mini-meta / .cd-mini-price-row / .cd-mini-price /
+     .cd-mini-price-sep / .cd-mini-instructor. */
 
   /* Hide original booking card while the sheet covers it. The sheet's
      CTA closed-state matches the bar's Next exactly, so the hand-off is
