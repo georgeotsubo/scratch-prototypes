@@ -1824,11 +1824,11 @@
   }
   .vd-panel.active {
     display: flex;
-    animation: vd-panel-fade 200ms cubic-bezier(.25,.46,.45,.94);
-  }
-  @keyframes vd-panel-fade {
-    from { opacity: 0; }
-    to { opacity: 1; }
+    /* Content is intentionally NOT animated on tab switch — only the
+       scroll position glides (see `smoothScrollVdTo` in activateTab).
+       The view appears to glide to the pin while the new tab's contents
+       are simply already there. Matches the class-detail behavior; see
+       [[feedback-tab-switch-polish]] in memory for the why. */
   }
 
   /* ===== SCHEDULE PANEL ===== */

@@ -2729,6 +2729,45 @@
       }
     }
 
+    // Animate venueDetailScroll.scrollTop from current → target with an
+    // ease-out cubic. Driving scrollTop in rAF lets the sticky nav fade
+    // in continuously with the scroll position (the .scrolled class is
+    // toggled inside the scroll listener) — without this the previous
+    // two-snap (scrollTop=0 then scrollTop=newPinOffset) caused the
+    // image gallery to whip past and the nav bg to lag.
+    var vdTabScrollRaf = null;
+    function cancelVdTabScroll() {
+      if (vdTabScrollRaf) {
+        cancelAnimationFrame(vdTabScrollRaf);
+        vdTabScrollRaf = null;
+      }
+    }
+    venueDetailScroll.addEventListener('wheel', cancelVdTabScroll, { passive: true });
+    venueDetailScroll.addEventListener('touchstart', cancelVdTabScroll, { passive: true });
+    venueDetailScroll.addEventListener('mousedown', cancelVdTabScroll);
+    function smoothScrollVdTo(target, duration) {
+      cancelVdTabScroll();
+      var start = venueDetailScroll.scrollTop;
+      var delta = target - start;
+      if (Math.abs(delta) < 1) {
+        venueDetailScroll.scrollTop = target;
+        return;
+      }
+      var startTime = performance.now();
+      var d = duration || 360;
+      function step(now) {
+        var t = Math.min(1, (now - startTime) / d);
+        var eased = 1 - Math.pow(1 - t, 3);
+        venueDetailScroll.scrollTop = start + delta * eased;
+        if (t < 1) {
+          vdTabScrollRaf = requestAnimationFrame(step);
+        } else {
+          vdTabScrollRaf = null;
+        }
+      }
+      vdTabScrollRaf = requestAnimationFrame(step);
+    }
+
     function activateTab(tab) {
       tabs.forEach(function(t) { t.classList.remove('active'); });
       tab.classList.add('active');
@@ -2747,20 +2786,19 @@
       // any sheet that doesn't carry .vd-tab-overview.
       if (venueDetailSheet) venueDetailSheet.classList.toggle('vd-tab-overview', panelName === 'overview');
 
-      // Snap scroll back to the pin so the user always lands at the top of
-      // the incoming tab. Reset to 0 first to unstick the tabs, then
-      // re-measure the pin offset and snap.
-      var tabsEl = venueDetailEl.querySelector('.vd-tabs');
-      if (tabsEl) {
-        venueDetailScroll.scrollTop = 0;
-        var scrollRect = venueDetailScroll.getBoundingClientRect();
-        var tabsRect = tabsEl.getBoundingClientRect();
-        var newPinOffset = tabsRect.top - scrollRect.top - 80;
-        window.__vdPinOffset = newPinOffset;
-        if (newPinOffset > 0) {
-          venueDetailScroll.scrollTop = newPinOffset;
+      // Glide to the cached pin so the sticky nav fades in alongside the
+      // scroll instead of snapping. __vdPinOffset was cached at open time
+      // (see venueDetailOpen path) and is refreshed whenever the About
+      // block expands. Use the cached value here — re-measuring requires
+      // first resetting scrollTop=0, which is itself the abrupt jump we
+      // are trying to avoid.
+      requestAnimationFrame(function() {
+        var pinOffset = window.__vdPinOffset || 0;
+        if (pinOffset > 0) {
+          var maxScroll = venueDetailScroll.scrollHeight - venueDetailScroll.clientHeight;
+          smoothScrollVdTo(Math.min(pinOffset, Math.max(0, maxScroll)), 360);
         }
-      }
+      });
 
       // Reset horizontal scroll on all carousels
       venueDetailEl.querySelectorAll('.vd-hscroll').forEach(function(s) { s.scrollLeft = 0; });
@@ -4070,7 +4108,7 @@
         +     '<div class="cd-review-card-date">' + review.date + ' · ClassPass</div>'
         +   '</div>'
         + '</div>'
-        + '<div class="cd-review-card-title">' + title + '</div>'
+        + '<div class="cd-review-card-title">' + title + ' with ' + review.instructor + '</div>'
         + '<div class="cd-review-card-body">' + review.body + '</div>'
         + '</div>';
     }
