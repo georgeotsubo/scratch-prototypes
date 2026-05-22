@@ -4010,30 +4010,55 @@
     opacity: 0;
     pointer-events: none;
   }
-  /* Success-state video: centered in the sheet at 180x180. Hidden by
-     default; fades in AFTER the body has finished fading out (180ms
-     delay) so the two don't visually overlap mid-transition. */
-  .cd-checkout-success-video {
+  /* Success-state content: 176×176 phone image stacked above the
+     "You're all set!" caption. Positioned absolutely between the header
+     (top: sheet padding 24 + header 44 + gap 16 = 84) and the CTA
+     (bottom: cta-bottom 32 + cta-height 48 + gap 16 = 96). Hidden by
+     default; fades + scales in AFTER the body has finished fading out
+     (180ms delay) so the two don't visually overlap mid-transition. */
+  .cd-checkout-success {
     position: absolute;
-    top: 50%;
-    left: 50%;
-    width: 180px;
-    height: 180px;
-    /* translate keeps the video centered around (top:50%, left:50%);
-       scale drives the success-state pop-in. */
-    transform: translate(-50%, -50%) scale(0.6);
+    left: 24px;
+    right: 24px;
+    top: 84px;
+    bottom: 96px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    /* `flex-start` (was `center`) pins the image just below the header so
+       the extra room produced by a taller sheet falls UNDER the caption
+       — that's the "more space between 'You're all set' and 'Add to
+       calendar'" the user asked for. */
+    justify-content: flex-start;
+    gap: 4px;
+    transform: scale(0.6);
     opacity: 0;
     pointer-events: none;
     transition: opacity 0.25s ease, transform 0.25s ease;
-    object-fit: contain;
-    background: transparent;
   }
-  .cd-checkout-sheet.is-success .cd-checkout-success-video {
+  .cd-checkout-sheet.is-success .cd-checkout-success {
     opacity: 1;
-    transform: translate(-50%, -50%) scale(1);
+    transform: scale(1);
     transition:
       opacity 0.25s ease 0.18s,
       transform 0.4s cubic-bezier(0.22, 1, 0.36, 1) 0.18s;
+  }
+  .cd-checkout-success-image {
+    width: 176px;
+    height: 176px;
+    object-fit: contain;
+    display: block;
+    user-select: none;
+    -webkit-user-drag: none;
+  }
+  .cd-checkout-success-caption {
+    margin: 0;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 18px;
+    font-weight: 700;
+    line-height: 26px;
+    color: #020203;
+    text-align: center;
   }
   /* Bordered card wrapping class info + payment + total in checkout mode.
      Matches the Figma "Content Container" — 1px border, 16px radius,
@@ -4368,12 +4393,44 @@
     font-size: 16px;
     font-weight: 600;
     line-height: 24px;
+    /* Flex so the calendar icon in success mode can sit 8px left of the
+       label without disturbing the existing absolute spinner overlay. */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
     /* Long checkout label ("Book and Pay") must never wrap into a
        second line during the morph. */
     white-space: nowrap;
     overflow: hidden;
     cursor: pointer;
-    transition: left 0.44s cubic-bezier(.32,.72,0,1), transform 0.12s cubic-bezier(.25,.46,.45,.94);
+    transition:
+      left 0.44s cubic-bezier(.32,.72,0,1),
+      transform 0.12s cubic-bezier(.25,.46,.45,.94),
+      background-color 0.22s ease,
+      color 0.22s ease;
+  }
+  /* Success-state CTA: gray neutral background, dark text, with the
+     calendar icon revealed left of the "Add to calendar" label. */
+  .cd-checkout-sheet.is-success .cd-checkout-cta {
+    background: #f1f2f3;
+    color: #020203;
+  }
+  .cd-checkout-sheet.is-success .cd-checkout-cta:active {
+    background: #e6e7e9;
+    transform: scale(0.96);
+  }
+  .cd-cta-icon-calendar {
+    display: none;
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+    pointer-events: none;
+    user-select: none;
+    -webkit-user-drag: none;
+  }
+  .cd-checkout-sheet.is-success .cd-cta-icon-calendar {
+    display: inline-block;
   }
   .cd-checkout-sheet.is-open .cd-checkout-cta {
     left: 20px;

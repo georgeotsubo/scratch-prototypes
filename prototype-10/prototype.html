@@ -878,10 +878,16 @@
       </div>
       <p class="cd-cancel-caption cd-checkout-mode-cancel">We&rsquo;ll send the refund to your original payment method. Refunds typically appear in 5&ndash;10 business days.</p>
     </div>
-    <video class="cd-checkout-success-video" id="cd-checkout-success-video" width="180" height="180" preload="auto" muted playsinline disablepictureinpicture aria-hidden="true">
-      <source src="../images/checkout_2.mp4" type="video/mp4">
-    </video>
-    <button class="cd-checkout-cta" id="cd-checkout-cta"><span class="cd-cta-label">Book</span><span class="cd-cta-spinner" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></button>
+    <!-- Confirmation success state: 176×176 phone video (autoplay, muted)
+         above the "You're all set!" caption. Fades + scales in once
+         .is-success lands on the sheet. -->
+    <div class="cd-checkout-success" id="cd-checkout-success" aria-hidden="true">
+      <video class="cd-checkout-success-image" id="cd-checkout-success-video" width="176" height="176" preload="auto" muted playsinline disablepictureinpicture>
+        <source src="../images/checkout_2.mp4" type="video/mp4">
+      </video>
+      <p class="cd-checkout-success-caption">You&rsquo;re all set!</p>
+    </div>
+    <button class="cd-checkout-cta" id="cd-checkout-cta"><img class="cd-cta-icon-calendar" src="figma-screens/calendar-icon.svg" alt="" aria-hidden="true" draggable="false"><span class="cd-cta-label">Book</span><span class="cd-cta-spinner" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></button>
     <!-- Compact summary that mirrors the booking bar's left content. Hidden
          while the sheet is open; fades in during the close so the sheet's
          end-of-morph state visually matches the booking bar instead of

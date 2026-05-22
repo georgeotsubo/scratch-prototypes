@@ -657,6 +657,15 @@
     const unclustered = map.querySourceFeatures(CLUSTER_SOURCE_ID, {
       filter: ['!', ['has', 'point_count']]
     });
+    const clusters = map.queryRenderedFeatures({ layers: [CLUSTER_LAYER_ID] });
+
+    // Defensive: when the cluster worker is mid-rebuild, querySourceFeatures
+    // can return [] even though we have pins in currentPins. Without this
+    // guard, the sync would hide EVERY marker (the brief flash the user
+    // sees on refresh / dev-tools open). Keep the current display state and
+    // wait for the next event when the index is stable.
+    if (currentPins.length > 0 && !unclustered.length && !clusters.length) return;
+
     const visibleIdxs = new Set();
     unclustered.forEach(f => visibleIdxs.add(f.properties.idx));
 
@@ -665,7 +674,6 @@
     // cluster bubble visually pokes out from under the cluster. Compute each
     // cluster's red-bubble screen center and hide any marker whose own red
     // bubble would overlap — effectively "cluster appears in front."
-    const clusters = map.queryRenderedFeatures({ layers: [CLUSTER_LAYER_ID] });
     const clusterBubbles = clusters.map(c => {
       const p = map.project(c.geometry.coordinates);
       return { x: p.x, y: p.y + CLUSTER_BUBBLE_OFFSET_Y };
@@ -717,7 +725,8 @@
       data: { type: 'FeatureCollection', features: [] },
       cluster: true,
       clusterMaxZoom: 14, // pins individualize at zoom > 14
-      clusterRadius: 70   // wider net → more aggregation, fewer dangling pins
+      clusterRadius: 40   // tighter net → most pins stay individual; only very
+                          // dense areas form clusters
     });
     // Load the cluster artwork as a Mapbox image. Drop shadow is baked
     // into the SVG, so no separate shadow layer is needed.
@@ -4493,7 +4502,9 @@
         if (cdCheckoutSuccessTimer) clearTimeout(cdCheckoutSuccessTimer);
         cdCheckoutSuccessTimer = setTimeout(function() {
           if (!cdCheckoutOpen) return;
-          if (cdCheckoutCtaLabel) cdCheckoutCtaLabel.textContent = "You're all set";
+          // CTA flips to "Add to calendar" with a calendar leading icon
+          // (CSS reveals .cd-cta-icon-calendar via .is-success on the sheet).
+          if (cdCheckoutCtaLabel) cdCheckoutCtaLabel.textContent = 'Add to calendar';
           // Swap the sheet title to confirm the booking succeeded. The
           // close handler restores it to "Review and confirm" so the
           // next open starts clean.
@@ -4501,10 +4512,18 @@
           if (successTitleEl) successTitleEl.textContent = 'Reservation confirmed';
           cdCheckoutCta.classList.remove('is-loading');
           cdCheckoutSheet.classList.add('is-success');
-          // Hug the success content: header + 180px centered video + CTA.
-          // The sheet already has `transition: height 0.44s ...` so this
-          // animates alongside the body fade.
+          // Hug the success content: header + 176px phone video + caption
+          // + extra breathing room + CTA. The sheet already has
+          // `transition: height 0.44s ...` so this animates alongside
+          // the body fade. ~50px gap between caption and CTA falls out
+          // of (420 sheet) − (84 top + 176 image + 4 gap + 26 caption)
+          // − (32 + 48 CTA-from-bottom). Bump this if more breathing
+          // room is needed.
           cdCheckoutSheet.style.height = '420px';
+          // Restart the confirmation video each time we enter success
+          // state so it plays from the beginning. `muted` enables
+          // autoplay; play() returns a promise we swallow rejections on
+          // (Safari sometimes rejects without user gesture, fine to ignore).
           if (cdCheckoutSuccessVideo) {
             try { cdCheckoutSuccessVideo.currentTime = 0; } catch (e) {}
             var p = cdCheckoutSuccessVideo.play();
