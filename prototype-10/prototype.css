@@ -907,7 +907,11 @@
     z-index: 25;
     opacity: 0;
     pointer-events: none;
-    transition: opacity 0.2s ease;
+    transition: opacity 0.2s ease, transform 0.12s cubic-bezier(.25,.46,.45,.94);
+  }
+  .search-this-area-btn:active {
+    /* Preserve the centering translate, just add the press scale on top. */
+    transform: translateX(-50%) scale(0.96);
   }
   .search-this-area-btn.visible {
     opacity: 1;
@@ -1641,6 +1645,9 @@
     display: flex;
     flex-direction: column;
     gap: 16px;
+    /* Tighten the gap below the carousel from the parent's 40px down to
+       24px (40 + (-16)). Works whether tabs or the promo card follows. */
+    margin-bottom: -16px;
   }
 
   /* Header — no fixed height; column stacks h1 → meta → tags */
@@ -1794,6 +1801,14 @@
     flex-direction: column;
     gap: 40px;
   }
+  /* Overview ends with the map card; pad below it so the absolutely-positioned
+     floating "See full schedule" button (52px tall + 40px bottom offset = 92px
+     from the sheet bottom) doesn't cover it at max scroll. The
+     .venue-detail-content already adds 32px below, so 80px here gives ~20px
+     breathing room above the floating button. */
+  .vd-panel-overview {
+    padding-bottom: 80px;
+  }
   .vd-panel-schedule {
     gap: 0;
   }
@@ -1821,7 +1836,10 @@
     top: 125px;
     z-index: 2;
     background: #f1f2f3;
-    margin-top: -24px;
+    /* Fully cancels the 40px flex gap that .venue-detail-content puts
+       between the tabs and the schedule panel, so the picker sits flush
+       below the tab bar from the start (no gap that closes on scroll). */
+    margin-top: -40px;
     margin-left: -20px;
     margin-right: -20px;
     padding-top: 16px;
@@ -2284,7 +2302,16 @@
     gap: 16px;
   }
   .vd-see-schedule-btn {
-    width: 100%;
+    /* Absolutely positioned at the bottom of the venue-detail sheet so it
+       stays "fixed" as the user scrolls. .vd-pane-stack is the containing
+       block. Full width with 20px gutters. Hidden on non-overview tabs and
+       while the class-detail pane is showing (rules below). */
+    position: absolute;
+    left: 20px;
+    right: 20px;
+    bottom: 32px;
+    z-index: 5;
+    white-space: nowrap;
     background: #e10e0e;
     color: #fff;
     border: none;
@@ -2295,9 +2322,84 @@
     font-weight: 500;
     line-height: 28px;
     cursor: pointer;
+    transition: transform 0.12s cubic-bezier(.25,.46,.45,.94),
+                opacity 0.2s ease;
   }
   .vd-see-schedule-btn:active {
     background: #c00b0b;
+    transform: scale(0.96);
+  }
+  /* Blurred wash that sits behind the floating CTA — fades smoothly from
+     opaque at the bottom to transparent at the top. Multi-stop ease-out
+     mask keeps the top edge of the blur from reading as a hard line; the
+     wash itself is also softened with `filter: blur` so the masked edge
+     dissolves rather than terminating sharply. */
+  /* Blurred wash behind the floating CTA — copy of the search view's
+     `.tab-bar-blur` (height 40px, blur 12px, linear-gradient mask). */
+  .vd-see-schedule-blur {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 40px;
+    pointer-events: none;
+    z-index: 4;
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
+    -webkit-mask-image: linear-gradient(to top, #000 50%, transparent);
+    mask-image: linear-gradient(to top, #000 50%, transparent);
+    transition: opacity 0.3s ease;
+  }
+  /* Hide the floating CTA + its blur wash on non-overview tabs (JS toggles
+     `vd-tab-overview` on the sheet) and while the class-detail pane is up.
+     Both elements are siblings of the sheet now, so we target them via
+     subsequent-sibling combinators. */
+  .venue-detail-sheet:not(.vd-tab-overview) ~ .vd-see-schedule-blur,
+  .venue-detail-sheet:not(.vd-tab-overview) ~ .vd-see-schedule-btn,
+  .venue-detail-sheet.show-class ~ .vd-see-schedule-blur,
+  .venue-detail-sheet.show-class ~ .vd-see-schedule-btn {
+    opacity: 0;
+    pointer-events: none;
+  }
+  /* Hidden by default until #venue-detail becomes visible (siblings of the
+     sheet don't inherit its `visibility: hidden`, so they need their own
+     gate). */
+  #venue-detail:not(.venue-detail-visible) .vd-see-schedule-blur,
+  #venue-detail:not(.venue-detail-visible) .vd-see-schedule-btn {
+    opacity: 0;
+    pointer-events: none;
+  }
+  /* `#venue-detail` itself is `pointer-events: none` (so the area around
+     the sheet doesn't block map clicks). Sheet descendants get re-enabled
+     by `#venue-detail.venue-detail-visible .venue-detail-sheet`, but the
+     floating button is a SIBLING of the sheet — re-enable it explicitly
+     when the venue is visible, on the overview tab, and class detail
+     isn't on top. */
+  #venue-detail.venue-detail-visible .venue-detail-sheet.vd-tab-overview:not(.show-class) ~ .vd-see-schedule-btn {
+    pointer-events: auto;
+  }
+
+  /* Static "See full schedule" CTA — sits at the very bottom of the
+     Available today preview, in natural flow. White pill counterpart to
+     the floating red button. */
+  .vd-see-schedule-btn-static {
+    width: 100%;
+    background: #fff;
+    color: #020203;
+    border: none;
+    border-radius: 999px;
+    padding: 12px 24px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 16px;
+    font-weight: 500;
+    line-height: 28px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: transform 0.12s cubic-bezier(.25,.46,.45,.94);
+  }
+  .vd-see-schedule-btn-static:active {
+    background: #f0f0f0;
+    transform: scale(0.96);
   }
   .vd-section-title {
     font-family: 'DM Sans', sans-serif;
@@ -2562,11 +2664,15 @@
     display: flex;
     flex-direction: column;
     gap: 4px;
+    padding: 12px 16px;
+    border-radius: 24px;
+    background-color: #fff;
     /* Pulls the about copy 8px closer to the image carousel so the gap
        between carousel and copy is 24px while all other
        .venue-detail-content gaps stay at 40px. */
     margin-top: -8px;
   }
+  .vd-about-block[hidden] { display: none; }
 
   /* About — clamped to 3 lines by default. JS unhides the adjacent
      "see more" span only when the text actually overflows; tapping it
@@ -2882,7 +2988,7 @@
   .cd-title {
     font-family: 'DM Sans', sans-serif;
     font-size: 24px;
-    font-weight: 800;
+    font-weight: 700;
     line-height: 28px;
     color: #020203;
   }
@@ -2905,11 +3011,8 @@
     min-width: 0;
   }
   #cd-venue-text {
-    font-size: 14px;
-    line-height: 20px;
-  }
-  .cd-venue-link > svg {
-    flex-shrink: 0;
+    font-size: 16px;
+    line-height: 24px;
   }
   .cd-header-rating {
     display: flex;
@@ -2966,19 +3069,26 @@
     color: #020203;
   }
 
-  /* Wraps date picker + time slots so spacing between them is one knob (gap). */
+  /* Wraps date picker + time slots so spacing between them is one knob (gap).
+     `flex: 1` lets the stack fill the panel's full height (panel has
+     min-height: 800), which extends the sticky context for `.cd-date-picker`
+     — without this the stack is only as tall as the picker + a few time
+     slots, and the picker un-sticks when scrolled to the bottom of the
+     stack instead of staying pinned. */
   .cd-schedule-stack {
     display: flex;
     flex-direction: column;
     gap: 0;
+    flex: 1;
   }
 
-  /* Date picker — horizontally paginated by week (carousel)
-     Native scroll-snap is disabled because we drive the snap with a JS ease-out
-     animation in prototype.js for a slower, more deliberate carousel feel.
-     Stuck at top:80 (just below the shared sticky nav) while the user scrolls
-     through the time slots; un-sticks naturally when the .cd-schedule-stack
-     parent scrolls past so the cd-tabs (also sticky at 80) take over. */
+  /* Date picker — horizontally paginated by week (carousel).
+     Native scroll-snap is disabled because we drive the snap with a JS
+     ease-out animation in prototype.js for a slower, more deliberate
+     carousel feel. Pinned flush below the sticky cd-tabs (which sit at
+     top:80, height 45) at top:125. Negative top margin cancels the
+     cd-content flex gap (24px) so the picker sits flush below the tabs
+     from the start — no gap that closes on scroll. */
   .cd-date-picker {
     display: flex;
     overflow-x: auto;
@@ -2987,16 +3097,13 @@
     overscroll-behavior-x: contain;
     margin-left: -20px;
     margin-right: -20px;
+    margin-top: -24px;
     position: sticky;
-    top: 80px;
-    z-index: 4;
+    top: 125px;
+    z-index: 2;
     background: #f1f2f3;
   }
   .cd-date-picker::-webkit-scrollbar { display: none; }
-  /* Tighten space from header into the schedule block (cd-content flex gap is 24px). */
-  .cd-header-section + .cd-schedule-stack {
-    margin-top: -16px;
-  }
   .cd-week {
     flex: 0 0 100%;
     width: 100%;
@@ -3131,10 +3238,9 @@
     font-weight: 400;
   }
 
-  /* Class detail header simplification: when class detail lives inside the
-     venue sheet, the venue link and intro chip are redundant (the user came
-     from the venue, and per-slot prices show the offer). */
-  .cd-venue-link,
+  /* Class detail header simplification: the intro chip is redundant (per-slot
+     prices already show the offer). Venue name + location stays visible as a
+     subtitle under the class title. */
   .cd-intro-chip { display: none; }
 
   /* Summary description sits between the header and the date picker. The
@@ -3199,6 +3305,12 @@
     flex-direction: column;
     gap: 40px;
     animation: cd-panel-fade 200ms cubic-bezier(.25,.46,.45,.94);
+    /* Guarantee enough scrollable height so the tab-switch pin scroll can
+       reach `__cdPinOffset` (otherwise scrollTop gets clamped and the
+       sticky cd-tabs / collapsed nav state never engage). The Schedule
+       panel has very little intrinsic content (date picker + a handful of
+       time slots), so we lean on a tall min-height. */
+    min-height: 800px;
   }
   @keyframes cd-panel-fade {
     from { opacity: 0; }
@@ -3213,6 +3325,11 @@
     line-height: 24px;
     color: #020203;
     margin: 0;
+  }
+  #cd-description-collapsible {
+    padding: 12px 16px;
+    border-radius: 24px;
+    background-color: #fff;
   }
   /* Collapsible text sections (description, prep, cancellation) */
   .cd-collapsible p {
@@ -3709,9 +3826,11 @@
     font-weight: 600;
     line-height: 24px;
     cursor: pointer;
+    transition: transform 0.12s cubic-bezier(.25,.46,.45,.94);
   }
   .cd-booking-cta:active {
     background: #c00b0b;
+    transform: scale(0.96);
   }
   /* Reserved state: after a successful booking the bar CTA becomes a
      black "Cancel" pill. Tapping it un-reserves and restores the
@@ -3876,37 +3995,132 @@
       opacity 0.25s ease 0.18s,
       transform 0.4s cubic-bezier(0.22, 1, 0.36, 1) 0.18s;
   }
-  .cd-checkout-info {
+  /* Bordered card wrapping class info + payment + total in checkout mode.
+     Matches the Figma "Content Container" — 1px border, 16px radius,
+     12px/16px padding. The three children are separated by 1px dividers
+     (applied as border-bottom on all but the last child). */
+  .cd-checkout-card {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    border: 1px solid #e4e5e7;
+    border-radius: 16px;
+    padding: 12px 16px;
+  }
+  .cd-checkout-card > .cd-checkout-info,
+  .cd-checkout-card > .cd-checkout-payment {
+    padding-bottom: 20px;
+    border-bottom: 1px solid #e4e5e7;
+  }
+  .cd-checkout-info,
+  .cd-cancel-info {
     display: flex;
     flex-direction: column;
   }
   .cd-checkout-class-title {
     font-family: 'DM Sans', sans-serif;
-    font-size: 18px;
+    font-size: 16px;
     font-weight: 700;
     line-height: 24px;
     color: #020203;
   }
-  .cd-checkout-time {
-    font-family: 'DM Sans', sans-serif;
-    font-size: 16px;
-    font-weight: 500;
-    line-height: 24px;
-    color: #020203;
-  }
-  .cd-checkout-instructor {
-    font-family: 'DM Sans', sans-serif;
-    font-size: 14px;
-    font-weight: 500;
-    line-height: 20px;
-    color: #4f5159;
-  }
+  .cd-checkout-time,
+  .cd-checkout-instructor,
   .cd-checkout-venue {
     font-family: 'DM Sans', sans-serif;
     font-size: 14px;
-    font-weight: 500;
+    font-weight: 400;
     line-height: 20px;
     color: #020203;
+  }
+  /* Cancel-mode overrides — the cancel-reservation modal uses a slightly
+     larger class title and a semibold time row (per Figma cancel design,
+     node 6074:15094). Booking modal stays unchanged. */
+  .cd-cancel-info .cd-checkout-class-title {
+    font-size: 18px;
+    line-height: 26px;
+  }
+  .cd-cancel-info .cd-checkout-time {
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 24px;
+  }
+  /* Total + collapsible price breakdown.
+     - Default: only the Total row is visible; the .cd-checkout-breakdown
+       has 0 height and is hidden.
+     - .is-expanded: breakdown reveals (Subtotal + Taxes rows above Total)
+       with a height + opacity transition and the chevron flips 180°. */
+  .cd-checkout-total-section {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .cd-checkout-breakdown {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    max-height: 0;
+    padding-bottom: 0;
+    opacity: 0;
+    overflow: hidden;
+    transition:
+      max-height 0.3s cubic-bezier(.25,.46,.45,.94),
+      padding-bottom 0.3s cubic-bezier(.25,.46,.45,.94),
+      opacity 0.2s ease;
+  }
+  .cd-checkout-total-section.is-expanded .cd-checkout-breakdown {
+    /* Generous ceiling to allow growth; actual height is content-driven. */
+    max-height: 120px;
+    padding-bottom: 4px;
+    opacity: 1;
+  }
+  .cd-checkout-breakdown-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    /* Padding-right pushes the amount left so its right edge aligns with
+       the Total row's amount text (not its chevron column). 14px = chevron
+       width 10px + 4px gap between amount and chevron. */
+    padding-right: 14px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 400;
+    line-height: 20px;
+    color: #696c77;
+  }
+  .cd-checkout-total-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+  }
+  .cd-checkout-total-label {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 24px;
+    color: #020203;
+  }
+  .cd-checkout-total-amount {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 24px;
+    color: #020203;
+  }
+  .cd-checkout-total-chevron {
+    display: block;
+    flex-shrink: 0;
+    transition: transform 0.3s cubic-bezier(.25,.46,.45,.94);
+  }
+  .cd-checkout-total-section.is-expanded .cd-checkout-total-chevron {
+    transform: rotate(180deg);
   }
   .cd-checkout-cancellation {
     display: flex;
@@ -3951,16 +4165,26 @@
   .cd-checkout-sheet.is-cancel-mode .cd-checkout-mode-checkout {
     display: none;
   }
+  /* Refund summary card — mirrors the booking modal's bordered card.
+     Two rows: "Refund amount" (with bottom-border separator) and
+     "Refund to". */
   .cd-cancel-block {
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 16px;
+    border: 1px solid #e4e5e7;
+    border-radius: 16px;
+    padding: 16px;
   }
   .cd-cancel-line {
     display: flex;
     align-items: center;
     justify-content: space-between;
     width: 100%;
+  }
+  .cd-cancel-line--amount {
+    padding-bottom: 16px;
+    border-bottom: 1px solid #e4e5e7;
   }
   .cd-cancel-label {
     font-family: 'DM Sans', sans-serif;
@@ -3971,9 +4195,9 @@
   }
   .cd-cancel-amount {
     font-family: 'DM Sans', sans-serif;
-    font-size: 16px;
+    font-size: 14px;
     font-weight: 600;
-    line-height: 24px;
+    line-height: 20px;
     color: #020203;
   }
   .cd-cancel-caption {
@@ -4024,27 +4248,6 @@
     display: block;
     width: 100%;
     height: 100%;
-  }
-  .cd-checkout-lines {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-  }
-  .cd-checkout-line {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    font-family: 'DM Sans', sans-serif;
-    font-size: 14px;
-    font-weight: 500;
-    line-height: 20px;
-    color: #4f5159;
-  }
-  .cd-checkout-line--total {
-    font-size: 16px;
-    font-weight: 600;
-    line-height: 20px;
-    color: #020203;
   }
   .cd-checkout-payment {
     display: flex;
@@ -4130,13 +4333,14 @@
     white-space: nowrap;
     overflow: hidden;
     cursor: pointer;
-    transition: left 0.44s cubic-bezier(.32,.72,0,1);
+    transition: left 0.44s cubic-bezier(.32,.72,0,1), transform 0.12s cubic-bezier(.25,.46,.45,.94);
   }
   .cd-checkout-sheet.is-open .cd-checkout-cta {
     left: 20px;
   }
   .cd-checkout-cta:active {
     background: #c00b0b;
+    transform: scale(0.96);
   }
   /* Loading state: hide the label and reveal a centered iOS-style spinner.
      The button keeps its position/size so only the inner content changes. */

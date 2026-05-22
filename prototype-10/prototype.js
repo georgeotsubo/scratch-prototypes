@@ -98,9 +98,17 @@
       sort: 'DISTANCE',
     });
     params.set('query', query || 'gym fitness yoga pilates');
-    const isFileProtocol = location.protocol === 'file:';
+    // The /api/foursquare/* rewrite is only set up by vercel.json — it
+    // exists when running `vercel dev` (localhost:3000) or on a Vercel
+    // deployment. Everywhere else (file://, Cursor's preview browser, Live
+    // Server, any random localhost server) we hit the public corsproxy so
+    // the prototype works standalone without needing the dev server.
     const baseUrl = `https://places-api.foursquare.com/places/search?${params}`;
-    const url = isFileProtocol ? `https://corsproxy.io/?url=${encodeURIComponent(baseUrl)}` : `/api/foursquare/places/search?${params}`;
+    const isVercelDev = (location.hostname === 'localhost' || location.hostname === '127.0.0.1') && location.port === '3000';
+    const isVercelProd = location.hostname.endsWith('.vercel.app');
+    const url = (isVercelDev || isVercelProd)
+      ? `/api/foursquare/places/search?${params}`
+      : `https://corsproxy.io/?url=${encodeURIComponent(baseUrl)}`;
     try {
       const res = await fetch(url, {
         headers: {
@@ -996,23 +1004,9 @@
     document.querySelectorAll('.map-nav-btn').forEach(b => b.classList.add('active'));
   });
 
-  // Then try to get actual location and update
-  if (navigator.geolocation) {
-    navigator.geolocation.getCurrentPosition(
-      function(pos) {
-        userLat = pos.coords.latitude;
-        userLng = pos.coords.longitude;
-        if (!locationTerm) {
-          locationTerm = 'Current location';
-        }
-        if (currentScreen === 'screen-map-default') {
-          initDefaultMap(userLat, userLng, DEFAULT_MAP_ZOOM, 'Nearby');
-        }
-      },
-      function() { /* already showing NYC default */ },
-      { enableHighAccuracy: true, timeout: 5000 }
-    );
-  }
+  // Geolocation intentionally disabled — the prototype always boots into
+  // the Manhattan default view (see initDefaultMap call above) without
+  // prompting the user for their current location.
 
   // ========== SCREEN MANAGEMENT ==========
   function showScreen(id, animation) {
@@ -2216,6 +2210,10 @@
   const venueDetailScroll = venueDetailEl.querySelector('.venue-detail-scroll');
   const persistentTabBar = document.getElementById('tab-bar-persistent');
 
+  // "See full schedule" floating CTA: absolutely positioned at the bottom of
+  // the venue-detail sheet (see CSS). No scroll-tracking needed — click
+  // handler is wired further down with the other tab-switch buttons.
+
   // ========== CLASS DETAIL (sub-pane inside the venue sheet) ==========
   // Class detail no longer has its own modal/sheet — its scroll container
   // lives inside .vd-pane-stack as a sibling of .venue-detail-scroll. The
@@ -2518,6 +2516,14 @@
         else p.classList.remove('active');
       });
 
+      // Venue description (about block) only belongs on the Overview tab.
+      var aboutBlock = venueDetailEl.querySelector('.vd-about-block');
+      if (aboutBlock) aboutBlock.hidden = (panelName !== 'overview');
+
+      // Floating "See full schedule" CTA is overview-only — CSS hides it on
+      // any sheet that doesn't carry .vd-tab-overview.
+      if (venueDetailSheet) venueDetailSheet.classList.toggle('vd-tab-overview', panelName === 'overview');
+
       // Snap scroll back to the pin so the user always lands at the top of
       // the incoming tab. Reset to 0 first to unstick the tabs, then
       // re-measure the pin offset and snap.
@@ -2571,6 +2577,13 @@
     var seeFullScheduleBtn = document.getElementById('vd-see-full-schedule-btn');
     if (seeFullScheduleBtn) {
       seeFullScheduleBtn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        window.__switchVenueDetailTab('schedule');
+      });
+    }
+    var seeFullScheduleStaticBtn = document.getElementById('vd-see-full-schedule-static');
+    if (seeFullScheduleStaticBtn) {
+      seeFullScheduleStaticBtn.addEventListener('click', function(e) {
         e.stopPropagation();
         window.__switchVenueDetailTab('schedule');
       });
@@ -2780,6 +2793,9 @@
         if (p.dataset.panel === 'overview') p.classList.add('active');
         else p.classList.remove('active');
       });
+      var aboutBlock = venueDetailEl.querySelector('.vd-about-block');
+      if (aboutBlock) aboutBlock.hidden = false;
+      if (venueDetailSheet) venueDetailSheet.classList.add('vd-tab-overview');
       requestAnimationFrame(function() {
         moveIndicator(firstTab, true); // instant, no spring
       });
@@ -4158,6 +4174,16 @@
     var cdCancelConfirmTimer = null;
     var cdCancelToastTimer = null;
     var cdCancelToastEl = document.getElementById('cd-cancel-toast');
+
+    // Total section expand/collapse: tapping the row reveals the Subtotal +
+    // Taxes breakdown and flips the chevron. CSS handles the height +
+    // opacity transition via .is-expanded on the section element.
+    var cdCheckoutTotalSection = document.getElementById('cd-checkout-total-section');
+    if (cdCheckoutTotalSection) {
+      cdCheckoutTotalSection.addEventListener('click', function() {
+        cdCheckoutTotalSection.classList.toggle('is-expanded');
+      });
+    }
     function showCancelToast() {
       if (!cdCancelToastEl) return;
       if (cdCancelToastTimer) clearTimeout(cdCancelToastTimer);
@@ -4291,10 +4317,20 @@
       var classTitle = titleEl ? titleEl.textContent : '';
       var venueText = document.getElementById('cd-venue-text');
       var venueStr = venueText ? venueText.textContent : '';
+      // Set both the checkout-mode card copy and the cancel-mode copy so
+      // users see the class context in either flow.
       document.getElementById('cd-checkout-class-title').textContent = classTitle;
       document.getElementById('cd-checkout-time').textContent = time;
       document.getElementById('cd-checkout-instructor').textContent = instructor;
       document.getElementById('cd-checkout-venue').textContent = venueStr;
+      var cancelTitleEl = document.getElementById('cd-cancel-class-title');
+      var cancelTimeEl = document.getElementById('cd-cancel-time');
+      var cancelInstructorEl = document.getElementById('cd-cancel-instructor');
+      var cancelVenueEl = document.getElementById('cd-cancel-venue');
+      if (cancelTitleEl) cancelTitleEl.textContent = classTitle;
+      if (cancelTimeEl) cancelTimeEl.textContent = time;
+      if (cancelInstructorEl) cancelInstructorEl.textContent = instructor;
+      if (cancelVenueEl) cancelVenueEl.textContent = venueStr;
       // "Free cancellation until <date> at <time> ET" — exactly 12 hours
       // before the class start. Computed from the same date/slotTime we
       // populated above so it always stays in sync with the booking.
@@ -4322,8 +4358,11 @@
       // Price: prefer the intro-offer final price, else the plain price.
       var priceFinalEl = document.querySelector('.cd-booking-price-final, .cd-booking-price-plain');
       var priceText = priceFinalEl ? priceFinalEl.textContent.trim() : '$30.00';
-      document.getElementById('cd-checkout-subtotal').textContent = priceText;
+      // Total + the collapsible Subtotal mirror it (Taxes stays hardcoded
+      // at $0.00 in the markup — there's no tax model in the prototype).
       document.getElementById('cd-checkout-total').textContent = priceText;
+      var subtotalEl = document.getElementById('cd-checkout-subtotal');
+      if (subtotalEl) subtotalEl.textContent = priceText;
       // Cancel-mode mirror: refund amount uses the same price.
       var refundEl = document.getElementById('cd-cancel-refund-amount');
       if (refundEl) refundEl.textContent = priceText;
@@ -4446,6 +4485,9 @@
       cdCheckoutCta.classList.remove('is-loading');
       // Reset the cancel-mode UI so the next open starts in checkout mode.
       cdCheckoutSheet.classList.remove('is-cancel-mode');
+      // Collapse the total breakdown so re-opening starts in the collapsed
+      // state (chevron pointing down, Subtotal/Taxes hidden).
+      if (cdCheckoutTotalSection) cdCheckoutTotalSection.classList.remove('is-expanded');
       var titleResetEl = document.getElementById('cd-checkout-title');
       if (titleResetEl) titleResetEl.textContent = 'Review and confirm';
       // Dismissing while in the success state (X, scrim, or "You're
@@ -4541,6 +4583,9 @@
     // "See more / see less" toggle for collapsible sections
     classDetailEl.querySelectorAll('.cd-see-more').forEach(function(toggle) {
       toggle.addEventListener('click', function() {
+        // Suppress clicks that are the tail end of a drag-scroll — otherwise
+        // releasing a vertical drag over a see-more link toggles it.
+        if (wasDragging) return;
         var collapsible = toggle.closest('.cd-collapsible');
         if (!collapsible) return;
         var isCollapsed = collapsible.classList.contains('collapsed');
@@ -4582,27 +4627,25 @@
       moveCdIndicator(tab);
       var name = tab.dataset.cdtab;
       cdPanels.forEach(function(p) { p.classList.toggle('active', p.dataset.cdpanel === name); });
-      // Hide the schedule (date picker + time slots) on the Reviews tab so
-      // the user only sees review content. Show it on Overview.
-      var scheduleStack = classDetailEl.querySelector('.cd-schedule-stack');
-      if (scheduleStack) {
-        scheduleStack.style.display = name === 'reviews' ? 'none' : '';
-      }
       // Snap scroll back to the pin so the user always lands at the top of
       // the incoming tab. Reset to 0 first to unstick the tabs — otherwise
       // their sticky position pins them at top:80 and the rect-based
-      // measurement just echoes the current scrollTop, leaving the user
-      // wherever they had scrolled to.
+      // measurement just echoes the current scrollTop. Defer the measurement
+      // to next frame so the panel display:flex/none swap has actually
+      // committed layout (otherwise tabsRect reflects the previous panel's
+      // size and newPinOffset is wrong).
       var tabsEl = classDetailEl.querySelector('.cd-tabs');
       if (tabsEl) {
         classDetailScroll.scrollTop = 0;
-        var scrollRect = classDetailScroll.getBoundingClientRect();
-        var tabsRect = tabsEl.getBoundingClientRect();
-        var newPinOffset = tabsRect.top - scrollRect.top - 80;
-        window.__cdPinOffset = newPinOffset;
-        if (newPinOffset > 0) {
-          classDetailScroll.scrollTop = newPinOffset;
-        }
+        requestAnimationFrame(function() {
+          var scrollRect = classDetailScroll.getBoundingClientRect();
+          var tabsRect = tabsEl.getBoundingClientRect();
+          var newPinOffset = tabsRect.top - scrollRect.top - 80;
+          window.__cdPinOffset = newPinOffset;
+          if (newPinOffset > 0) {
+            classDetailScroll.scrollTop = newPinOffset;
+          }
+        });
       }
       // Reset horizontal scroll on review carousels so each tab opens cleanly
       classDetailEl.querySelectorAll('.cd-review-cards').forEach(function(s) { s.scrollLeft = 0; });
@@ -4637,10 +4680,6 @@
     window.__resetClassDetailTabs = function() {
       cdTabs.forEach(function(t) { t.classList.toggle('active', t.dataset.cdtab === 'overview'); });
       cdPanels.forEach(function(p) { p.classList.toggle('active', p.dataset.cdpanel === 'overview'); });
-      // Make sure the schedule reappears for Overview if a previous session
-      // had Reviews active and hid it.
-      var scheduleStack = classDetailEl.querySelector('.cd-schedule-stack');
-      if (scheduleStack) scheduleStack.style.display = '';
       requestAnimationFrame(function() {
         moveCdIndicator(cdTabs[0], true);
       });
