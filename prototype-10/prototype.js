@@ -594,7 +594,13 @@
   function clearMarkers() {
     pinMarkers.forEach(m => m.remove());
     pinMarkers = [];
-    // Also empty the GeoJSON source feeding the cluster layer. We empty
+    // Drop every cluster HTML marker too — the new dataset will rebuild
+    // its own set on the next sync once `setData` populates the source.
+    if (typeof clusterMarkers !== 'undefined' && clusterMarkers.forEach) {
+      clusterMarkers.forEach(m => m.remove());
+      clusterMarkers.clear();
+    }
+    // Also empty the GeoJSON source feeding clustering. We empty
     // explicitly (not via updateClusterSource) because callers like
     // initDefaultMap clear markers BEFORE currentPins is overwritten — using
     // updateClusterSource here would repopulate with the stale prior set.
@@ -652,31 +658,128 @@
   const PIN_BUBBLE_R = 10;
   const BUBBLE_OVERLAP_R = CLUSTER_BUBBLE_R + PIN_BUBBLE_R;
 
+  // Cluster bubbles are HTML markers (not Mapbox symbol layers) so the
+  // count text can render in DM Sans (Mapbox glyph fonts don't include
+  // our app fonts) and so the bubble can scale up on tap via CSS. Keyed
+  // by `cluster_id` so we re-use the same marker across syncs and only
+  // create/remove on cluster set changes.
+  const clusterMarkers = new Map();
+
+  function createClusterElement(count) {
+    // .cluster-pin is the outer element Mapbox positions; .cluster-pin-inner
+    // is what gets `transform: scale(...)` on tap (would otherwise fight
+    // Mapbox's own translate on the outer element).
+    const el = document.createElement('div');
+    el.className = 'cluster-pin';
+    const inner = document.createElement('div');
+    inner.className = 'cluster-pin-inner';
+    const img = document.createElement('img');
+    img.src = PIN_CLUSTER_URL;
+    img.width = PIN_CLUSTER_W;
+    img.height = PIN_CLUSTER_H;
+    img.draggable = false;
+    inner.appendChild(img);
+    const countEl = document.createElement('span');
+    countEl.className = 'cluster-count';
+    countEl.textContent = count;
+    inner.appendChild(countEl);
+    el.appendChild(inner);
+    return el;
+  }
+
+  function animateClusterTap(el, lngLat, clusterId) {
+    el.classList.add('is-tapped');
+    // Trigger the zoom expansion just after the scale animation peaks so
+    // the user sees the cluster "pop" before the zoom takes over. The
+    // marker gets cleaned up by syncClusterMarkers once the new tile
+    // state arrives (the cluster_id usually disappears at higher zoom).
+    setTimeout(() => {
+      const src = map.getSource(CLUSTER_SOURCE_ID);
+      if (!src) return;
+      src.getClusterExpansionZoom(clusterId, (err, zoom) => {
+        if (err) return;
+        map.easeTo({ center: lngLat, zoom: zoom, duration: 500 });
+      });
+    }, 160);
+    // Clear the tapped scale after the zoom transition would have
+    // finished. Cluster usually disappears at higher zoom (so the marker
+    // gets removed by syncClusterMarkers anyway) but if it persists we
+    // don't want it stuck enlarged.
+    setTimeout(() => el.classList.remove('is-tapped'), 800);
+  }
+
+  function syncClusterMarkers() {
+    if (!map.getSource(CLUSTER_SOURCE_ID)) return;
+    const clusters = map.querySourceFeatures(CLUSTER_SOURCE_ID, {
+      filter: ['has', 'point_count']
+    });
+    const seen = new Set();
+    clusters.forEach(c => {
+      const id = c.properties.cluster_id;
+      // querySourceFeatures can yield duplicates across tile boundaries
+      // — guard so we don't try to create two markers for the same id.
+      if (seen.has(id)) return;
+      seen.add(id);
+      let marker = clusterMarkers.get(id);
+      const countText = c.properties.point_count_abbreviated;
+      if (!marker) {
+        const el = createClusterElement(countText);
+        marker = new mapboxgl.Marker({ element: el })
+          .setLngLat(c.geometry.coordinates)
+          .addTo(map);
+        el.addEventListener('click', e => {
+          e.stopPropagation();
+          if (wasDragging) return;
+          // Use the live lng/lat off the marker (may have shifted since
+          // the click handler was first wired) rather than the stale
+          // closure over c.geometry.coordinates.
+          animateClusterTap(el, marker.getLngLat(), id);
+        });
+        clusterMarkers.set(id, marker);
+      } else {
+        // Update count in place if it shifted (e.g., features arrived
+        // late) and refresh the geographic center.
+        const countEl = marker.getElement().querySelector('.cluster-count');
+        if (countEl && String(countEl.textContent) !== String(countText)) {
+          countEl.textContent = countText;
+        }
+        marker.setLngLat(c.geometry.coordinates);
+      }
+    });
+    // Remove markers whose cluster_id no longer exists at this zoom.
+    clusterMarkers.forEach((m, id) => {
+      if (!seen.has(id)) {
+        m.remove();
+        clusterMarkers.delete(id);
+      }
+    });
+  }
+
   function syncMarkerVisibility() {
     if (!map.getSource(CLUSTER_SOURCE_ID)) return;
     const unclustered = map.querySourceFeatures(CLUSTER_SOURCE_ID, {
       filter: ['!', ['has', 'point_count']]
     });
-    const clusters = map.queryRenderedFeatures({ layers: [CLUSTER_LAYER_ID] });
 
     // Defensive: when the cluster worker is mid-rebuild, querySourceFeatures
     // can return [] even though we have pins in currentPins. Without this
     // guard, the sync would hide EVERY marker (the brief flash the user
     // sees on refresh / dev-tools open). Keep the current display state and
     // wait for the next event when the index is stable.
-    if (currentPins.length > 0 && !unclustered.length && !clusters.length) return;
+    if (currentPins.length > 0 && !unclustered.length && clusterMarkers.size === 0) return;
 
     const visibleIdxs = new Set();
     unclustered.forEach(f => visibleIdxs.add(f.properties.idx));
 
-    // Mapbox layers render BELOW HTML markers (markers are DOM siblings of
-    // the map canvas), so without this an unclustered pin sitting near a
-    // cluster bubble visually pokes out from under the cluster. Compute each
-    // cluster's red-bubble screen center and hide any marker whose own red
-    // bubble would overlap — effectively "cluster appears in front."
-    const clusterBubbles = clusters.map(c => {
-      const p = map.project(c.geometry.coordinates);
-      return { x: p.x, y: p.y + CLUSTER_BUBBLE_OFFSET_Y };
+    // HTML cluster markers ARE the cluster bubbles, but DOM-sibling order
+    // alone doesn't guarantee stacking — so we also hide any individual
+    // pin marker whose red bubble would overlap a cluster's red bubble.
+    // ("cluster appears in front" — same intent as before, source of
+    // truth is now the live cluster marker set.)
+    const clusterBubbles = [];
+    clusterMarkers.forEach(m => {
+      const p = map.project(m.getLngLat());
+      clusterBubbles.push({ x: p.x, y: p.y + CLUSTER_BUBBLE_OFFSET_Y });
     });
 
     pinMarkers.forEach((m, i) => {
@@ -728,72 +831,44 @@
       clusterRadius: 40   // tighter net → most pins stay individual; only very
                           // dense areas form clusters
     });
-    // Load the cluster artwork as a Mapbox image. Drop shadow is baked
-    // into the SVG, so no separate shadow layer is needed.
-    loadSvgAsMapImage('cluster-icon', PIN_CLUSTER_URL, PIN_CLUSTER_W, PIN_CLUSTER_H);
-    // Cluster bubble — single symbol layer using the Figma-exported icon.
+    // Cluster bubbles are HTML markers (see `syncClusterMarkers`) so the
+    // count can render in DM Sans (Mapbox glyph fonts don't include our
+    // app fonts) and the bubble can scale up on tap via CSS. We still
+    // need ONE layer referencing the clustered source though, otherwise
+    // Mapbox's tile worker treats the source as unused and skips the
+    // clustering pass entirely — `querySourceFeatures` would return only
+    // singletons and `syncClusterMarkers` would find nothing to render.
+    // This invisible circle layer is a no-op visually but keeps the
+    // worker active.
     map.addLayer({
       id: CLUSTER_LAYER_ID,
-      type: 'symbol',
+      type: 'circle',
       source: CLUSTER_SOURCE_ID,
       filter: ['has', 'point_count'],
-      layout: {
-        'icon-image': 'cluster-icon',
-        'icon-size': 1,
-        'icon-allow-overlap': true,
-        'icon-ignore-placement': true
-        // icon-anchor defaults to 'center', so the icon's center sits at
-        // the lng/lat. The red bubble inside the SVG is ~15.5px above
-        // center; the count text below uses text-translate to land on it.
-      }
-    });
-    // Count label — translated up so the digits land on the red bubble
-    // (CLUSTER_BUBBLE_OFFSET_Y above the icon center / lng/lat).
-    map.addLayer({
-      id: CLUSTER_COUNT_LAYER_ID,
-      type: 'symbol',
-      source: CLUSTER_SOURCE_ID,
-      filter: ['has', 'point_count'],
-      layout: {
-        'text-field': ['get', 'point_count_abbreviated'],
-        'text-font': ['DIN Pro Medium', 'Arial Unicode MS Bold'],
-        'text-size': 13,
-        'text-allow-overlap': true,
-        'text-ignore-placement': true
-      },
       paint: {
-        'text-color': '#ffffff',
-        'text-translate': [0, CLUSTER_BUBBLE_OFFSET_Y]
+        'circle-color': 'rgba(0,0,0,0)',
+        'circle-radius': 1,
+        'circle-opacity': 0
       }
     });
-    // Click a cluster → ease in to the zoom level at which it expands.
-    map.on('click', CLUSTER_LAYER_ID, function(e) {
-      const features = map.queryRenderedFeatures(e.point, { layers: [CLUSTER_LAYER_ID] });
-      if (!features.length) return;
-      const clusterId = features[0].properties.cluster_id;
-      const src = map.getSource(CLUSTER_SOURCE_ID);
-      src.getClusterExpansionZoom(clusterId, function(err, zoom) {
-        if (err) return;
-        map.easeTo({
-          center: features[0].geometry.coordinates,
-          zoom: zoom,
-          duration: 500
-        });
-      });
-    });
-    map.on('mouseenter', CLUSTER_LAYER_ID, () => { map.getCanvas().style.cursor = 'pointer'; });
-    map.on('mouseleave', CLUSTER_LAYER_ID, () => { map.getCanvas().style.cursor = ''; });
-    // Resync HTML marker visibility whenever the rendered cluster set changes.
+    // Sync HTML cluster markers + individual-pin visibility whenever the
+    // tile state settles.
     // - `idle` is the most reliable signal — fires only after all tile
     //   workers (including the clustering supercluster pass) have settled.
     //   Without this the FIRST sync after initial data fetch fires too
     //   early: `sourcedata` reports the source as loaded, but
-    //   `querySourceFeatures` still returns an empty unclustered set, so
-    //   every marker would be hidden until the user pans.
+    //   `querySourceFeatures` still returns an empty set, so every pin
+    //   marker would be hidden until the user pans.
     // - `moveend` is kept for snappier feedback while panning (idle waits
     //   for tile loads, which can lag a beat behind the pan settling).
-    map.on('idle', syncMarkerVisibility);
-    map.on('moveend', syncMarkerVisibility);
+    // Cluster markers must sync BEFORE pin visibility — pin visibility
+    // reads from `clusterMarkers` to compute its overlap-hide list.
+    function syncAll() {
+      syncClusterMarkers();
+      syncMarkerVisibility();
+    }
+    map.on('idle', syncAll);
+    map.on('moveend', syncAll);
   }
 
   const VENUE_PIN_SVG = '<svg width="58" height="62" viewBox="0 0 58 62" fill="none" xmlns="http://www.w3.org/2000/svg"><g filter="url(#filter0_d_4995_23746)"><path d="M42 23C42 30.1797 36.1797 36 29 36C21.8203 36 16 30.1797 16 23C16 15.8203 21.8203 10 29 10C36.1797 10 42 15.8203 42 23Z" fill="white"/><path d="M27.1274 38.7907C27.8453 39.7676 29.3048 39.7676 30.0227 38.7907L37.3637 28.8003C38.2355 27.6139 37.3883 25.9401 35.9161 25.9401H21.2341C19.7618 25.9401 18.9146 27.6139 19.7864 28.8003L27.1274 38.7907Z" fill="white"/><circle cx="29" cy="23" r="10" fill="url(#paint0_linear_4995_23746)"/><circle cx="29" cy="23" r="3" fill="white"/></g><defs><filter id="filter0_d_4995_23746" x="0" y="0" width="58" height="61.5234" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/><feOffset dy="6"/><feGaussianBlur stdDeviation="8"/><feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.14 0"/><feBlend mode="normal" in2="BackgroundImageFix" result="effect1_dropShadow_4995_23746"/><feBlend mode="normal" in="SourceGraphic" in2="effect1_dropShadow_4995_23746" result="shape"/></filter><linearGradient id="paint0_linear_4995_23746" x1="29" y1="13" x2="29" y2="33" gradientUnits="userSpaceOnUse"><stop stop-color="#FF5858"/><stop offset="1" stop-color="#E10E0E"/></linearGradient></defs></svg>';
@@ -2786,17 +2861,27 @@
       // any sheet that doesn't carry .vd-tab-overview.
       if (venueDetailSheet) venueDetailSheet.classList.toggle('vd-tab-overview', panelName === 'overview');
 
-      // Glide to the cached pin so the sticky nav fades in alongside the
-      // scroll instead of snapping. __vdPinOffset was cached at open time
-      // (see venueDetailOpen path) and is refreshed whenever the About
-      // block expands. Use the cached value here — re-measuring requires
-      // first resetting scrollTop=0, which is itself the abrupt jump we
-      // are trying to avoid.
+      // Land at the cached pin (top of the new tab's content). Behavior
+      // depends on where the user is:
+      //   - Above the pin (hero still visible): glide to pinOffset so the
+      //     sticky nav fades in alongside the scroll.
+      //   - At or past the pin (tabs already pinned): SNAP instantly to
+      //     pinOffset. The new tab's content should always start at the
+      //     top — but an animated scroll back to pinOffset from a deep
+      //     scroll position would feel like "scrolling to initial state".
+      //     Instant snap reads as "tabs pinned, content reset, ready".
+      // __vdPinOffset was cached at open time (see venueDetailOpen path)
+      // and is refreshed whenever the About block expands.
       requestAnimationFrame(function() {
         var pinOffset = window.__vdPinOffset || 0;
-        if (pinOffset > 0) {
-          var maxScroll = venueDetailScroll.scrollHeight - venueDetailScroll.clientHeight;
-          smoothScrollVdTo(Math.min(pinOffset, Math.max(0, maxScroll)), 360);
+        if (pinOffset <= 0) return;
+        var maxScroll = venueDetailScroll.scrollHeight - venueDetailScroll.clientHeight;
+        var target = Math.min(pinOffset, Math.max(0, maxScroll));
+        if (venueDetailScroll.scrollTop < pinOffset - 4) {
+          smoothScrollVdTo(target, 360);
+        } else {
+          cancelVdTabScroll();
+          venueDetailScroll.scrollTop = target;
         }
       });
 
@@ -4665,6 +4750,10 @@
         cdCheckoutHideTimer = null;
       }
       cdCheckoutSheet.classList.remove('is-collapsing');
+      // Reset CTA state from any prior close — the previous closeCheckout
+      // may have left the sheet's CTA in the black Cancel state to morph
+      // cleanly into the bar; the next open must start from base red Book.
+      cdCheckoutCta.classList.remove('is-reserved');
       // Strip any lingering sheet-overlay flag (e.g. from an interrupted
       // close) before re-applying it below.
       cdBookingBar.classList.remove('is-sheet-overlay');
@@ -4697,19 +4786,19 @@
       cdBookingBar.classList.add('is-under-checkout');
       cdBookingBar.classList.add('is-sheet-overlay');
       cdCheckoutScrim.classList.add('is-visible');
-      // Add is-open to trigger the coordinated CSS transitions.
-      cdCheckoutSheet.classList.add('is-open');
-      cdCheckoutSheet.style.height = targetH + 'px';
-      // Delay the label swap until the pill has grown wide enough to fit
-      // the longer label — the closed Book-shape pill is only 100px wide,
-      // which would clip/wrap until the morph completes. ~200ms in, the
-      // pill is roughly halfway and the text fits.
-      setTimeout(function() {
-        if (!cdCheckoutOpen || !cdCheckoutCtaLabel) return;
+      // Swap the label immediately so the morph from the bar's short pill
+      // ("Book" / "Cancel") to the full-width modal CTA reads as a single
+      // continuous transition. The pill's overflow:hidden + nowrap clips
+      // the wider text during the early frames of the morph, but that
+      // reads better than a 200ms-late text swap mid-expansion.
+      if (cdCheckoutCtaLabel) {
         cdCheckoutCtaLabel.textContent = cdCheckoutSheet.classList.contains('is-cancel-mode')
           ? 'Confirm and cancel'
           : 'Book and Pay';
-      }, 200);
+      }
+      // Add is-open to trigger the coordinated CSS transitions.
+      cdCheckoutSheet.classList.add('is-open');
+      cdCheckoutSheet.style.height = targetH + 'px';
     }
 
     // Open the same sheet but in cancel-reservation mode — different
@@ -4720,6 +4809,12 @@
       cdCheckoutSheet.classList.add('is-cancel-mode');
       var titleEl = document.getElementById('cd-checkout-title');
       if (titleEl) titleEl.textContent = 'Cancel reservation?';
+      // Set the CTA label immediately so the morph from the bar's "Cancel"
+      // pill into the full-width modal CTA reads as a single continuous
+      // transition. Without this, the 200ms label-swap delay in
+      // openCheckout (intended for the "Book" → "Book and Pay" case)
+      // leaves "Cancel" visible until the pill is nearly full width.
+      if (cdCheckoutCtaLabel) cdCheckoutCtaLabel.textContent = 'Confirm and cancel';
       openCheckout();
     }
 
@@ -4757,10 +4852,6 @@
       // already at opacity 1, eliminating the empty-frame flash that
       // happens if we kick off the fade at sheet-hide.
       cdBookingBar.classList.remove('is-under-checkout');
-      // Swap CTA label as the morph starts so by the time the pill has
-      // shrunk back to bar-shape, the label already reads "Book". Also
-      // clear the spinner/success state so re-opening starts clean.
-      if (cdCheckoutCtaLabel) cdCheckoutCtaLabel.textContent = 'Book';
       cdCheckoutCta.classList.remove('is-loading');
       // Reset the cancel-mode UI so the next open starts in checkout mode.
       cdCheckoutSheet.classList.remove('is-cancel-mode');
@@ -4772,6 +4863,9 @@
       // Dismissing while in the success state (X, scrim, or "You're
       // all set" CTA) all mean the reservation is committed — capture
       // the reservation so any close path produces the same outcome.
+      // Capture happens BEFORE the CTA label/style is set below so the
+      // sheet's CTA can morph directly to the final "Cancel" black state
+      // (matching the bar underneath) instead of flashing red Book.
       if (cdCheckoutSheet.classList.contains('is-success')) {
         var resPin = window.__currentVenuePin;
         var resTitleEl = document.getElementById('cd-title');
@@ -4783,6 +4877,18 @@
         if (window.__applyReservedHighlights) window.__applyReservedHighlights();
       }
       cdCheckoutSheet.classList.remove('is-success');
+      // Morph the sheet's CTA to whatever state the booking bar will show
+      // once revealed — black "Cancel" if a reservation now exists for the
+      // viewed slot, red "Book" otherwise. The sheet sits at z 36 over the
+      // bar (z 35), so without this the user sees the sheet's red Book
+      // collapse and then the bar's black Cancel snap in at end-of-morph.
+      var willShowCancel = currentSlotMatchesReservation();
+      if (cdCheckoutCtaLabel) cdCheckoutCtaLabel.textContent = willShowCancel ? 'Cancel' : 'Book';
+      if (willShowCancel) {
+        cdCheckoutCta.classList.add('is-reserved');
+      } else {
+        cdCheckoutCta.classList.remove('is-reserved');
+      }
       // Sync the booking-bar CTA against the (possibly just-committed)
       // reservation — black "Cancel" if the currently-viewed slot is
       // the reserved one, red "Book" otherwise.
@@ -4963,17 +5069,28 @@
       moveCdIndicator(tab);
       var name = tab.dataset.cdtab;
       cdPanels.forEach(function(p) { p.classList.toggle('active', p.dataset.cdpanel === name); });
-      // Animate scroll FROM the current position TO the cached pin offset
-      // (instead of two instant snaps via scrollTop=0 + scrollTop=pinOffset).
-      // Panel content appears instantly under the moving scroll — no fade.
-      // Deferred to next frame so the panel display: none → flex swap has
-      // committed layout before we fit the panel's min-height.
+      // Land at the cached pin (top of the new tab's content). Behavior
+      // depends on where the user is:
+      //   - Above the pin (hero still visible): glide to pinOffset so the
+      //     sticky nav fades in alongside the scroll.
+      //   - At or past the pin (tabs already pinned): SNAP instantly to
+      //     pinOffset. The new tab's content should always start at the
+      //     top — but an animated scroll back to pinOffset from a deep
+      //     scroll position would feel like "scrolling to initial state".
+      //     Instant snap reads as "tabs pinned, content reset, ready".
+      // Deferred to next frame so the panel display: none → flex swap
+      // has committed layout before we fit the panel's min-height.
       requestAnimationFrame(function() {
         fitCdActivePanelHeight();
         var pinOffset = window.__cdPinOffset || 0;
-        if (pinOffset > 0) {
-          var maxScroll = classDetailScroll.scrollHeight - classDetailScroll.clientHeight;
-          smoothScrollCdTo(Math.min(pinOffset, Math.max(0, maxScroll)), 360);
+        if (pinOffset <= 0) return;
+        var maxScroll = classDetailScroll.scrollHeight - classDetailScroll.clientHeight;
+        var target = Math.min(pinOffset, Math.max(0, maxScroll));
+        if (classDetailScroll.scrollTop < pinOffset - 4) {
+          smoothScrollCdTo(target, 360);
+        } else {
+          cancelCdTabScroll();
+          classDetailScroll.scrollTop = target;
         }
       });
       // Reset horizontal scroll on review carousels so each tab opens cleanly

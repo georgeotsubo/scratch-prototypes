@@ -821,6 +821,50 @@
     -webkit-user-drag: none;
     user-select: none;
   }
+  /* ========== HTML CLUSTER MARKER ==========
+     Replaces the old Mapbox cluster symbol + text layers so the count
+     can render in DM Sans (Mapbox glyph fonts don't include our app
+     fonts) and the bubble can scale up on tap via CSS.
+
+     Structure: .cluster-pin (Mapbox positions this) → .cluster-pin-inner
+     (gets the scale transform on tap, isolated from Mapbox's translate
+     on the outer element) → SVG <img> + count <span>. */
+  .cluster-pin {
+    cursor: pointer;
+    line-height: 0;
+  }
+  .cluster-pin-inner {
+    position: relative;
+    transform: scale(1);
+    transform-origin: 50% 26px; /* matches the red bubble's cy in pin-cluster.svg */
+    transition: transform 0.22s cubic-bezier(.34, 1.56, .64, 1);
+  }
+  .cluster-pin.is-tapped .cluster-pin-inner {
+    transform: scale(1.25);
+  }
+  .cluster-pin img {
+    display: block;
+    pointer-events: none;
+    -webkit-user-drag: none;
+    user-select: none;
+  }
+  /* Count text sits on the red bubble. pin-cluster.svg has its bubble
+     centered at (40.375, 26) in the 80×80 canvas — so the count's
+     center lands at (50%, 26). */
+  .cluster-count {
+    position: absolute;
+    top: 26px;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    line-height: 1;
+    color: #ffffff;
+    pointer-events: none;
+    user-select: none;
+    -webkit-font-smoothing: antialiased;
+  }
   .pin-dot-numbered {
     width: 28px;
     height: 28px;
@@ -1671,7 +1715,7 @@
   .vd-name {
     font-family: 'DM Sans', sans-serif;
     font-size: 28px;
-    font-weight: 900;
+    font-weight: 700;
     line-height: 32px;
     color: #020203;
     margin: 0;
@@ -4419,6 +4463,17 @@
   .cd-checkout-sheet.is-success .cd-checkout-cta:active {
     background: #e6e7e9;
     transform: scale(0.96);
+  }
+  /* Reserved morph: when closing from the success state, the sheet's CTA
+     morphs to the black Cancel state that the booking bar underneath
+     shows, so the final frame of the close matches the bar's CTA exactly
+     instead of flashing red Book mid-morph. */
+  .cd-checkout-sheet .cd-checkout-cta.is-reserved {
+    background: #020203;
+    color: #fff;
+  }
+  .cd-checkout-sheet .cd-checkout-cta.is-reserved:active {
+    background: #1a1a1c;
   }
   .cd-cta-icon-calendar {
     display: none;
