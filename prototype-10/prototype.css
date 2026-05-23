@@ -1851,6 +1851,10 @@
     display: none;
     flex-direction: column;
     gap: 40px;
+    /* Trim 20px off the 40px venue-detail-content flex gap so the visual
+       gap from the sticky tabs to the active panel's first card lands at
+       20px (matches the class-detail tabs→intro card spacing). */
+    margin-top: -20px;
   }
   /* Overview ends with the map card; pad below it so the absolutely-positioned
      floating "See full schedule" button (52px tall + 40px bottom offset = 92px
@@ -1887,10 +1891,10 @@
     top: 125px;
     z-index: 2;
     background: #f1f2f3;
-    /* Fully cancels the 40px flex gap that .venue-detail-content puts
-       between the tabs and the schedule panel, so the picker sits flush
-       below the tab bar from the start (no gap that closes on scroll). */
-    margin-top: -40px;
+    /* Cancels the effective 20px tabs→panel gap (40px venue-detail-content
+       flex gap minus the -20px margin-top on .vd-panel) so the picker sits
+       flush below the tab bar from the start. */
+    margin-top: -20px;
     margin-left: -20px;
     margin-right: -20px;
     padding-top: 16px;
@@ -2295,6 +2299,9 @@
     padding: 12px 16px;
     background: white;
     border-radius: 24px;
+    /* Tighten the gap below the promo card from the parent's 40px down to
+       24px (40 + (-16)), matching the image-carousel→promo spacing above. */
+    margin-bottom: -16px;
   }
   .vd-promo-icon { flex-shrink: 0; margin-top: 2px; }
   .vd-promo-title {
@@ -2718,10 +2725,10 @@
     padding: 12px 16px;
     border-radius: 24px;
     background-color: #fff;
-    /* Pulls the about copy 8px closer to the image carousel so the gap
-       between carousel and copy is 24px while all other
-       .venue-detail-content gaps stay at 40px. */
-    margin-top: -8px;
+    /* Trim 20px off the 40px venue-detail-content flex gap so the visual
+       gap from the sticky tabs to this intro card lands at 20px, matching
+       the class-detail tabs→intro card spacing. */
+    margin-top: -20px;
   }
   .vd-about-block[hidden] { display: none; }
 
@@ -3138,8 +3145,8 @@
      ease-out animation in prototype.js for a slower, more deliberate
      carousel feel. Pinned flush below the sticky cd-tabs (which sit at
      top:80, height 45) at top:125. Negative top margin cancels the
-     cd-content flex gap (24px) so the picker sits flush below the tabs
-     from the start — no gap that closes on scroll. */
+     effective tabs→panel gap (20px, after the -4px margin on .cd-panel)
+     so the picker sits flush below the tabs from the start. */
   .cd-date-picker {
     display: flex;
     overflow-x: auto;
@@ -3148,7 +3155,7 @@
     overscroll-behavior-x: contain;
     margin-left: -20px;
     margin-right: -20px;
-    margin-top: -24px;
+    margin-top: -20px;
     position: sticky;
     top: 125px;
     z-index: 2;
@@ -3350,7 +3357,12 @@
   }
 
   /* Panels */
-  .cd-panel { display: none; }
+  .cd-panel {
+    display: none;
+    /* Trim 4px off the 24px cd-content flex gap so the visual gap from the
+       sticky tabs to the active panel's first card lands at 20px. */
+    margin-top: -4px;
+  }
   .cd-panel.active {
     display: flex;
     flex-direction: column;
