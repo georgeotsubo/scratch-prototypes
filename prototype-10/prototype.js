@@ -4627,7 +4627,7 @@
           if (!cdCheckoutOpen) return;
           // CTA flips to "Add to calendar" with a calendar leading icon
           // (CSS reveals .cd-cta-icon-calendar via .is-success on the sheet).
-          if (cdCheckoutCtaLabel) cdCheckoutCtaLabel.textContent = 'Add to calendar';
+          if (cdCheckoutCtaLabel) cdCheckoutCtaLabel.textContent = 'Add';
           // Swap the sheet title to confirm the booking succeeded. The
           // close handler restores it to "Review and confirm" so the
           // next open starts clean.
@@ -4643,14 +4643,11 @@
           // − (32 + 48 CTA-from-bottom). Bump this if more breathing
           // room is needed.
           cdCheckoutSheet.style.height = '420px';
-          // Restart the confirmation video each time we enter success
-          // state so it plays from the beginning. `muted` enables
-          // autoplay; play() returns a promise we swallow rejections on
-          // (Safari sometimes rejects without user gesture, fine to ignore).
+          // Restart the confirmation lottie each time we enter success state.
+          // dotlottie-player exposes seek() + play() directly on the element.
           if (cdCheckoutSuccessVideo) {
-            try { cdCheckoutSuccessVideo.currentTime = 0; } catch (e) {}
-            var p = cdCheckoutSuccessVideo.play();
-            if (p && p.catch) p.catch(function() {});
+            try { cdCheckoutSuccessVideo.seek(0); } catch (e) {}
+            try { cdCheckoutSuccessVideo.play(); } catch (e) {}
           }
         }, 2000);
       });

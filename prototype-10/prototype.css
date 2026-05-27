@@ -2326,7 +2326,7 @@
     gap: 16px;
   }
   #vd-section-reviews {
-    gap: 24px;
+    gap: 16x;
   }
   .vd-reviews-group {
     display: flex;
@@ -3426,7 +3426,7 @@
     gap: 20px;
   }
   .cd-section.cd-section-reviews {
-    gap: 24px;
+    gap: 16px;
   }
   .cd-section-heading-group {
     display: flex;
@@ -4081,12 +4081,8 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    /* `flex-start` (was `center`) pins the image just below the header so
-       the extra room produced by a taller sheet falls UNDER the caption
-       — that's the "more space between 'You're all set' and 'Add to
-       calendar'" the user asked for. */
-    justify-content: flex-start;
-    gap: 4px;
+    justify-content: center;
+    gap: 20px;
     transform: scale(0.6);
     opacity: 0;
     pointer-events: none;
@@ -4100,8 +4096,8 @@
       transform 0.4s cubic-bezier(0.22, 1, 0.36, 1) 0.18s;
   }
   .cd-checkout-success-image {
-    width: 176px;
-    height: 176px;
+    width: 80px;
+    height: 80px;
     object-fit: contain;
     display: block;
     user-select: none;
@@ -4443,6 +4439,8 @@
     background: #e10e0e;
     color: #fff;
     border: none;
+    outline: none;
+    -webkit-tap-highlight-color: transparent;
     border-radius: 999px;
     padding: 12px 16px;
     font-family: 'DM Sans', sans-serif;
@@ -4462,15 +4460,18 @@
     cursor: pointer;
     transition:
       left 0.44s cubic-bezier(.32,.72,0,1),
+      right 0.44s cubic-bezier(.32,.72,0,1),
       transform 0.12s cubic-bezier(.25,.46,.45,.94),
       background-color 0.22s ease,
       color 0.22s ease;
   }
   /* Success-state CTA: gray neutral background, dark text, with the
-     calendar icon revealed left of the "Add to calendar" label. */
+     calendar icon revealed left of the "Add" label. Right edge pulls
+     in to the midpoint so the Share button sits beside it. */
   .cd-checkout-sheet.is-success .cd-checkout-cta {
     background: #f1f2f3;
     color: #020203;
+    right: calc(50% + 6px);
   }
   .cd-checkout-sheet.is-success .cd-checkout-cta:active {
     background: #e6e7e9;
@@ -4505,6 +4506,59 @@
   .cd-checkout-cta:active {
     background: #c00b0b;
     transform: scale(0.96);
+  }
+  .cd-checkout-cta:focus,
+  .cd-checkout-cta:focus-visible {
+    outline: none;
+  }
+  /* Share button: hidden by default, fades in on success state. Mirrors
+     the Add CTA's typography + pill shape so the row reads as a paired set. */
+  .cd-checkout-share {
+    position: absolute;
+    left: calc(50% + 6px);
+    right: 20px;
+    bottom: 32px;
+    background: #f1f2f3;
+    color: #020203;
+    border: none;
+    outline: none;
+    -webkit-tap-highlight-color: transparent;
+    border-radius: 999px;
+    padding: 12px 16px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    white-space: nowrap;
+    cursor: pointer;
+    opacity: 0;
+    pointer-events: none;
+    transition:
+      opacity 0.25s ease,
+      transform 0.12s cubic-bezier(.25,.46,.45,.94),
+      background-color 0.22s ease;
+  }
+  .cd-checkout-sheet.is-success .cd-checkout-share {
+    opacity: 1;
+    pointer-events: auto;
+  }
+  .cd-checkout-share:active {
+    background: #e6e7e9;
+    transform: scale(0.96);
+  }
+  .cd-checkout-share:focus,
+  .cd-checkout-share:focus-visible {
+    outline: none;
+  }
+  .cd-share-icon {
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+    pointer-events: none;
   }
   /* Loading state: hide the label and reveal a centered iOS-style spinner.
      The button keeps its position/size so only the inner content changes. */

@@ -11,6 +11,7 @@
 <script src="https://api.mapbox.com/mapbox-gl-js/v3.4.0/mapbox-gl.js"></script>
 <link rel="stylesheet" href="prototype.css">
 <script src="https://cdn.jsdelivr.net/npm/motion@11.18.2/dist/motion.js"></script>
+<script src="https://unpkg.com/@dotlottie/player-component@2.7.12/dist/dotlottie-player.js"></script>
 <script src="config.js"></script>
 </head>
 <body>
@@ -882,12 +883,13 @@
          above the "You're all set!" caption. Fades + scales in once
          .is-success lands on the sheet. -->
     <div class="cd-checkout-success" id="cd-checkout-success" aria-hidden="true">
-      <video class="cd-checkout-success-image" id="cd-checkout-success-video" width="176" height="176" preload="auto" muted playsinline disablepictureinpicture>
-        <source src="../images/checkout_2.mp4" type="video/mp4">
-      </video>
+      <dotlottie-player class="cd-checkout-success-image" id="cd-checkout-success-video" src="../images/checkmark.lottie" style="width:80px;height:80px;"></dotlottie-player>
       <p class="cd-checkout-success-caption">You&rsquo;re all set!</p>
     </div>
     <button class="cd-checkout-cta" id="cd-checkout-cta"><img class="cd-cta-icon-calendar" src="figma-screens/calendar-icon.svg" alt="" aria-hidden="true" draggable="false"><span class="cd-cta-label">Book</span><span class="cd-cta-spinner" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></button>
+    <!-- Share button: only revealed in success state, sits in the right
+         half of the row alongside the shrunk "Add" CTA. -->
+    <button class="cd-checkout-share" id="cd-checkout-share" type="button" aria-label="Share"><svg class="cd-share-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M4 13V17C4 18.1046 4.89543 19 6 19H18C19.1046 19 20 18.1046 20 17V13" stroke="#020203" stroke-width="2" stroke-linecap="round"/><path d="M12 6L12 14" stroke="#020203" stroke-width="2" stroke-linecap="round"/><path d="M8 8L11.6464 4.35355C11.8417 4.15829 12.1583 4.15829 12.3536 4.35355L16 8" stroke="#020203" stroke-width="2" stroke-linecap="round"/></svg><span class="cd-share-label">Share</span></button>
     <!-- Compact summary that mirrors the booking bar's left content. Hidden
          while the sheet is open; fades in during the close so the sheet's
          end-of-morph state visually matches the booking bar instead of
