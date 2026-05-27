@@ -3819,6 +3819,11 @@
               slotEls.forEach(function(s) { s.classList.remove('selected'); });
             }
           }
+          // Reserved highlight must follow the viewing date. The slot list
+          // isn't re-rendered on date switch, so we have to re-run the
+          // highlight pass manually — otherwise an `is-reserved` slot from
+          // the booked date stays marked across other dates.
+          if (window.__applyReservedHighlights) window.__applyReservedHighlights();
         });
       });
       // Scroll to the week containing the day the user is viewing.
@@ -4560,6 +4565,7 @@
       var cdTitleEl = document.getElementById('cd-title');
       if (!cdTitleEl || cdTitleEl.textContent !== r.classTitle) return false;
       if (!cdLastSlot || cdLastSlot.time !== r.slotTime) return false;
+      if (cdSelectedAbsIdx !== r.absIdx) return false;
       return true;
     }
     window.__syncBookingBarCta = function() {
@@ -4582,10 +4588,11 @@
       var venueKey = p ? ((p.name || '') + '|' + (p.lat || '') + '|' + (p.lng || '')) : '';
       if (venueKey !== r.venueKey) return;
       // Class-detail time slots only highlight when the currently-viewed
-      // class is the reserved one (title check) — otherwise the same
-      // time slot on a sibling class would falsely show as reserved.
+      // class AND the currently-viewed date match the reservation — without
+      // the date check, the same time slot on a different day would falsely
+      // show as reserved when the user tabs through the date picker.
       var cdTitleEl = document.getElementById('cd-title');
-      if (cdTitleEl && cdTitleEl.textContent === r.classTitle) {
+      if (cdTitleEl && cdTitleEl.textContent === r.classTitle && cdViewingAbsIdx === r.absIdx) {
         document.querySelectorAll('.cd-time-slot').forEach(function(slot) {
           if (slot.dataset.time === r.slotTime) slot.classList.add('is-reserved');
         });
@@ -4869,7 +4876,8 @@
         window.__reservation = {
           venueKey: resPin ? ((resPin.name || '') + '|' + (resPin.lat || '') + '|' + (resPin.lng || '')) : '',
           classTitle: resTitleEl ? resTitleEl.textContent : '',
-          slotTime: cdLastSlot ? cdLastSlot.time : ''
+          slotTime: cdLastSlot ? cdLastSlot.time : '',
+          absIdx: cdSelectedAbsIdx
         };
         if (window.__applyReservedHighlights) window.__applyReservedHighlights();
       }

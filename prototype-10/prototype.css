@@ -2037,7 +2037,6 @@
     font-family: 'DM Sans', sans-serif;
     font-size: 16px;
     font-weight: 700;
-    line-height: 24px;
     color: #379062;
   }
   .vd-price-plain {
@@ -2049,6 +2048,26 @@
   }
   .vd-schedule-card.disabled .vd-price-final,
   .vd-schedule-card.disabled .vd-price-plain { color: #b3b5bc; }
+  /* Sold-out state (matches Figma node 6493:11678): hide the price and
+     show "Sold out" in --text/emphasis red. Other text already greys via
+     the .disabled rules above. Two markup variants exist: a wrapper
+     `.vd-schedule-price` with child spans (finalPrice path), or a bare
+     `.vd-price-plain` span (plainPrice path) — handle both. */
+  .vd-schedule-card.disabled .vd-schedule-price,
+  .vd-schedule-card.disabled .vd-price-plain {
+    font-size: 0;
+    line-height: 0;
+  }
+  .vd-schedule-card.disabled .vd-schedule-price::before,
+  .vd-schedule-card.disabled .vd-price-plain::before {
+    content: 'Sold out';
+    color: #e10e0e;
+    font-weight: 600;
+    font-size: 16px;
+    line-height: 24px;
+    display: inline-block;
+    vertical-align: middle;
+  }
 
   /* ===== CLASSES PANEL ===== */
   .vd-class-summary-card {
@@ -3285,15 +3304,42 @@
     text-decoration: line-through;
     font-weight: 400;
   }
-  /* Reserved state: prepend "Reserved · " in secondary grey/regular weight
-     to the price wrapper. Applied to both class-detail time-slots and
-     venue-detail schedule cards via .is-reserved on the card root. */
-  .cd-time-slot.is-reserved .cd-time-slot-price::before,
-  .vd-schedule-card.is-reserved .vd-schedule-price::before,
-  .vd-schedule-card.is-reserved .vd-price-plain::before {
-    content: 'Reserved · ';
+  /* Reserved state (matches Figma node 6524:15291): all text greys out to
+     --text/disabled (#b3b5bc), price is replaced with the word "Reserved"
+     in --text/secondary (#696c77). Applied to both class-detail time-slots
+     and venue-detail schedule cards via .is-reserved on the card root. */
+  .cd-time-slot.is-reserved .cd-time-slot-time,
+  .cd-time-slot.is-reserved .cd-time-slot-duration,
+  .cd-time-slot.is-reserved .cd-time-slot-instructor {
+    color: #b3b5bc;
+  }
+  .cd-time-slot.is-reserved .cd-time-slot-price {
+    font-size: 0;
+  }
+  .cd-time-slot.is-reserved .cd-time-slot-price::before {
+    content: 'Reserved';
     color: #696c77;
-    font-weight: 400;
+    font-weight: 600;
+    font-size: 16px;
+    line-height: 24px;
+  }
+  .vd-schedule-card.is-reserved .vd-schedule-time,
+  .vd-schedule-card.is-reserved .vd-schedule-duration,
+  .vd-schedule-card.is-reserved .vd-schedule-title {
+    color: #b3b5bc;
+  }
+  .vd-schedule-card.is-reserved .vd-schedule-rating { color: #b3b5bc; }
+  .vd-schedule-card.is-reserved .vd-schedule-rating svg path { fill: #b3b5bc; }
+  .vd-schedule-card.is-reserved .vd-schedule-price > *,
+  .vd-schedule-card.is-reserved .vd-schedule-price-label {
+    display: none;
+  }
+  .vd-schedule-card.is-reserved .vd-schedule-price::before {
+    content: 'Reserved';
+    color: #696c77;
+    font-weight: 600;
+    font-size: 16px;
+    line-height: 24px;
   }
 
   /* Class detail header simplification: the intro chip is redundant (per-slot
@@ -4555,8 +4601,8 @@
     outline: none;
   }
   .cd-share-icon {
-    width: 20px;
-    height: 20px;
+    width: 24px;
+    height: 24px;
     flex-shrink: 0;
     pointer-events: none;
   }
