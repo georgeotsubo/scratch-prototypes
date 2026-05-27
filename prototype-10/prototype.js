@@ -4607,10 +4607,10 @@
     if (cdCheckoutCta) {
       cdCheckoutCta.addEventListener('click', function() {
         if (!cdCheckoutOpen) return;
-        // Success-state tap: close the sheet. closeCheckout detects the
-        // is-success class on its own and captures the reservation.
+        // Success-state tap: the Add button is intentionally non-actionable
+        // (visual affordance only — no calendar integration in the prototype).
+        // Tappable for press feedback, but doesn't dismiss the modal.
         if (cdCheckoutSheet.classList.contains('is-success')) {
-          closeCheckout();
           return;
         }
         // Cancel-mode tap ("Confirm and cancel"): show the iOS spinner

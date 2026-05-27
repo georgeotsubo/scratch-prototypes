@@ -1793,7 +1793,7 @@
      scrolled past. Always visible. */
   .vd-tabs {
     display: flex;
-    gap: 40px;
+    gap: 32px;
     border-bottom: 1px solid #e4e5e7;
     position: sticky;
     /* Pin flush below the 80px shared sticky nav. */
@@ -3358,7 +3358,7 @@
   /* Tabs (sticky below nav, animated indicator) */
   .cd-tabs {
     display: flex;
-    gap: 40px;
+    gap: 32px;
     border-bottom: 1px solid #e4e5e7;
     position: sticky;
     top: 80px;
