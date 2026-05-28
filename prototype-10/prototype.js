@@ -4642,14 +4642,12 @@
           if (successTitleEl) successTitleEl.textContent = 'Reservation confirmed';
           cdCheckoutCta.classList.remove('is-loading');
           cdCheckoutSheet.classList.add('is-success');
-          // Hug the success content: header + 176px phone video + caption
-          // + extra breathing room + CTA. The sheet already has
-          // `transition: height 0.44s ...` so this animates alongside
-          // the body fade. ~50px gap between caption and CTA falls out
-          // of (420 sheet) − (84 top + 176 image + 4 gap + 26 caption)
-          // − (32 + 48 CTA-from-bottom). Bump this if more breathing
-          // room is needed.
-          cdCheckoutSheet.style.height = '420px';
+          // Hug the success content: header + 80px lottie + 20px gap +
+          // caption ≈ 174px content area. Sheet height = 174 + 84 (top
+          // offset of .cd-checkout-success) + 96 (bottom offset) = 354.
+          // The sheet already has `transition: height 0.44s ...` so this
+          // animates alongside the body fade.
+          cdCheckoutSheet.style.height = '354px';
           // Restart the confirmation lottie each time we enter success state.
           // dotlottie-player exposes seek() + play() directly on the element.
           if (cdCheckoutSuccessVideo) {
