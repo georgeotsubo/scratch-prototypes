@@ -3077,7 +3077,7 @@
     font-size: 16px;
     font-weight: 500;
     line-height: 24px;
-    color: #4F5159;
+    color: #020203;
     cursor: pointer;
     min-width: 0;
   }
@@ -3086,6 +3086,9 @@
     text-overflow: ellipsis;
     white-space: nowrap;
     min-width: 0;
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 3px;
   }
   #cd-venue-text {
     font-size: 16px;
