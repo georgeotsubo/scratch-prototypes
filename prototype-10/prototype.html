@@ -809,8 +809,7 @@
       <div class="cd-checkout-card cd-checkout-mode-checkout">
         <div class="cd-checkout-info">
           <div class="cd-checkout-class-title" id="cd-checkout-class-title">Slow Burn Hot Mat Pilates</div>
-          <div class="cd-checkout-time" id="cd-checkout-time">Tue, Mar 3 &middot; 1:00 PM</div>
-          <div class="cd-checkout-instructor" id="cd-checkout-instructor">Carolyn</div>
+          <div class="cd-checkout-meta"><span id="cd-checkout-time">Tue, Mar 3 &middot; 1:00 PM ET</span> &middot; <span id="cd-checkout-instructor">Carolyn</span></div>
           <div class="cd-checkout-venue" id="cd-checkout-venue">ID Hot Yoga &middot; Lower East Side</div>
         </div>
         <div class="cd-checkout-payment">
@@ -858,10 +857,16 @@
         <div class="cd-checkout-venue" id="cd-cancel-venue">ID Hot Yoga &middot; Lower East Side</div>
       </div>
       <div class="cd-checkout-cancellation cd-checkout-mode-checkout">
-        <div class="cd-checkout-cancellation-title">Cancellation policy</div>
-        <div class="cd-checkout-cancellation-body"><strong id="cd-checkout-cancel-cutoff">Free cancellation until Tue, Mar 3 at 1:00 AM ET.</strong> You must cancel your reservation at least 12 hours prior to the class start time in order to return the credit to your account with no late cancellation fee. Late cancellations with less than 12 hours notice will be assessed a $10 charge to your card. The credit will be returned to your account.</div>
+        <div class="cd-checkout-cancellation-heading">
+          <p class="cd-checkout-cancellation-title">Cancellation policy</p>
+          <p class="cd-checkout-cancellation-cutoff" id="cd-checkout-cancel-cutoff">Free cancellation until Tue, Mar 3 at 1:00 AM ET.</p>
+        </div>
+        <ul class="cd-checkout-cancellation-list">
+          <li><strong>Late cancellation fee: $10.</strong> Any late cancellation fee will be charged to your payment method on file.</li>
+          <li>Cancellations will be refunded to your original payment method.</li>
+        </ul>
       </div>
-      <p class="cd-checkout-terms cd-checkout-mode-checkout">By tapping the button below, I agree to the <a href="#" class="cd-checkout-link">Booking Terms</a> and <a href="#" class="cd-checkout-link">Terms of Service</a> and <a href="#" class="cd-checkout-link">Privacy Policy</a>.</p>
+      <p class="cd-checkout-terms cd-checkout-mode-checkout">By tapping &ldquo;Book and pay,&rdquo; you agree to the <a href="#" class="cd-checkout-link">Terms of Use</a>, Cancellation Policy above, and acknowledge the <a href="#" class="cd-checkout-link">Privacy Policy</a>.</p>
       <div class="cd-cancel-block cd-checkout-mode-cancel">
         <div class="cd-cancel-line cd-cancel-line--amount">
           <span class="cd-cancel-label">Refund amount</span>
@@ -886,7 +891,7 @@
       <dotlottie-player class="cd-checkout-success-image" id="cd-checkout-success-video" src="../images/checkmark.lottie" style="width:80px;height:80px;"></dotlottie-player>
       <p class="cd-checkout-success-caption">You&rsquo;re all set!</p>
     </div>
-    <button class="cd-checkout-cta" id="cd-checkout-cta"><img class="cd-cta-icon-calendar" src="figma-screens/calendar-icon.svg" alt="" aria-hidden="true" draggable="false"><span class="cd-cta-label">Book</span><span class="cd-cta-spinner" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></button>
+    <button class="cd-checkout-cta" id="cd-checkout-cta"><img class="cd-cta-icon-calendar" src="figma-screens/calendar-icon.svg" alt="" aria-hidden="true" draggable="false"><span class="cd-cta-label">Book and pay</span><span class="cd-cta-spinner" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></button>
     <!-- Share button: only revealed in success state, sits in the right
          half of the row alongside the shrunk "Add" CTA. -->
     <button class="cd-checkout-share" id="cd-checkout-share" type="button" aria-label="Share"><svg class="cd-share-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M4 13V17C4 18.1046 4.89543 19 6 19H18C19.1046 19 20 18.1046 20 17V13" stroke="#020203" stroke-width="2" stroke-linecap="round"/><path d="M12 6L12 14" stroke="#020203" stroke-width="2" stroke-linecap="round"/><path d="M8 8L11.6464 4.35355C11.8417 4.15829 12.1583 4.15829 12.3536 4.35355L16 8" stroke="#020203" stroke-width="2" stroke-linecap="round"/></svg><span class="cd-share-label">Share</span></button>
@@ -902,6 +907,22 @@
         <span class="cd-mini-instructor" id="cd-mini-instructor"></span>
       </div>
     </div>
+  </div>
+
+  <!-- Cluster venues sheet — opens when a cluster pin is tapped. On open it's
+       re-parented into the active map screen so it sits below that screen's
+       tab bar (mirroring the search results sheet). Drag up to expand to just
+       below the search bar (list scrolls under the header); drag down from the
+       default position to dismiss. -->
+  <div class="cluster-sheet" id="cluster-sheet" aria-hidden="true">
+    <div class="sheet-handle"></div>
+    <div class="cluster-sheet-header">
+      <button class="cluster-sheet-close" id="cluster-sheet-close" aria-label="Close">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M5 5l10 10M15 5l-10 10" stroke="#020203" stroke-width="2" stroke-linecap="round"/></svg>
+      </button>
+      <h2 class="cluster-sheet-title" id="cluster-sheet-title">Places</h2>
+    </div>
+    <div class="venue-list cluster-sheet-list" id="cluster-sheet-list"></div>
   </div>
 
   <!-- Blurred overlay behind the persistent tab bar -->

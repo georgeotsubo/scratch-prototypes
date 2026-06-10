@@ -534,9 +534,7 @@
   function renderAmenities(containerId, amenities, pillClass) {
     var el = document.getElementById(containerId);
     if (!el) return;
-    el.innerHTML = amenities
-      .map(function(a) { return '<span class="' + pillClass + '">' + a + '</span>'; })
-      .join('');
+    el.textContent = amenities.join(' · ');
   }
 
   // Average center of the hardcoded NYC studio data
@@ -687,25 +685,25 @@
     return el;
   }
 
+  // Tapping a cluster enlarges its pin and opens the cluster sheet listing
+  // every venue inside it (instead of zooming to expand). The pin stays
+  // enlarged (.is-tapped) until the sheet closes — see openClusterSheet /
+  // closeClusterSheet below.
   function animateClusterTap(el, lngLat, clusterId) {
+    const src = map.getSource(CLUSTER_SOURCE_ID);
+    if (!src) return;
+    // Pop immediately for tactile feedback; openClusterSheet keeps it enlarged.
     el.classList.add('is-tapped');
-    // Trigger the zoom expansion just after the scale animation peaks so
-    // the user sees the cluster "pop" before the zoom takes over. The
-    // marker gets cleaned up by syncClusterMarkers once the new tile
-    // state arrives (the cluster_id usually disappears at higher zoom).
-    setTimeout(() => {
-      const src = map.getSource(CLUSTER_SOURCE_ID);
-      if (!src) return;
-      src.getClusterExpansionZoom(clusterId, (err, zoom) => {
-        if (err) return;
-        map.easeTo({ center: lngLat, zoom: zoom, duration: 500 });
-      });
-    }, 160);
-    // Clear the tapped scale after the zoom transition would have
-    // finished. Cluster usually disappears at higher zoom (so the marker
-    // gets removed by syncClusterMarkers anyway) but if it persists we
-    // don't want it stuck enlarged.
-    setTimeout(() => el.classList.remove('is-tapped'), 800);
+    // getClusterLeaves returns the original point features (each carries the
+    // `idx` we stamped in pinsToGeoJSON), which maps back to currentPins.
+    src.getClusterLeaves(clusterId, 1000, 0, (err, leaves) => {
+      if (err || !leaves) { el.classList.remove('is-tapped'); return; }
+      const idxs = leaves
+        .map(f => (f.properties ? f.properties.idx : null))
+        .filter(i => i != null && currentPins[i]);
+      if (!idxs.length) { el.classList.remove('is-tapped'); return; }
+      openClusterSheet(el, idxs);
+    });
   }
 
   function syncClusterMarkers() {
@@ -1019,8 +1017,7 @@
     return descs[Math.abs(hash) % descs.length];
   }
 
-  function generateVenueCardHTML(pins, search, location) {
-    return pins.map((pin, i) => {
+  function buildVenueCardHTML(pin, i, search, location) {
       const rawTags = search || pin.category || STUDIO_TAGS[pin.name] || 'Fitness';
       const tags = formatTag(rawTags);
       const distance = pin.distance != null ? (pin.distance / 1609.34).toFixed(1) : (0.1 + (i * 0.15)).toFixed(1);
@@ -1049,7 +1046,9 @@
         ${introBadge}
         <div class="venue-desc">${desc}</div>
       </div>`;
-    }).join('');
+  }
+  function generateVenueCardHTML(pins, search, location) {
+    return pins.map((pin, i) => buildVenueCardHTML(pin, i, search, location)).join('');
   }
 
   function populateVenueList(screenId, pins, search, location) {
@@ -2437,6 +2436,164 @@
       window.addEventListener('mouseup', onUp);
     });
   });
+
+  // ========== CLUSTER SHEET ==========
+  // A standalone draggable sheet listing every venue inside a tapped cluster.
+  // Mirrors the search results sheet: default ~half-open, drag up to expand to
+  // 16px below the search bar (list scrolls under the header), drag down from
+  // default to dismiss. Transform is driven inline from here.
+  const clusterSheet = document.getElementById('cluster-sheet');
+  const clusterListEl = document.getElementById('cluster-sheet-list');
+  const clusterTitleEl = document.getElementById('cluster-sheet-title');
+  const clusterCloseBtn = document.getElementById('cluster-sheet-close');
+  // Y positions match .results-sheet: 0 = default, -266 = expanded (top 126px),
+  // 760 = fully off the bottom (hidden).
+  const CLUSTER_DEFAULT_Y = 0;
+  const CLUSTER_EXPANDED_Y = -266;
+  const CLUSTER_HIDDEN_Y = 760;
+  const CLUSTER_SNAP = 60;
+  let clusterSheetState = 'hidden'; // 'hidden' | 'default' | 'expanded'
+  let clusterCurrentY = CLUSTER_HIDDEN_Y;
+  let activeClusterEl = null; // the enlarged .cluster-pin element
+
+  function setClusterY(y, animate) {
+    clusterCurrentY = y;
+    clusterSheet.style.transition = animate ? '' : 'none';
+    clusterSheet.style.transform = `translateY(${y}px)`;
+  }
+
+  function openClusterSheet(el, idxs) {
+    // Build cards using the real currentPins indices so ratings/images match
+    // the main list and data-venue-index drives openVenueDetail correctly.
+    clusterListEl.innerHTML = idxs
+      .map(idx => buildVenueCardHTML(currentPins[idx], idx, currentSearchLabel, currentLocationLabel))
+      .join('');
+    clusterListEl.scrollTop = 0;
+    clusterTitleEl.textContent = idxs.length + (idxs.length === 1 ? ' Place' : ' Places');
+    clusterListEl.querySelectorAll('.venue-card').forEach(card => {
+      card.style.cursor = 'pointer';
+      card.addEventListener('click', function(e) {
+        if (wasDragging) return;
+        const idx = parseInt(this.dataset.venueIndex, 10);
+        const bookBtn = e.target.closest('.venue-action-btn');
+        const isBook = bookBtn && bookBtn.textContent.trim().includes('Book now');
+        closeClusterSheet();
+        if (isBook) openVenueDetail(idx, 'schedule');
+        else openVenueDetail(idx);
+      });
+    });
+    // Keep the tapped cluster pin enlarged until the sheet closes.
+    if (activeClusterEl && activeClusterEl !== el) activeClusterEl.classList.remove('is-tapped');
+    activeClusterEl = el;
+    el.classList.add('is-tapped');
+    // Re-parent into the active map screen so it stacks below that screen's
+    // tab bar (the tab bar stays in front, like the search results sheet).
+    const screenEl = document.getElementById(currentScreen);
+    if (screenEl && clusterSheet.parentNode !== screenEl) screenEl.appendChild(clusterSheet);
+    clusterSheet.setAttribute('aria-hidden', 'false');
+    clusterSheet.classList.add('is-open');
+    clusterSheet.classList.remove('is-expanded');
+    // Snap to the hidden position without animation, force a reflow, then
+    // animate up to the default position.
+    setClusterY(CLUSTER_HIDDEN_Y, false);
+    void clusterSheet.offsetHeight;
+    setClusterY(CLUSTER_DEFAULT_Y, true);
+    clusterSheetState = 'default';
+  }
+
+  function closeClusterSheet() {
+    if (clusterSheetState === 'hidden') return;
+    clusterSheetState = 'hidden';
+    clusterSheet.classList.remove('is-expanded');
+    setClusterY(CLUSTER_HIDDEN_Y, true);
+    if (activeClusterEl) { activeClusterEl.classList.remove('is-tapped'); activeClusterEl = null; }
+    const done = (ev) => {
+      if (ev.target !== clusterSheet || ev.propertyName !== 'transform') return;
+      if (clusterSheetState === 'hidden') {
+        clusterSheet.classList.remove('is-open');
+        clusterSheet.setAttribute('aria-hidden', 'true');
+      }
+      clusterSheet.removeEventListener('transitionend', done);
+    };
+    clusterSheet.addEventListener('transitionend', done);
+  }
+
+  clusterCloseBtn.addEventListener('click', e => { e.stopPropagation(); closeClusterSheet(); });
+  // Panning/zooming the map dismisses the cluster sheet (its venues are tied
+  // to that map view), matching how map drags collapse the results sheet.
+  map.on('dragstart', closeClusterSheet);
+  map.on('zoomstart', e => { if (e.originalEvent) closeClusterSheet(); });
+
+  (function wireClusterDrag() {
+    let dragging = false;
+    let startY = 0;
+    let startOffset = 0;
+
+    function shouldDrag(e) {
+      const fromList = e.target.closest('.cluster-sheet-list');
+      if (!fromList) return true;
+      if (clusterSheetState !== 'expanded') return true; // list not scrollable yet
+      return fromList.scrollTop <= 0; // expanded: only drag when at top
+    }
+
+    function dragStart(clientY) {
+      dragging = true;
+      startY = clientY;
+      startOffset = clusterCurrentY;
+      setClusterY(clusterCurrentY, false);
+    }
+
+    function dragMove(clientY) {
+      if (!dragging) return;
+      const delta = clientY - startY;
+      const y = Math.max(CLUSTER_EXPANDED_Y, Math.min(CLUSTER_HIDDEN_Y, startOffset + delta));
+      setClusterY(y, false);
+    }
+
+    function dragEnd(clientY) {
+      if (!dragging) return;
+      dragging = false;
+      const delta = clientY - startY;
+      if (Math.abs(delta) >= 10) { wasDragging = true; setTimeout(() => { wasDragging = false; }, 0); }
+      if (delta > CLUSTER_SNAP && clusterSheetState !== 'expanded') {
+        // Dragged down from default → dismiss.
+        closeClusterSheet();
+        return;
+      }
+      let target;
+      if (delta < -CLUSTER_SNAP) {
+        target = CLUSTER_EXPANDED_Y; // dragged up → expand
+      } else if (delta > CLUSTER_SNAP) {
+        target = CLUSTER_DEFAULT_Y; // expanded dragged down → default
+      } else {
+        target = clusterSheetState === 'expanded' ? CLUSTER_EXPANDED_Y : CLUSTER_DEFAULT_Y;
+      }
+      setClusterY(target, true);
+      clusterSheetState = target === CLUSTER_EXPANDED_Y ? 'expanded' : 'default';
+      clusterSheet.classList.toggle('is-expanded', clusterSheetState === 'expanded');
+      if (clusterSheetState !== 'expanded') clusterListEl.scrollTop = 0;
+    }
+
+    clusterSheet.addEventListener('touchstart', e => {
+      if (!shouldDrag(e)) return;
+      dragStart(e.touches[0].clientY);
+    }, { passive: true });
+    clusterSheet.addEventListener('touchmove', e => { dragMove(e.touches[0].clientY); }, { passive: true });
+    clusterSheet.addEventListener('touchend', e => { dragEnd(e.changedTouches[0].clientY); });
+
+    clusterSheet.addEventListener('mousedown', e => {
+      if (!shouldDrag(e)) return;
+      dragStart(e.clientY);
+      const onMove = ev => dragMove(ev.clientY);
+      const onUp = ev => {
+        dragEnd(ev.clientY);
+        window.removeEventListener('mousemove', onMove);
+        window.removeEventListener('mouseup', onUp);
+      };
+      window.addEventListener('mousemove', onMove);
+      window.addEventListener('mouseup', onUp);
+    });
+  })();
 
   searchThisAreaBtn.addEventListener('click', () => {
     // Fade out button, keep sheet (and nav button) in collapsed position
@@ -4674,7 +4831,7 @@
       var dayShort = date.toLocaleDateString('en-US', { weekday: 'short' });
       var monthShort = date.toLocaleDateString('en-US', { month: 'short' });
       var dateStr = dayShort + ', ' + monthShort + ' ' + date.getDate();
-      var time = dateStr + ' · ' + slotTime + ' · ET';
+      var time = dateStr + ' · ' + slotTime + ' ET';
       var titleEl = document.getElementById('cd-title');
       var classTitle = titleEl ? titleEl.textContent : '';
       var venueText = document.getElementById('cd-venue-text');
@@ -4796,7 +4953,7 @@
       if (cdCheckoutCtaLabel) {
         cdCheckoutCtaLabel.textContent = cdCheckoutSheet.classList.contains('is-cancel-mode')
           ? 'Confirm and cancel'
-          : 'Book and Pay';
+          : 'Book and pay';
       }
       // Add is-open to trigger the coordinated CSS transitions.
       cdCheckoutSheet.classList.add('is-open');
