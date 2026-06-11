@@ -534,7 +534,18 @@
   function renderAmenities(containerId, amenities, pillClass) {
     var el = document.getElementById(containerId);
     if (!el) return;
-    el.textContent = amenities.join(' · ');
+    // Render each amenity as its own span; the "·" separator is drawn by CSS
+    // (::before with an ASCII \00B7 escape). A literal "·" byte joined into
+    // textContent rendered as "MatsTowelsShowers" once deployed to Vercel —
+    // building the separator from an ASCII-safe CSS escape sidesteps any
+    // serving/encoding quirk and keeps the spacing from collapsing.
+    el.textContent = '';
+    amenities.forEach(function(a) {
+      var span = document.createElement('span');
+      span.className = 'amenity-item';
+      span.textContent = a;
+      el.appendChild(span);
+    });
   }
 
   // Average center of the hardcoded NYC studio data
@@ -1311,6 +1322,10 @@
     const previousScreen = currentScreen;
     const previousEl = previousScreen ? document.getElementById(previousScreen) : null;
     const target = document.getElementById(id);
+    // The cluster sheet now lives at device-frame level (so it can sit above the
+    // tab bar) instead of inside a screen, so it no longer hides automatically
+    // when its screen is deactivated — close it explicitly on any navigation.
+    closeClusterSheet();
     const isTargetInput = target.classList.contains('input-screen');
     const isPrevInput = previousEl && previousEl.classList.contains('input-screen');
     // Hide the persistent tab bar while on input screens — the simulated keyboard
@@ -2477,7 +2492,9 @@
         const idx = parseInt(this.dataset.venueIndex, 10);
         const bookBtn = e.target.closest('.venue-action-btn');
         const isBook = bookBtn && bookBtn.textContent.trim().includes('Book now');
-        closeClusterSheet();
+        // Leave the cluster sheet open underneath — the venue detail (z-index
+        // 32) opens on top of it (z-index 31), and closing the detail reveals
+        // the cluster sheet again.
         if (isBook) openVenueDetail(idx, 'schedule');
         else openVenueDetail(idx);
       });
@@ -2486,10 +2503,10 @@
     if (activeClusterEl && activeClusterEl !== el) activeClusterEl.classList.remove('is-tapped');
     activeClusterEl = el;
     el.classList.add('is-tapped');
-    // Re-parent into the active map screen so it stacks below that screen's
-    // tab bar (the tab bar stays in front, like the search results sheet).
-    const screenEl = document.getElementById(currentScreen);
-    if (screenEl && clusterSheet.parentNode !== screenEl) screenEl.appendChild(clusterSheet);
+    // Keep the sheet at device-frame level (where it lives in the HTML) so its
+    // z-index can sit above the tab bar + "Search this area" button. Re-parenting
+    // into the active screen would trap it inside that screen's z-index:1
+    // stacking context, below the device-level tab bar.
     clusterSheet.setAttribute('aria-hidden', 'false');
     clusterSheet.classList.add('is-open');
     clusterSheet.classList.remove('is-expanded');
@@ -2593,6 +2610,24 @@
       window.addEventListener('mousemove', onMove);
       window.addEventListener('mouseup', onUp);
     });
+
+    // Trackpad/wheel: while half-open the list doesn't scroll (overflow-y:hidden),
+    // so scrolling up drags the sheet up to expanded — then the content scrolls
+    // natively. Scrolling back up at the top of the expanded list does NOT
+    // collapse the sheet; it just sits at the top (collapse only via drag-down,
+    // the X, or panning the map).
+    function snapClusterTo(state) {
+      const target = state === 'expanded' ? CLUSTER_EXPANDED_Y : CLUSTER_DEFAULT_Y;
+      setClusterY(target, true);
+      clusterSheetState = state;
+      clusterSheet.classList.toggle('is-expanded', state === 'expanded');
+      if (state !== 'expanded') clusterListEl.scrollTop = 0;
+    }
+    clusterListEl.addEventListener('wheel', e => {
+      if (clusterSheetState === 'default' && e.deltaY > 0) {
+        snapClusterTo('expanded');
+      }
+    }, { passive: true });
   })();
 
   searchThisAreaBtn.addEventListener('click', () => {
@@ -5350,6 +5385,12 @@
       if (el.classList.contains('venue-list')) {
         var parentSheet = el.closest('.results-sheet');
         if (parentSheet && !parentSheet.classList.contains('expanded')) return;
+        // The cluster sheet's list lives inside .cluster-sheet (not a
+        // .results-sheet). Until it's expanded, a drag here must bubble to the
+        // cluster sheet's own drag handler so the sheet expands — otherwise
+        // stopPropagation below eats it and the sheet can't be dragged up.
+        var clusterSheetParent = el.closest('.cluster-sheet');
+        if (clusterSheetParent && !clusterSheetParent.classList.contains('is-expanded')) return;
       }
       if (e.target.closest('button, a, .venue-action-btn, .vd-action-pill, .vd-slot-btn, .vd-quick-btn, .venue-detail-close, .vd-nav-back, .venue-detail-handle, .vd-sticky-nav, .vd-actions-pill, .cd-tab, .cd-hero')) return;
       var hscrollChild = e.target.closest('.vd-hscroll, .vd-date-picker, .cd-date-picker');

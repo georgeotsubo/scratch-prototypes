@@ -830,8 +830,32 @@
      (gets the scale transform on tap, isolated from Mapbox's translate
      on the outer element) → SVG <img> + count <span>. */
   .cluster-pin {
-    cursor: pointer;
     line-height: 0;
+    /* The marker box is 80×80 (room for the drop shadow) but the visible
+       bubble is only ~28px wide, so adjacent markers' boxes overlap. Make the
+       box itself non-clickable and limit the hit area to the bubble (::after
+       below) — otherwise a neighbouring cluster's box steals the tap and the
+       wrong cluster scales up. Clicks on the bubble still bubble to this
+       element's listener despite pointer-events:none here. !important beats
+       the inline `pointer-events: auto` Mapbox sets on every marker element;
+       pointer-events is inherited, so the inner box goes none too and only the
+       ::after (explicit auto) stays hittable. */
+    pointer-events: none !important;
+  }
+  /* Clickable hit target limited to the visible red bubble (centered at
+     ~40,26 in the 80×80 canvas, radius ~14) so overlapping marker boxes can't
+     capture each other's taps. */
+  .cluster-pin-inner::after {
+    content: '';
+    position: absolute;
+    top: 26px;
+    left: 50%;
+    width: 32px;
+    height: 32px;
+    transform: translate(-50%, -50%);
+    border-radius: 50%;
+    pointer-events: auto;
+    cursor: pointer;
   }
   .cluster-pin-inner {
     position: relative;
@@ -844,7 +868,7 @@
     transition: transform 0.3s cubic-bezier(.34, 1.3, .64, 1);
   }
   .cluster-pin.is-tapped .cluster-pin-inner {
-    transform: scale(1.5);
+    transform: scale(1.6);
   }
   @media (prefers-reduced-motion: reduce) {
     .cluster-pin-inner { transition: none; }
@@ -1101,8 +1125,13 @@
      height 726) so translateY(0) lands at the default ~half-open position
      and translateY(-266) reaches 16px below the search bar. Transform is
      driven entirely from JS (inline style); classes here only control
-     visibility + the expanded-state list scroll. z-index 12 sits above the
-     results sheet (10) but below the tab bar (25). */
+     visibility + the expanded-state list scroll. z-index 31 sits above the
+     tab bar (30), its blur (25), and the "Search this area" button (25) so
+     the open sheet covers them, but BELOW #venue-detail (32) so tapping a
+     venue card opens its detail on top of (not behind) this sheet — the sheet
+     stays put and is revealed again when the detail closes. Stays at
+     device-frame level (NOT re-parented into a screen, whose z-index:1 context
+     would trap it below the tab bar). */
   .cluster-sheet {
     position: absolute;
     bottom: -266px;
@@ -1111,7 +1140,7 @@
     height: 726px;
     background: #f1f2f3;
     border-radius: 32px 32px 0 0;
-    z-index: 12;
+    z-index: 31;
     display: flex;
     flex-direction: column;
     overflow: hidden;
@@ -1123,18 +1152,46 @@
   .cluster-sheet.is-open {
     visibility: visible;
   }
-  .cluster-sheet-header {
+  /* The header now covers from the sheet top (to kill the seam), so lift the
+     handle above it (header is z-index:2) to keep it visible. */
+  .cluster-sheet .sheet-handle {
     position: relative;
+    z-index: 3;
+  }
+  /* Header is lifted OUT of flow and overlaid on top of the list (which is
+     padded to rest below it). Solid #F1F2F3 behind the title, fading to
+     transparent over the lower ~half, so venue cards dissolve into the sheet
+     as they scroll up underneath it. pointer-events:none lets scroll/drag
+     pass through to the cards (the close button re-enables its own). */
+  .cluster-sheet-header {
+    position: absolute;
+    top: 0;               /* cover from the very top of the sheet so the solid
+                             region overlaps the list's overflow-clip boundary
+                             (~14px) with margin — otherwise a sub-pixel seam at
+                             that boundary lets a 1px line of the card behind
+                             peek through below the handle. The drag handle is
+                             raised above this via z-index. */
+    left: 0;
+    right: 0;
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 10px 20px 12px;
-    flex-shrink: 0;
+    padding: 24px 20px 38px;   /* 24px top keeps the title where it was after
+                                  moving top 14px→0; header is ~86px tall */
+    /* Solid down past the title (~64%) so scrolling cards are hidden behind a
+       clean buffer below the title, then a gradual fade over the lower third so
+       cards dissolve softly into the sheet (not a hard grey block). The list's
+       padding-top is matched to the fade's end so the first card rests just
+       clear of it. */
+    background: linear-gradient(180deg, #F1F2F3 0%, #F1F2F3 24%, rgba(241, 242, 243, 0.00) 100%);
+    z-index: 2;
+    pointer-events: none;
   }
   .cluster-sheet-close {
     position: absolute;
     left: 20px;
-    top: 50%;
+    top: 36px;            /* aligned to the title row (was 22px; +14 to track the
+                             header's top moving 14px→0) */
     transform: translateY(-50%);
     width: 44px;
     height: 44px;
@@ -1146,6 +1203,8 @@
     display: grid;
     place-items: center;
     padding: 0;
+    pointer-events: auto;   /* header is pointer-events:none; re-enable the button */
+    z-index: 1;
   }
   .cluster-sheet-close:active { background: #f4f4f6; }
   .cluster-sheet-title {
@@ -1158,7 +1217,11 @@
   }
   /* Default (half-open) keeps the list non-scrollable so a drag anywhere
      expands the sheet; once expanded the list scrolls under the header. */
-  .cluster-sheet-list { overflow-y: hidden; padding-top: 16px; }
+  /* padding-top drops the first card clear of the overlaid header so it isn't
+     covered (cards still scroll up under the header's fade). The selector
+     includes .venue-list to out-specify the `.venue-list` shorthand `padding`
+     declared further down — otherwise that shorthand resets padding-top to 4px. */
+  .cluster-sheet-list.venue-list { overflow-y: hidden; padding-top: 72px; }
   .cluster-sheet.is-expanded .cluster-sheet-list { overflow-y: auto; }
 
   /* Filter bar */
@@ -1379,11 +1442,11 @@
   #venue-detail {
     position: absolute;
     top: 0; left: 0; right: 0; bottom: 0;
-    /* Above the persistent tab bar (z:30) so the venue and class detail
-       sheets (and the class hero) sit in front of the docked tab bar. The
-       class detail's booking bar (z:35) and checkout sheet (z:36) still
-       sit above this so their docked card pokes above the venue sheet. */
-    z-index: 31;
+    /* Above the persistent tab bar (z:30) and the cluster sheet (z:31) so a
+       venue opened from a cluster sheet sits in front of it. The class
+       detail's booking bar (z:35) and checkout sheet (z:36) still sit above
+       this so their docked card pokes above the venue sheet. */
+    z-index: 32;
     pointer-events: none;
     transition: background 0.35s ease;
   }
@@ -2429,6 +2492,14 @@
     font-weight: 400;
     line-height: 24px;
     color: #020203;
+  }
+  /* "·" separator between amenity spans, drawn from an ASCII-safe CSS escape
+     so it survives Vercel serving/encoding (a literal "·" in JS shipped as
+     "MatsTowelsShowers"). Applies to both the venue + class detail lists. */
+  .vd-amenities .amenity-item + .amenity-item::before,
+  .cd-amenities .amenity-item + .amenity-item::before {
+    content: "\00B7";
+    margin: 0 6px;
   }
   /* Available today preview — sits between the carousel and the tabs. */
   .vd-available-today {
