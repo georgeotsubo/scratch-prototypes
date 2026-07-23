@@ -7,6 +7,9 @@
 
   function currentId() { return navStack[navStack.length - 1]; }
 
+  // Basic email shape: something@something.something (no whitespace).
+  const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
   const ANIM_MS = 380;
   // Release the animation guard after the transition duration. Uses a timeout
   // (not transitionend, which can silently fail to fire in embedded browsers
@@ -73,7 +76,7 @@
   const cpSignin = document.getElementById('btn-cp-signin');
 
   function updateCpState() {
-    const ok = cpEmail.value.trim() && cpPassword.value.length > 0;
+    const ok = EMAIL_RE.test(cpEmail.value.trim()) && cpPassword.value.length > 0;
     cpSignin.disabled = !ok;
     cpSignin.classList.toggle('btn-disabled', !ok);
   }
@@ -117,7 +120,7 @@
   const suSubmit = document.getElementById('btn-su-submit');
 
   function updateSuState() {
-    const ok = suFirst.value.trim() && suLast.value.trim() && suEmail.value.trim();
+    const ok = suFirst.value.trim() && suLast.value.trim() && EMAIL_RE.test(suEmail.value.trim());
     suSubmit.disabled = !ok;
     suSubmit.classList.toggle('btn-disabled', !ok);
   }
@@ -246,7 +249,6 @@
 
   const rpEmail = document.getElementById('rp-email');
   const rpSubmit = document.getElementById('btn-rp-submit');
-  const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
   rpEmail.addEventListener('input', () => {
     const ok = EMAIL_RE.test(rpEmail.value.trim());
