@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>Playlist App – Sign Up Flow Prototype</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400..700&display=swap" rel="stylesheet">
+<!-- Cache-bust CSS/JS on every load so iterations always show fresh (avoids
+     stale-cache issues in embedded browser panes). -->
+<script>document.write('<link rel="stylesheet" href="prototype.css?v=' + Date.now() + '">');</script>
+</head>
+<body>
+
+<div class="device-frame" id="app">
+
+  <!-- Persistent status bar — top-most layer, does not move with screen pushes -->
+  <div class="status-bar" id="global-status-bar">
+    <img src="figma-screens/status-bar.png" alt="Status bar">
+  </div>
+
+  <!-- ===== SCREEN 1: Welcome ===== -->
+  <div class="screen welcome-screen active" id="screen-welcome">
+
+    <!-- Playlist wordmark -->
+    <div class="brand-logo">
+      <img src="figma-screens/playlist-logo-black.svg" alt="Playlist">
+    </div>
+
+    <!-- Bottom action block -->
+    <div class="welcome-actions">
+      <p class="legal-text">
+        By tapping any button or link below, you agree to the
+        <a href="#" class="legal-link">Terms of Use</a> and acknowledge the
+        <a href="#" class="legal-link">Privacy Policy</a>.
+      </p>
+
+      <div class="button-group">
+        <button class="btn btn-classpass" id="btn-classpass">
+          <span class="cp-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect width="24" height="24" rx="12" fill="#0055FF"/>
+              <path d="M13.9907 6.1145C13.8432 6.10739 13.1841 6.10351 12.7132 6.10156C12.5601 6.10116 12.4115 6.15377 12.2928 6.25046C12.174 6.34715 12.0924 6.48196 12.0618 6.63199L11.8115 7.82932C11.7901 7.93379 11.7334 8.02771 11.6509 8.09532C11.5685 8.16293 11.4653 8.20011 11.3587 8.20062L9.01057 8.21097C6.3979 8.21097 4 10.1697 4 12.913C4 15.3775 6.05636 17.5956 9.01121 17.5956C9.16387 17.6034 10.0216 17.6014 10.5934 17.6034C10.7466 17.6035 10.8952 17.5507 11.0138 17.4538C11.1324 17.3568 11.2138 17.2218 11.2442 17.0716L11.4945 15.8672C11.5156 15.7625 11.5722 15.6684 11.6547 15.6006C11.7372 15.5329 11.8406 15.4957 11.9473 15.4952L13.9894 15.5011C16.8751 15.5011 19 13.283 19 10.7945C19 8.07772 16.6532 6.11256 13.9888 6.11256L13.9907 6.1145ZM13.9771 13.7002L11.8949 13.7047C11.7438 13.7052 11.5975 13.7577 11.4805 13.8533C11.3635 13.949 11.283 14.082 11.2526 14.23L11.0016 15.4454C10.9802 15.5496 10.9234 15.6431 10.8409 15.7101C10.7583 15.7771 10.6551 15.8134 10.5488 15.8129C10.0216 15.8129 9.73052 15.796 9.0345 15.796C7.45616 15.796 5.78792 14.7436 5.78792 12.9272C5.78792 11.2454 7.27569 10.0118 9.02932 10.0118L11.4046 10.0073C11.5557 10.0071 11.7022 9.95487 11.8193 9.85931C11.9365 9.76375 12.0171 9.63074 12.0476 9.48269L12.3005 8.27178C12.3221 8.16775 12.379 8.07437 12.4615 8.00743C12.544 7.94048 12.647 7.90408 12.7533 7.90436C13.1951 7.90436 13.8814 7.90889 13.9752 7.91665C15.6337 7.91665 17.2166 9.05059 17.2166 10.8275C17.2166 12.4537 15.7993 13.7028 13.9759 13.7028" fill="white"/>
+            </svg>
+          </span>
+          <span class="btn-classpass-label">Sign in with ClassPass</span>
+        </button>
+
+        <button class="btn btn-primary" id="btn-signup">Sign up with Playlist</button>
+
+        <a href="#" class="signin-link" id="link-signin">Have a Playlist account? Sign in</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== SCREEN 2: Sign in with ClassPass ===== -->
+  <div class="screen classpass-screen" id="screen-classpass">
+
+    <!-- Toolbar / back -->
+    <div class="toolbar">
+      <button class="icon-btn back-btn" id="btn-back-classpass" aria-label="Back">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12.5 15.5L7 10L12.5 4.5" stroke="#020203" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Scrollable content -->
+    <div class="cp-content">
+      <h1 class="cp-title">Sign in with ClassPass</h1>
+
+      <button class="btn btn-social">
+        <span class="social-icon"><img src="figma-screens/apple.svg" alt=""></span>
+        <span class="btn-social-label">Sign in with Apple</span>
+      </button>
+
+      <button class="btn btn-social">
+        <span class="social-icon"><img src="figma-screens/google.svg" alt=""></span>
+        <span class="btn-social-label">Sign in with Google</span>
+      </button>
+
+      <div class="divider">
+        <span class="divider-line"></span>
+        <span class="divider-label">or</span>
+        <span class="divider-line"></span>
+      </div>
+
+      <div class="cp-form">
+        <div class="field-group">
+          <div class="input-field">
+            <input type="email" id="cp-email" placeholder="Email" autocomplete="email">
+          </div>
+          <div class="input-field">
+            <input type="password" id="cp-password" placeholder="Password" autocomplete="current-password">
+            <button class="visibility-toggle" data-target="cp-password" aria-label="Show password">
+              <img src="figma-screens/eye-off.svg" alt="">
+            </button>
+          </div>
+        </div>
+
+        <div class="cp-footer">
+          <a href="#" class="forgot-link" id="link-forgot">Forgot password?</a>
+          <p class="cp-legal">
+            By tapping any button on this screen, you agree to the
+            <a href="#" class="legal-link">Terms of Use</a> and acknowledge the
+            <a href="#" class="legal-link">Privacy Policy</a>. For ClassPass members, the
+            payment method on file will be used for purchases in Playlist. Update anytime
+            in Account Settings.
+          </p>
+          <button class="btn btn-primary btn-disabled" id="btn-cp-signin" disabled>Sign in</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== SCREEN 3: Sign up with Playlist ===== -->
+  <div class="screen signup-screen" id="screen-signup">
+
+    <!-- Toolbar / back -->
+    <div class="toolbar">
+      <button class="icon-btn back-btn" id="btn-back-signup" aria-label="Back">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12.5 15.5L7 10L12.5 4.5" stroke="#020203" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+    </div>
+
+    <div class="cp-content">
+      <h1 class="cp-title">Sign up with Playlist</h1>
+
+      <div class="cp-form">
+        <div class="field-group">
+          <div class="name-row">
+            <div class="input-field">
+              <input type="text" id="su-first" placeholder="First name" autocomplete="given-name">
+            </div>
+            <div class="input-field">
+              <input type="text" id="su-last" placeholder="Last name" autocomplete="family-name">
+            </div>
+          </div>
+          <div class="input-field">
+            <input type="email" id="su-email" placeholder="Email" autocomplete="email">
+          </div>
+        </div>
+
+        <div class="info-box">
+          <span class="info-icon">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="8" cy="8" r="7" fill="#020203"/>
+              <circle cx="8" cy="4.9" r="0.95" fill="#fff"/>
+              <rect x="7.2" y="6.8" width="1.6" height="5.2" rx="0.8" fill="#fff"/>
+            </svg>
+          </span>
+          <p class="info-text">By signing up for Playlist, you are also creating a ClassPass account</p>
+        </div>
+
+        <p class="cp-legal">
+          By tapping "Sign up," you agree to the
+          <a href="#" class="legal-link">Terms of Use</a> and acknowledge the
+          <a href="#" class="legal-link">Privacy Policy</a>. For ClassPass members, the
+          payment method on file will be used for purchases in Playlist. Update anytime
+          in Account Settings.
+        </p>
+
+        <button class="btn btn-primary btn-disabled" id="btn-su-submit" disabled>Sign up</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== SCREEN 4: Create a password ===== -->
+  <div class="screen password-screen" id="screen-password">
+
+    <!-- Toolbar / back -->
+    <div class="toolbar">
+      <button class="icon-btn back-btn" id="btn-back-password" aria-label="Back">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12.5 15.5L7 10L12.5 4.5" stroke="#020203" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+    </div>
+
+    <div class="cp-content">
+      <h1 class="cp-title">Create a password</h1>
+
+      <div class="cp-form">
+        <div class="field-group">
+          <div class="input-field">
+            <input type="password" id="pw-password" placeholder="Password" autocomplete="new-password">
+            <button class="visibility-toggle" data-target="pw-password" aria-label="Show password">
+              <img src="figma-screens/eye-off.svg" alt="">
+            </button>
+          </div>
+
+          <div class="validation-msg" id="pw-validation">
+            <span class="validation-indicator">
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="10" cy="10" r="10" fill="currentColor"/>
+                <path d="M5.8 10.2L8.7 13L14.2 7" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </span>
+            <p class="validation-text">Your password must have at least 8 characters, and include a number or symbol.</p>
+          </div>
+
+          <div class="input-field">
+            <input type="password" id="pw-confirm" placeholder="Confirm password" autocomplete="new-password">
+            <button class="visibility-toggle" data-target="pw-confirm" aria-label="Show password">
+              <img src="figma-screens/eye-off.svg" alt="">
+            </button>
+          </div>
+        </div>
+
+        <button class="btn btn-primary btn-disabled" id="btn-pw-continue" disabled>Continue</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== SCREEN 5: Verify your number ===== -->
+  <div class="screen verify-screen" id="screen-verify">
+
+    <!-- Toolbar / back -->
+    <div class="toolbar">
+      <button class="icon-btn back-btn" id="btn-back-verify" aria-label="Back">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12.5 15.5L7 10L12.5 4.5" stroke="#020203" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+    </div>
+
+    <div class="cp-content">
+      <div class="cp-heading">
+        <h1 class="cp-title">Verify your number</h1>
+        <p class="cp-subtitle">To finish setting up your account, we'll need to send you a confirmation code.</p>
+      </div>
+
+      <div class="cp-form">
+        <div class="input-field phone-field">
+          <span class="phone-prefix">US +1</span>
+          <input type="tel" id="vn-phone" placeholder="Phone number" inputmode="tel" autocomplete="tel-national">
+        </div>
+
+        <button class="btn btn-primary btn-disabled" id="btn-vn-continue" disabled>Continue</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== SCREEN 6: Enter the 4-digit code ===== -->
+  <div class="screen code-screen" id="screen-code">
+
+    <!-- Toolbar / back -->
+    <div class="toolbar">
+      <button class="icon-btn back-btn" id="btn-back-code" aria-label="Back">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12.5 15.5L7 10L12.5 4.5" stroke="#020203" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+    </div>
+
+    <div class="cp-content">
+      <div class="cp-heading">
+        <h1 class="cp-title">Enter the 4-digit code</h1>
+        <p class="cp-subtitle" id="code-sent-to">Code sent to +1 347-582-0653.</p>
+      </div>
+
+      <div class="cp-form">
+        <div class="code-inputs" id="code-inputs">
+          <input class="code-box" type="text" inputmode="numeric" maxlength="1" aria-label="Digit 1">
+          <input class="code-box" type="text" inputmode="numeric" maxlength="1" aria-label="Digit 2">
+          <input class="code-box" type="text" inputmode="numeric" maxlength="1" aria-label="Digit 3">
+          <input class="code-box" type="text" inputmode="numeric" maxlength="1" aria-label="Digit 4">
+        </div>
+
+        <p class="resend-text" id="resend-text">Resend code in 60s</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== SCREEN 7: Reset your password ===== -->
+  <div class="screen reset-screen" id="screen-reset">
+
+    <!-- Toolbar / back -->
+    <div class="toolbar">
+      <button class="icon-btn back-btn" id="btn-back-reset" aria-label="Back">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12.5 15.5L7 10L12.5 4.5" stroke="#020203" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+    </div>
+
+    <div class="cp-content">
+      <div class="cp-heading">
+        <h1 class="cp-title">Reset your password</h1>
+        <p class="cp-subtitle">Enter the email address you used to create your account.</p>
+      </div>
+
+      <div class="cp-form">
+        <div class="input-field">
+          <input type="email" id="rp-email" placeholder="Email" autocomplete="email">
+        </div>
+
+        <button class="btn btn-primary btn-disabled" id="btn-rp-submit" disabled>Submit</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== SCREEN 8: Log in with Playlist (Welcome back) ===== -->
+  <div class="screen login-screen" id="screen-login">
+
+    <!-- Toolbar / back -->
+    <div class="toolbar">
+      <button class="icon-btn back-btn" id="btn-back-login" aria-label="Back">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12.5 15.5L7 10L12.5 4.5" stroke="#020203" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+    </div>
+
+    <div class="cp-content">
+      <h1 class="cp-title">Welcome back</h1>
+
+      <div class="cp-form">
+        <div class="field-group">
+          <div class="input-field">
+            <input type="email" id="lg-email" placeholder="Email" autocomplete="email">
+          </div>
+          <div class="input-field">
+            <input type="password" id="lg-password" placeholder="Password" autocomplete="current-password">
+            <button class="visibility-toggle" data-target="lg-password" aria-label="Show password">
+              <img src="figma-screens/eye-off.svg" alt="">
+            </button>
+          </div>
+        </div>
+
+        <div class="cp-footer">
+          <a href="#" class="forgot-link">Forgot password?</a>
+          <p class="cp-legal">
+            By tapping "Sign in," you agree to the
+            <a href="#" class="legal-link">Terms of Use</a> and acknowledge the
+            <a href="#" class="legal-link">Privacy Policy</a>.
+          </p>
+          <button class="btn btn-primary btn-disabled" id="btn-lg-signin" disabled>Sign in</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>document.write('<scr' + 'ipt src="prototype.js?v=' + Date.now() + '"><\/scr' + 'ipt>');</script>
+</body>
+</html>
