@@ -1,0 +1,497 @@
+* { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+html, body { -webkit-user-select: none; user-select: none; }
+input, textarea { -webkit-user-select: text; user-select: text; }
+
+:root {
+  --accent: #e10e0e;
+  --text-primary: #020203;
+  --border-default: #e4e5e7;
+  --surface-white: #ffffff;
+  --link-blue: #0032d7;
+  --brand-blue: #0055ff;
+  --surface-subtle: #f1f2f3;
+  --text-secondary: #43454c;
+}
+
+body {
+  font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', sans-serif;
+  font-optical-sizing: auto;
+  background: #fff;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  overflow: hidden;
+}
+
+/* iPhone frame for desktop */
+.device-frame {
+  width: 393px;
+  height: 852px;
+  background: #fff;
+  border: 1px solid #dfe2e5;
+  border-radius: 40px;
+  overflow: hidden;
+  position: relative;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.08);
+}
+
+/* On mobile, go full screen */
+@media (max-width: 430px) {
+  body { background: #fff; align-items: flex-start; }
+  .device-frame {
+    width: 100vw;
+    height: 100vh;
+    height: 100dvh;
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+  }
+}
+
+/* Screen container — transform-based push navigation.
+   All screens stay in the layout; inactive ones sit off-screen (right) or
+   pushed behind (left). The device-frame clips the overflow. */
+.screen {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface-white);
+  overflow: hidden;
+  transform: translateX(100%);
+  pointer-events: none;
+  transition: transform 0.38s cubic-bezier(0.32, 0.72, 0, 1);
+}
+/* Only promote a screen to its own layer while it's on-screen or animating,
+   to avoid overwhelming embedded-browser compositors with 8 permanent layers. */
+.screen.active,
+.screen.behind {
+  will-change: transform;
+}
+.screen.active {
+  transform: translateX(0);
+  pointer-events: auto;
+}
+/* Previous screen pushed behind, iOS-style parallax + dim */
+.screen.behind {
+  transform: translateX(-25%);
+  pointer-events: none;
+}
+.screen.behind::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.06);
+  z-index: 50;
+}
+/* No transition on initial paint to avoid a flash */
+.screen.no-anim { transition: none; }
+
+/* Status bar */
+.status-bar {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  z-index: 100;
+  pointer-events: none;
+}
+.status-bar img { width: 100%; display: block; }
+
+/* ===== Welcome screen ===== */
+.brand-logo {
+  position: absolute;
+  top: 87px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+.brand-logo img {
+  display: block;
+  width: 166px;
+  height: auto;
+}
+
+.welcome-actions {
+  position: absolute;
+  left: 24px;
+  right: 24px;
+  bottom: 40px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+}
+
+.legal-text {
+  font-size: 13px;
+  line-height: 16px;
+  color: var(--text-primary);
+  text-align: center;
+  font-weight: 400;
+}
+.legal-link {
+  color: var(--link-blue);
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-position: from-font;
+}
+
+.button-group {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+}
+
+.btn {
+  width: 100%;
+  height: 48px;
+  border: none;
+  border-radius: 999px;
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.12s ease, filter 0.12s ease, background 0.12s ease;
+}
+.btn:active { transform: scale(0.97); }
+
+/* ClassPass sign-in — white pill with border, icon left, label centered */
+.btn-classpass {
+  position: relative;
+  background: var(--surface-white);
+  border: 1px solid var(--border-default);
+  color: var(--text-primary);
+  padding: 0 16px;
+}
+.btn-classpass:active { background: #f7f7f8; }
+.cp-icon {
+  position: absolute;
+  left: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  width: 24px;
+  height: 24px;
+}
+.btn-classpass-label {
+  width: 100%;
+  text-align: center;
+}
+
+/* Primary red pill */
+.btn-primary {
+  background: var(--accent);
+  color: #fff;
+}
+.btn-primary:active { filter: brightness(0.92); }
+
+.signin-link {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+  text-decoration: underline;
+  text-underline-position: from-font;
+  padding: 4px 0;
+}
+
+/* ===== Sign in with ClassPass screen ===== */
+.toolbar {
+  position: absolute;
+  top: 54px;
+  left: 0;
+  right: 0;
+  height: 54px;
+  z-index: 30;
+  padding: 0 16px;
+  display: flex;
+  align-items: center;
+}
+.icon-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: 999px;
+  background: #fff;
+  border: none;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: transform 0.12s ease;
+}
+.icon-btn:active { transform: scale(0.92); }
+
+.cp-content {
+  position: absolute;
+  top: 108px;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 20px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.cp-title {
+  font-size: 24px;
+  line-height: 28px;
+  font-weight: 900;
+  color: var(--text-primary);
+}
+
+/* Social sign-in buttons (Apple / Google) */
+.btn-social {
+  position: relative;
+  background: #fff;
+  border: 1px solid var(--border-default);
+  color: var(--text-primary);
+  padding: 0 16px;
+}
+.btn-social:active { background: #f7f7f8; }
+.social-icon {
+  position: absolute;
+  left: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 24px;
+  height: 24px;
+  display: flex;
+}
+.social-icon img { width: 100%; height: 100%; display: block; }
+.btn-social-label { width: 100%; text-align: center; }
+
+/* Divider with "or" */
+.divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.divider-line {
+  flex: 1 0 0;
+  height: 1px;
+  background: var(--border-default);
+}
+.divider-label {
+  font-size: 18px;
+  line-height: 28px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+/* Form */
+.cp-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+.input-field {
+  position: relative;
+  background: var(--surface-subtle, #f1f2f3);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+}
+.input-field input {
+  flex: 1;
+  width: 100%;
+  border: none;
+  background: transparent;
+  outline: none;
+  padding: 16px;
+  font-family: inherit;
+  font-size: 16px;
+  line-height: 20px;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+.input-field input::placeholder {
+  color: #43454c;
+  font-weight: 500;
+}
+.visibility-toggle {
+  position: absolute;
+  right: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 24px;
+  height: 24px;
+  border: none;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+  display: flex;
+}
+.visibility-toggle img { width: 100%; height: 100%; display: block; }
+
+.cp-footer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+.forgot-link {
+  font-size: 16px;
+  line-height: 20px;
+  font-weight: 600;
+  color: var(--text-primary);
+  text-decoration: underline;
+  text-underline-position: from-font;
+}
+.cp-legal {
+  font-size: 13px;
+  line-height: 16px;
+  color: var(--text-primary);
+  font-weight: 400;
+}
+.cp-footer .btn-primary { width: 100%; }
+
+/* ===== Sign up with Playlist screen ===== */
+.signup-screen .field-group { gap: 12px; }
+.name-row {
+  display: flex;
+  gap: 12px;
+}
+.name-row .input-field { flex: 1 0 0; min-width: 0; }
+
+/* Info callout box */
+.info-box {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 8px;
+  background: #fff;
+  border: 1px solid var(--border-default);
+  border-radius: 12px;
+}
+.info-icon {
+  flex-shrink: 0;
+  display: flex;
+  padding-top: 4px;
+}
+.info-icon svg { display: block; }
+.info-text {
+  flex: 1 0 0;
+  min-width: 0;
+  font-size: 13px;
+  line-height: 16px;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+.signup-screen .btn-primary { width: 100%; }
+
+/* ===== Create a password screen ===== */
+.password-screen .field-group { gap: 12px; }
+.password-screen .btn-primary { width: 100%; }
+
+/* Validation message */
+.validation-msg {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+.validation-indicator {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  /* currentColor drives the circle fill; grey until requirements are met */
+  color: #c4c6cd;
+  transition: color 0.2s ease;
+}
+.validation-msg.valid .validation-indicator { color: #16a34a; }
+.validation-indicator svg { display: block; }
+.validation-text {
+  flex: 1 0 0;
+  min-width: 0;
+  font-size: 13px;
+  line-height: 16px;
+  font-weight: 400;
+  color: var(--text-primary);
+}
+
+/* Disabled primary button */
+.btn.btn-disabled {
+  background: #f7f7f8;
+  color: #b3b5bc;
+  cursor: default;
+}
+.btn.btn-disabled:active { transform: none; filter: none; }
+
+/* ===== Verify your number screen ===== */
+.cp-heading {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.cp-subtitle {
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 400;
+  color: var(--text-secondary);
+}
+.verify-screen .btn-primary { width: 100%; }
+
+/* Phone field — static "US +1" prefix + editable number */
+.phone-field { gap: 0; padding-left: 16px; }
+.phone-prefix {
+  flex-shrink: 0;
+  font-size: 16px;
+  line-height: 20px;
+  font-weight: 500;
+  color: var(--text-primary);
+  margin-right: 8px;
+  pointer-events: none;
+  user-select: none;
+}
+
+/* ===== Enter code screen ===== */
+.code-inputs {
+  display: flex;
+  gap: 12px;
+}
+.code-box {
+  width: 48px;
+  height: 52px;
+  background: var(--surface-subtle, #f1f2f3);
+  border: 1px solid transparent;
+  border-radius: 12px;
+  outline: none;
+  text-align: center;
+  font-family: inherit;
+  font-size: 20px;
+  font-weight: 500;
+  color: var(--text-primary);
+  transition: border-color 0.15s ease;
+}
+.code-box:focus { border-color: #020203; }
+.resend-text {
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 400;
+  color: var(--text-secondary);
+}
+.resend-text.active {
+  color: var(--text-primary);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-position: from-font;
+  cursor: pointer;
+}
+
+/* ===== Reset your password screen ===== */
+.reset-screen .btn-primary { width: 100%; }

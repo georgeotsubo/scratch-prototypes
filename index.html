@@ -171,23 +171,6 @@
       background: #fff;
     }
 
-    .preview-hint {
-      background: rgba(0,0,0,0.7);
-      color: #fff;
-      padding: 10px 20px;
-      border-radius: 20px;
-      font-size: 13px;
-      font-weight: 500;
-      white-space: nowrap;
-      pointer-events: none;
-      opacity: 1;
-      transition: opacity 0.5s;
-    }
-
-    .preview-hint.fade-out {
-      opacity: 0;
-    }
-
     /* Close button */
     .close-btn {
       position: fixed;
@@ -227,6 +210,22 @@
    <div class="list">
       <div class="item">
         <h2>Prototypes</h2>
+        <div class="proto-item">
+          <a href="/prototype-11/prototype.html" class="proto-link">Sign Up Flow v1</a>
+          <p>New sign-up flow starting from the Figma welcome screen.</p>
+          <ul class="changelog">
+            <li>Welcome screen with Playlist wordmark and legal copy</li>
+            <li>Sign in with ClassPass, Sign up with Playlist, and Sign in link</li>
+            <li>ClassPass sign-in screen (Apple/Google, email + password) with iOS push transition</li>
+            <li>Sign up with Playlist form (name, email, ClassPass account notice)</li>
+            <li>Create-password screen with live validation and gated Continue button</li>
+            <li>Verify-your-number screen with fixed "US +1" prefix and editable phone field</li>
+            <li>Enter-code screen: 4-digit boxes with auto-advance, dynamic phone number, resend countdown</li>
+            <li>Reset-password screen reached from "Forgot password?" on the ClassPass sign-in screen</li>
+            <li>Log-in ("Welcome back") screen from "Have a Playlist account? Sign in"</li>
+            <li>Back navigation now uses a history stack so each back returns to the correct prior screen</li>
+          </ul>
+        </div>
         <div class="proto-item">
           <a href="/prototype-10/prototype.html" class="proto-link">Booking Flow v5</a>
           <p>Forked from v5 for the next round of iteration.</p>
@@ -289,8 +288,7 @@
 
   <div class="preview-panel open" id="preview-panel">
     <div class="preview-panel-inner">
-      <iframe id="preview-frame" src="prototype-10/prototype.html"></iframe>
-      <p class="preview-hint" style="display:none">Tap the search bar to begin</p>
+      <iframe id="preview-frame" data-default-src="prototype-11/prototype.html"></iframe>
     </div>
   </div>
 
@@ -306,7 +304,15 @@
     const frame = document.getElementById('preview-frame');
     const closeBtn = document.getElementById('close-btn');
 
-    const hint = document.querySelector('.preview-hint');
+    // Force the iframe to (re)load via JS after the page is ready, with a
+    // cache-buster. Embedded browser panes (e.g. Claude Desktop) sometimes
+    // don't paint an iframe whose src is set in the initial HTML; assigning
+    // src from JS reliably triggers a fetch + repaint.
+    function loadFrame(url) {
+      const sep = url.includes('?') ? '&' : '?';
+      frame.src = url + sep + 'v=' + Date.now();
+    }
+    loadFrame(frame.dataset.defaultSrc);
 
     const caretSvg = '<svg class="caret" width="9" height="6" viewBox="0 0 9 6" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M4.95175 4.94975C4.56123 5.34027 3.92806 5.34027 3.53754 4.94975L0.294898 1.70711C-0.335067 1.07714 0.1111 8.42938e-08 1.002 8.42938e-08L7.48729 0C8.37819 0 8.82436 1.07714 8.19439 1.70711L4.95175 4.94975Z" fill="#D9D9D9"/></svg>';
 
@@ -320,19 +326,11 @@
           link.closest('.proto-item').classList.toggle('expanded');
           return;
         }
-        frame.src = link.href;
+        loadFrame(link.href);
         panel.classList.add('open');
         closeBtn.style.display = 'flex';
         document.querySelectorAll('.proto-item').forEach(item => item.classList.remove('expanded'));
         link.closest('.proto-item').classList.add('expanded');
-        // Only show search hint for search prototypes, not venue detail
-        if (link.href.includes('prototype-6') || link.href.includes('prototype-7') || link.href.includes('prototype-8') || link.href.includes('prototype-9') || link.href.includes('prototype-10')) {
-          hint.style.display = 'none';
-        } else {
-          hint.style.display = '';
-          hint.classList.remove('fade-out');
-          setTimeout(() => hint.classList.add('fade-out'), 3000);
-        }
       });
     });
 

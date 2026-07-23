@@ -643,13 +643,6 @@
     }
   }
 
-  // ========== HINT ==========
-  const hint = document.getElementById('hint');
-  if (hint) {
-    setTimeout(() => hint.classList.add('fade-out'), 3000);
-    setTimeout(() => hint.remove(), 3500);
-  }
-
   // ========== SEARCH INPUT LOGIC ==========
   const searchInput = document.getElementById('search-input-field');
   const searchClear = document.getElementById('search-clear');
