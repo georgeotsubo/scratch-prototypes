@@ -155,7 +155,7 @@ Sizes `--sm` `--md` `--lg`; variants `--primary` `--raised` `--ghost` `--neutral
 ### `.pl-chip` — PLChip (`925:12624`)
 
 One size, **42px** tall — 44 with a trailing icon, since the 20px icon slot is taller
-than the 18px label line. The label is `label/sm/semibold` (13/18). Selection is a
+than the 18px label line. The label is `bodySmall medium` (13/18). Selection is a
 state, not a pseudo-class:
 
 ```html
