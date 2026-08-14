@@ -3235,12 +3235,12 @@
         var card = e.target.closest('.vd-schedule-card');
         if (!card || card.classList.contains('disabled')) return;
         if (wasDragging) return;
-        var titleEl = card.querySelector('.vd-schedule-title');
-        var timeEl = card.querySelector('.vd-schedule-time');
-        var ratingEl = card.querySelector('.vd-schedule-rating');
-        var finalPriceEl = card.querySelector('.vd-price-final');
-        var strikePriceEl = card.querySelector('.vd-price-strike');
-        var plainPriceEl = card.querySelector('.vd-price-plain');
+        var titleEl = card.querySelector('.pl-schedule-card__title');
+        var timeEl = card.querySelector('.pl-schedule-card__meta');
+        var ratingEl = card.querySelector('.pl-schedule-card__rating');
+        var finalPriceEl = card.querySelector('.pl-price--offer .pl-price__current');
+        var strikePriceEl = card.querySelector('.pl-price__original');
+        var plainPriceEl = card.querySelector('.pl-price:not(.pl-price--offer) .pl-price__current');
         // Time line is now "12:00 PM · Wed, Apr 29 · Sarah M." — extract the
         // time via regex (first "h:mm AM/PM" match) and the instructor as the
         // last `·`-delimited segment.
@@ -3559,6 +3559,47 @@
 
     var STAR_SVG = '<svg class="pl-icon pl-icon--sm" aria-hidden="true"><use href="#pl-star-fill"></use></svg>';
 
+    function plPriceHtml(c) {
+      if (c.finalPrice) {
+        return '<span class="pl-price pl-price--offer">'
+          + (c.priceLabel ? '<span class="pl-price__label">' + c.priceLabel + '</span>' : '')
+          + '<span class="pl-price__amounts">'
+          +   '<span class="pl-price__current">' + c.finalPrice + '</span>'
+          +   (c.strikePrice ? '<span class="pl-price__original">' + c.strikePrice + '</span>' : '')
+          + '</span></span>';
+      }
+      if (c.plainPrice || c.price) {
+        return '<span class="pl-price"><span class="pl-price__amounts">'
+          + '<span class="pl-price__current">' + (c.plainPrice || c.price) + '</span>'
+          + '</span></span>';
+      }
+      return '';
+    }
+
+    function plScheduleCardHtml(c, attrs) {
+      var timeParts = (c.time || '').split(' · ');
+      var timeOnly = timeParts[0] || '';
+      var duration = timeParts[1] || '';
+      var meta = timeOnly + (c.instructor ? ' · ' + c.instructor : '');
+      var classes = 'pl-card pl-schedule-card vd-schedule-card';
+      if (c.disabled) classes += ' is-dimmed disabled';
+      var trailing = c.disabled
+        ? '<span class="pl-card__status pl-card__status--sold-out">Sold out</span>'
+        : plPriceHtml(c);
+      return '<div class="' + classes + '"' + (attrs || '') + '>'
+        + '<div class="pl-schedule-card__body">'
+        +   '<div class="pl-schedule-card__row">'
+        +     '<span class="pl-schedule-card__meta">' + meta + '</span>'
+        +     (duration ? '<span class="pl-schedule-card__duration">' + duration + '</span>' : '')
+        +   '</div>'
+        +   '<div class="pl-schedule-card__title">' + c.title + '</div>'
+        +   '<div class="pl-schedule-card__row">'
+        +     '<span class="pl-schedule-card__rating"><span class="pl-schedule-card__star">' + STAR_SVG + '</span>' + c.rating + '</span>'
+        +     trailing
+        +   '</div>'
+        + '</div></div>';
+    }
+
     // Titles come from the shared VENUE_CLASSES catalog so Schedule and
     // Classes tab always agree on what this venue offers.
     var CLASS_NAMES = VENUE_CLASSES.map(function(c) { return c.title; });
@@ -3675,31 +3716,7 @@
       // scoped to today, so the date is redundant. The Schedule tab's cards
       // mirror this layout (the date picker above them sets context).
       list.innerHTML = preview.map(function(c) {
-        var priceHtml = '';
-        if (c.finalPrice) {
-          priceHtml = '<div class="pl-price pl-price--offer vd-schedule-price">'
-            + (c.priceLabel ? '<span class="pl-price__label vd-schedule-price-label">' + c.priceLabel + '</span>' : '')
-            + '<span class="pl-price__current vd-price-final">' + c.finalPrice + '</span>'
-            + '<span class="pl-price__original vd-price-strike">' + c.strikePrice + '</span>'
-            + '</div>';
-        } else if (c.plainPrice) {
-          priceHtml = '<span class="pl-price__current vd-price-plain">' + c.plainPrice + '</span>';
-        }
-        var timeParts = c.time.split(' · ');
-        var timeOnly = timeParts[0];
-        var duration = timeParts[1] || '';
-        var label = timeOnly + ' · ' + c.instructor;
-        return '<div class="pl-card pl-schedule-card vd-schedule-card">'
-          + '<div class="pl-schedule-card__row vd-schedule-top">'
-          +   '<span class="pl-schedule-card__meta vd-schedule-time">' + label + '</span>'
-          +   (duration ? '<span class="pl-schedule-card__duration vd-schedule-duration">' + duration + '</span>' : '')
-          + '</div>'
-          + '<div class="pl-schedule-card__title vd-schedule-title">' + c.title + '</div>'
-          + '<div class="pl-schedule-card__row vd-schedule-bottom">'
-          +   '<div class="pl-schedule-card__rating vd-schedule-rating">' + STAR_SVG + ' ' + c.rating + '</div>'
-          +   priceHtml
-          + '</div>'
-          + '</div>';
+        return plScheduleCardHtml(c);
       }).join('');
     }
     window.__renderVdAvailableToday = renderAvailableToday;
@@ -3708,30 +3725,9 @@
       var classes = generateClasses();
       window.__lastGeneratedClasses = classes;
       var html = classes.map(function(c, i) {
-        var priceHtml = '';
-        if (c.finalPrice) {
-          priceHtml = '<div class="pl-price pl-price--offer vd-schedule-price">'
-            + (c.priceLabel ? '<span class="pl-price__label vd-schedule-price-label">' + c.priceLabel + '</span>' : '')
-            + '<span class="pl-price__current vd-price-final">' + c.finalPrice + '</span>'
-            + '<span class="pl-price__original vd-price-strike">' + c.strikePrice + '</span>'
-            + '</div>';
-        } else if (c.plainPrice) {
-          priceHtml = '<span class="pl-price__current vd-price-plain">' + c.plainPrice + '</span>';
-        }
-        var sParts = c.time.split(' · ');
-        var sTime = sParts[0];
-        var sDuration = sParts[1] || '';
-        return '<div class="pl-card pl-schedule-card vd-schedule-card' + (c.disabled ? ' disabled is-dimmed' : '') + '" data-class-idx="' + i + '" data-title="' + c.title + '" data-time="' + sTime + '">'
-          + '<div class="pl-schedule-card__row vd-schedule-top">'
-          +   '<span class="pl-schedule-card__meta vd-schedule-time">' + sTime + ' · ' + c.instructor + '</span>'
-          +   (sDuration ? '<span class="pl-schedule-card__duration vd-schedule-duration">' + sDuration + '</span>' : '')
-          + '</div>'
-          + '<div class="pl-schedule-card__title vd-schedule-title">' + c.title + '</div>'
-          + '<div class="pl-schedule-card__row vd-schedule-bottom">'
-          +   '<div class="pl-schedule-card__rating vd-schedule-rating">' + STAR_SVG + ' ' + c.rating + '</div>'
-          +   priceHtml
-          + '</div>'
-          + '</div>';
+        var sTime = (c.time || '').split(' · ')[0];
+        var attrs = ' data-class-idx="' + i + '" data-title="' + c.title + '" data-time="' + sTime + '"';
+        return plScheduleCardHtml(c, attrs);
       }).join('');
       scheduleList.innerHTML = html;
       if (window.__applyReservedHighlights) window.__applyReservedHighlights();
@@ -4062,11 +4058,15 @@
             var slotEls = slotsEl.querySelectorAll('.cd-time-slot');
             if (absIdx === cdSelectedAbsIdx && cdLastSlot) {
               slotEls.forEach(function(s) {
-                var t = s.querySelector('.cd-time-slot-time');
-                s.classList.toggle('selected', !!(t && t.textContent === cdLastSlot.time));
+                var t = s.querySelector('.pl-class-card__time');
+                var on = !!(t && t.textContent === cdLastSlot.time);
+                s.classList.toggle('selected', on);
+                s.classList.toggle('is-selected', on);
               });
             } else {
-              slotEls.forEach(function(s) { s.classList.remove('selected'); });
+              slotEls.forEach(function(s) {
+                s.classList.remove('selected', 'is-selected');
+              });
             }
           }
           // Reserved highlight must follow the viewing date. The slot list
@@ -4252,17 +4252,24 @@
 
       slots.innerHTML = data.map(function(s) {
         var priceHtml = s.strikePrice
-          ? '<span class="pl-price__current cd-time-slot-price-final">' + s.price + '</span>'
-            + '<span class="pl-price__original cd-time-slot-price-strike">' + s.strikePrice + '</span>'
-          : s.price;
-        return '<div class="pl-card pl-class-card cd-time-slot' + (s.selected ? ' selected is-selected' : '') + '" data-time="' + s.time + '">'
-          +   '<div class="pl-class-card__row cd-time-slot-row">'
-          +     '<div class="pl-class-card__time cd-time-slot-time">' + s.time + '</div>'
-          +     '<div class="pl-class-card__duration cd-time-slot-duration">' + s.duration + '</div>'
-          +   '</div>'
-          +   '<div class="pl-class-card__row cd-time-slot-row">'
-          +     '<div class="pl-class-card__instructor cd-time-slot-instructor">' + s.instructor + '</div>'
-          +     '<div class="pl-price cd-time-slot-price">' + priceHtml + '</div>'
+          ? '<span class="pl-price pl-price--offer"><span class="pl-price__amounts">'
+            + '<span class="pl-price__current">' + s.price + '</span>'
+            + '<span class="pl-price__original">' + s.strikePrice + '</span>'
+            + '</span></span>'
+          : '<span class="pl-price"><span class="pl-price__amounts">'
+            + '<span class="pl-price__current">' + s.price + '</span>'
+            + '</span></span>';
+        return '<div class="pl-card pl-class-card cd-time-slot'
+          + (s.selected ? ' selected is-selected' : '') + '" data-time="' + s.time + '">'
+          +   '<div class="pl-class-card__body">'
+          +     '<div class="pl-class-card__row">'
+          +       '<span class="pl-class-card__time">' + s.time + '</span>'
+          +       '<span class="pl-class-card__duration">' + s.duration + '</span>'
+          +     '</div>'
+          +     '<div class="pl-class-card__row">'
+          +       '<span class="pl-class-card__instructor">' + s.instructor + '</span>'
+          +       priceHtml
+          +     '</div>'
           +   '</div>'
           + '</div>';
       }).join('');
@@ -4274,9 +4281,11 @@
       slots.querySelectorAll('.cd-time-slot').forEach(function(slot, idx) {
         slot.addEventListener('click', function() {
           if (wasDragging) return;
-          if (slot.classList.contains('selected')) return;
-          slots.querySelectorAll('.cd-time-slot').forEach(function(s) { s.classList.remove('selected'); });
-          slot.classList.add('selected');
+          if (slot.classList.contains('is-selected')) return;
+          slots.querySelectorAll('.cd-time-slot').forEach(function(s) {
+            s.classList.remove('selected', 'is-selected');
+          });
+          slot.classList.add('selected', 'is-selected');
           cdSelectedAbsIdx = cdViewingAbsIdx;
           updateBookingBar(data[idx]);
           if (window.__rerenderCdReviews) window.__rerenderCdReviews(data[idx].instructor);
@@ -4795,11 +4804,27 @@
         cdBookingCta.classList.remove('is-reserved');
       }
     };
+    function clearReservedCard(el) {
+      el.classList.remove('is-reserved');
+      if (!el.classList.contains('disabled')) el.classList.remove('is-dimmed');
+      var status = el.querySelector('.pl-card__status--reserved');
+      if (status) status.remove();
+      var price = el.querySelector('.pl-price');
+      if (price) price.hidden = false;
+    }
+    function markReservedCard(el) {
+      el.classList.add('is-reserved', 'is-dimmed');
+      var price = el.querySelector('.pl-price');
+      if (price) price.hidden = true;
+      if (!el.querySelector('.pl-card__status--reserved')) {
+        var row = price && price.parentNode;
+        var status = '<span class="pl-card__status pl-card__status--reserved">Reserved</span>';
+        if (row) row.insertAdjacentHTML('beforeend', status);
+      }
+    }
     window.__applyReservedHighlights = function() {
       var r = window.__reservation;
-      document.querySelectorAll('.cd-time-slot.is-reserved, .vd-schedule-card.is-reserved').forEach(function(el) {
-        el.classList.remove('is-reserved');
-      });
+      document.querySelectorAll('.cd-time-slot.is-reserved, .vd-schedule-card.is-reserved').forEach(clearReservedCard);
       if (!r) return;
       var p = window.__currentVenuePin;
       var venueKey = p ? ((p.name || '') + '|' + (p.lat || '') + '|' + (p.lng || '')) : '';
@@ -4811,13 +4836,13 @@
       var cdTitleEl = document.getElementById('cd-title');
       if (cdTitleEl && cdTitleEl.textContent === r.classTitle && cdViewingAbsIdx === r.absIdx) {
         document.querySelectorAll('.cd-time-slot').forEach(function(slot) {
-          if (slot.dataset.time === r.slotTime) slot.classList.add('is-reserved');
+          if (slot.dataset.time === r.slotTime) markReservedCard(slot);
         });
       }
       // Venue-detail schedule cards match on title + time.
       document.querySelectorAll('.vd-schedule-card').forEach(function(card) {
         if (card.dataset.title === r.classTitle && card.dataset.time === r.slotTime) {
-          card.classList.add('is-reserved');
+          markReservedCard(card);
         }
       });
     };
@@ -5378,91 +5403,6 @@
   var activeDragEl = null;
   var pendingDrag = null; // for direction-detection on carousels
 
-  // Trackpad wheel events scroll natively and clamp hard at the edges. Mouse
-  // drag (below) and sheet snaps already feel elastic; this adds the same
-  // rubber-band give for smooth trackpad deltas at scroll boundaries.
-  function isTrackpadWheel(e) {
-    if (e.deltaMode === 1) return false; // discrete mouse-wheel lines
-    return Math.abs(e.deltaY) < 80; // trackpad sends many small pixel deltas
-  }
-
-  function enableWheelRubberBand(scroller, opts) {
-    if (!scroller || scroller.dataset.wheelRubberBand) return;
-    scroller.dataset.wheelRubberBand = '1';
-    opts = opts || {};
-    var maxPull = opts.maxPull || 64;
-    var resistance = opts.resistance || 0.45;
-    var settleFriction = opts.settleFriction || 0.78;
-    var shouldSkip = opts.shouldSkip || function() { return false; };
-    var overscroll = 0;
-    var settling = false;
-    var settleRaf = null;
-    var wheelTimer = null;
-    var baseTransform = '';
-
-    function getMaxScroll() {
-      return Math.max(0, scroller.scrollHeight - scroller.clientHeight);
-    }
-
-    function readBaseTransform() {
-      baseTransform = scroller.style.transform || '';
-      if (baseTransform === 'none') baseTransform = '';
-    }
-
-    function applyPull() {
-      readBaseTransform();
-      if (Math.abs(overscroll) < 0.5) {
-        scroller.style.transform = baseTransform || '';
-        overscroll = 0;
-        return;
-      }
-      var pull = ' translateY(' + overscroll + 'px)';
-      scroller.style.transform = (baseTransform + pull).trim();
-    }
-
-    function animateSettle() {
-      settling = true;
-      function step() {
-        overscroll *= settleFriction;
-        if (Math.abs(overscroll) < 0.5) {
-          overscroll = 0;
-          readBaseTransform();
-          scroller.style.transform = baseTransform || '';
-          settling = false;
-          settleRaf = null;
-          return;
-        }
-        applyPull();
-        settleRaf = requestAnimationFrame(step);
-      }
-      cancelAnimationFrame(settleRaf);
-      settleRaf = requestAnimationFrame(step);
-    }
-
-    function scheduleSettle() {
-      clearTimeout(wheelTimer);
-      wheelTimer = setTimeout(animateSettle, 100);
-    }
-
-    scroller.addEventListener('wheel', function(e) {
-      if (!isTrackpadWheel(e) || shouldSkip() || settling) return;
-      var max = getMaxScroll();
-      var atTop = scroller.scrollTop <= 0;
-      var atBottom = scroller.scrollTop >= max - 1;
-
-      if ((atTop && e.deltaY < 0) || (atBottom && e.deltaY > 0)) {
-        e.preventDefault();
-        overscroll -= e.deltaY * resistance;
-        if (overscroll > maxPull) overscroll = maxPull;
-        if (overscroll < -maxPull) overscroll = -maxPull;
-        applyPull();
-        scheduleSettle();
-      } else if (overscroll !== 0) {
-        scheduleSettle();
-      }
-    }, { passive: false });
-  }
-
   function addVerticalDragScroll(el) {
     var startY, startScroll, velocity, lastY, lastTime, raf;
 
@@ -5471,18 +5411,8 @@
       velocity *= 0.95;
       var max = el.scrollHeight - el.clientHeight;
       var newTop = el.scrollTop - velocity;
-      if (newTop < 0) {
-        el.scrollTop = 0;
-        velocity = -velocity * 0.28;
-        if (Math.abs(velocity) > 0.5) raf = requestAnimationFrame(momentum);
-        return;
-      }
-      if (newTop > max) {
-        el.scrollTop = max;
-        velocity = -velocity * 0.28;
-        if (Math.abs(velocity) > 0.5) raf = requestAnimationFrame(momentum);
-        return;
-      }
+      if (newTop < 0) { el.scrollTop = 0; return; }
+      if (newTop > max) { el.scrollTop = max; return; }
       el.scrollTop = newTop;
       if (Math.abs(velocity) > 0.5) raf = requestAnimationFrame(momentum);
     }
@@ -5619,28 +5549,13 @@
 
   // Venue detail vertical scroll
   addVerticalDragScroll(venueDetailScroll);
-  enableWheelRubberBand(venueDetailScroll, {
-    shouldSkip: function() {
-      return venueDetailSheet && venueDetailSheet.classList.contains('show-class');
-    }
-  });
 
   // Class detail vertical scroll
   addVerticalDragScroll(classDetailScroll);
-  enableWheelRubberBand(classDetailScroll);
 
   // Venue lists
   document.querySelectorAll('.venue-list').forEach(function(list) {
     addVerticalDragScroll(list);
-    enableWheelRubberBand(list, {
-      shouldSkip: function() {
-        var parentSheet = list.closest('.results-sheet');
-        if (parentSheet && !parentSheet.classList.contains('expanded')) return true;
-        var clusterSheetParent = list.closest('.cluster-sheet');
-        if (clusterSheetParent && !clusterSheetParent.classList.contains('is-expanded')) return true;
-        return false;
-      }
-    });
   });
 
   // ========== PREVENT ZOOM ON iOS ==========

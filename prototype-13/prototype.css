@@ -1653,23 +1653,15 @@
   }
   .vd-hscroll::-webkit-scrollbar { display: none; }
 
-  /* Image carousel — Figma 353×240. Keep the left gutter (don't cancel the
-     parent's 20px padding); only bleed to the right so the next slide peeks. */
-  #vd-section-images.vd-hscroll {
-    margin-left: 0;
-    padding-left: 0;
-  }
-
-  /* Venue detail image carousel — Figma 353×240 per slide (content width on
-     393 frame with 20px gutters). Radius/Semantic/lg (16px). */
+  /* Venue detail image carousel — same .vd-hscroll gutters as
+     .vd-reviews-scroll (no extra offsets, no snap). Figma 353×240,
+     Radius/Semantic/lg (16px). */
   .vd-image-placeholder {
     width: 353px;
-    max-width: 100%;
     height: 240px;
     background: var(--pl-neutral-400);
     border-radius: var(--pl-radius-semantic-lg);
     flex-shrink: 0;
-    scroll-snap-align: start;
   }
 
   /* Venue detail tabs — .pl-tab-nav (1192:843) with sticky placement only.
@@ -1797,115 +1789,10 @@
     flex-direction: column;
     gap: 12px;
   }
-  /* Card shell, radius, padding and text styles come from
-     `.pl-card .pl-schedule-card`; only the 4px row rhythm is local. */
-  .vd-schedule-card {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-  }
+  /* Shell, type, price and sold-out/reserved status come from
+     `.pl-card.pl-schedule-card`. Local class is only a click/state hook. */
+  .vd-schedule-card { cursor: pointer; }
   .vd-schedule-card.disabled { cursor: default; }
-  .vd-schedule-top {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    width: 100%;
-    font-family: var(--pl-type-font-primary);
-    line-height: 20px;
-  }
-  .vd-schedule-time {
-    font-size: var(--pl-body-md-medium-size);
-    font-weight: var(--pl-body-md-medium-weight);
-    color: var(--pl-text-primary);
-  }
-  .vd-schedule-duration {
-    font-size: var(--pl-body-md-medium-size);
-    font-weight: var(--pl-body-md-medium-weight);
-    color: var(--pl-text-primary);
-  }
-  .vd-schedule-card.disabled .vd-schedule-time,
-  .vd-schedule-card.disabled .vd-schedule-duration { color: var(--pl-text-disabled); }
-  .vd-schedule-title {
-    font-family: var(--pl-label-lg-semibold-font);
-    font-size: var(--pl-label-lg-semibold-size);
-    font-weight: var(--pl-label-lg-semibold-weight);
-    line-height: var(--pl-label-lg-semibold-lineheight);
-    color: var(--pl-text-primary);
-  }
-  .vd-schedule-card.disabled .vd-schedule-title { color: var(--pl-text-disabled); }
-  .vd-schedule-bottom {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    width: 100%;
-  }
-  .vd-schedule-rating {
-    display: flex;
-    align-items: center;
-    gap: 0;
-    font-family: var(--pl-body-md-medium-font);
-    font-size: var(--pl-body-md-medium-size);
-    font-weight: var(--pl-body-md-medium-weight);
-    line-height: var(--pl-body-md-medium-lineheight);
-    color: var(--pl-text-primary);
-  }
-  .vd-schedule-card.disabled .vd-schedule-rating { color: var(--pl-text-disabled); }
-  .vd-schedule-card.disabled .vd-schedule-rating svg path { fill: var(--pl-text-disabled); }
-  .vd-schedule-price {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    font-family: var(--pl-body-sm-medium-font);
-    font-size: var(--pl-body-sm-medium-size);
-    font-weight: var(--pl-body-sm-medium-weight);
-    line-height: var(--pl-body-sm-medium-lineheight);
-  }
-  .vd-schedule-price-label { color: var(--pl-text-primary); }
-  .vd-schedule-card.disabled .vd-schedule-price-label { color: var(--pl-text-disabled); }
-  .vd-price-strike {
-    font-family: var(--pl-body-lg-medium-font);
-    font-size: var(--pl-body-lg-medium-size);
-    font-weight: var(--pl-body-lg-medium-weight);
-    line-height: var(--pl-body-lg-medium-lineheight);
-    color: var(--pl-text-secondary);
-    text-decoration: line-through;
-  }
-  .vd-schedule-card.disabled .vd-price-strike { color: var(--pl-text-disabled); }
-  .vd-price-final {
-    font-family: var(--pl-title-md-bold-font);
-    font-size: var(--pl-title-md-bold-size);
-    font-weight: var(--pl-title-md-bold-weight);
-    color: var(--pl-text-price-discount);
-  }
-  .vd-price-plain {
-    font-family: var(--pl-label-lg-semibold-font);
-    font-size: var(--pl-label-lg-semibold-size);
-    font-weight: var(--pl-label-lg-semibold-weight);
-    line-height: var(--pl-label-lg-semibold-lineheight);
-    color: var(--pl-text-primary);
-  }
-  .vd-schedule-card.disabled .vd-price-final,
-  .vd-schedule-card.disabled .vd-price-plain { color: var(--pl-text-disabled); }
-  /* Sold-out state (matches Figma node 6493:11678): hide the price and
-     show "Sold out" in --text/emphasis red. Other text already greys via
-     the .disabled rules above. Two markup variants exist: a wrapper
-     `.vd-schedule-price` with child spans (finalPrice path), or a bare
-     `.vd-price-plain` span (plainPrice path) — handle both. */
-  .vd-schedule-card.disabled .vd-schedule-price,
-  .vd-schedule-card.disabled .vd-price-plain {
-    font-size: 0;
-    line-height: 0;
-  }
-  .vd-schedule-card.disabled .vd-schedule-price::before,
-  .vd-schedule-card.disabled .vd-price-plain::before {
-    content: 'Sold out';
-    color: var(--pl-accent-default);
-    font-weight: var(--pl-label-lg-semibold-weight);
-    font-size: var(--pl-label-lg-semibold-size);
-    line-height: var(--pl-label-lg-semibold-lineheight);
-    display: inline-block;
-    vertical-align: middle;
-  }
 
   /* ===== CLASSES PANEL ===== */
   .vd-class-summary-card {
@@ -2710,99 +2597,9 @@
     gap: 8px;
     padding: 16px 0 4px;
   }
-  /* Card layout per Figma: 80px tall, 16px padding, 24px radius, two rows
-     (time/duration on top, instructor/price on bottom) with 4px between. */
-  /* Card shell + selected stroke come from `.pl-card .pl-class-card`. */
-  .cd-time-slot {
-    min-height: 80px;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    gap: 4px;
-    transition: border-color 0.15s ease;
-  }
-  .cd-time-slot-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-  }
-  .cd-time-slot-time {
-    font-family: var(--pl-label-md-semibold-font);
-    font-size: var(--pl-label-md-semibold-size);
-    font-weight: var(--pl-label-md-semibold-weight);
-    line-height: var(--pl-label-md-semibold-lineheight);
-    color: var(--pl-text-primary);
-  }
-  .cd-time-slot-duration {
-    font-family: var(--pl-body-md-medium-font);
-    font-size: var(--pl-body-md-medium-size);
-    font-weight: var(--pl-body-md-medium-weight);
-    line-height: var(--pl-body-md-medium-lineheight);
-    color: var(--pl-text-primary);
-  }
-  .cd-time-slot-instructor {
-    font-family: var(--pl-label-md-semibold-font);
-    font-size: var(--pl-label-md-semibold-size);
-    font-weight: var(--pl-label-md-semibold-weight);
-    line-height: var(--pl-label-md-semibold-lineheight);
-    color: var(--pl-text-primary);
-  }
-  .cd-time-slot-price {
-    display: flex;
-    align-items: baseline;
-    gap: 4px;
-    font-family: var(--pl-title-md-bold-font);
-    font-size: var(--pl-title-md-bold-size);
-    font-weight: var(--pl-title-md-bold-weight);
-    line-height: var(--pl-title-md-bold-lineheight);
-    color: var(--pl-text-primary);
-  }
-  .cd-time-slot-price-final {
-    color: var(--pl-text-price-discount);
-  }
-  .cd-time-slot-price-strike {
-    color: var(--pl-text-secondary);
-    text-decoration: line-through;
-    font-weight: 400;
-  }
-  /* Reserved state (matches Figma node 6524:15291): all text greys out to
-     --text/disabled (#b3b5bc), price is replaced with the word "Reserved"
-     in --text/secondary (#696c77). Applied to both class-detail time-slots
-     and venue-detail schedule cards via .is-reserved on the card root. */
-  .cd-time-slot.is-reserved .cd-time-slot-time,
-  .cd-time-slot.is-reserved .cd-time-slot-duration,
-  .cd-time-slot.is-reserved .cd-time-slot-instructor {
-    color: var(--pl-text-disabled);
-  }
-  .cd-time-slot.is-reserved .cd-time-slot-price {
-    font-size: 0;
-  }
-  .cd-time-slot.is-reserved .cd-time-slot-price::before {
-    content: 'Reserved';
-    color: var(--pl-text-secondary);
-    font-weight: var(--pl-label-lg-semibold-weight);
-    font-size: var(--pl-label-lg-semibold-size);
-    line-height: var(--pl-label-lg-semibold-lineheight);
-  }
-  .vd-schedule-card.is-reserved .vd-schedule-time,
-  .vd-schedule-card.is-reserved .vd-schedule-duration,
-  .vd-schedule-card.is-reserved .vd-schedule-title {
-    color: var(--pl-text-disabled);
-  }
-  .vd-schedule-card.is-reserved .vd-schedule-rating { color: var(--pl-text-disabled); }
-  .vd-schedule-card.is-reserved .vd-schedule-rating svg path { fill: var(--pl-text-disabled); }
-  .vd-schedule-card.is-reserved .vd-schedule-price > *,
-  .vd-schedule-card.is-reserved .vd-schedule-price-label {
-    display: none;
-  }
-  .vd-schedule-card.is-reserved .vd-schedule-price::before {
-    content: 'Reserved';
-    color: var(--pl-text-secondary);
-    font-weight: var(--pl-label-lg-semibold-weight);
-    font-size: var(--pl-label-lg-semibold-size);
-    line-height: var(--pl-label-lg-semibold-lineheight);
-  }
+  /* Shell, type, selected stroke and reserved/sold-out status come from
+     `.pl-card.pl-class-card`. Local class is only a click/state hook. */
+  .cd-time-slot { cursor: pointer; }
 
   /* Class detail header simplification: the intro chip is redundant (per-slot
      prices already show the offer). Venue name + location stays visible as a
@@ -3858,7 +3655,7 @@
   .lightbox-bg {
     position: absolute;
     inset: 0;
-    background: var(--pl-surface-inset);
+    background: var(--pl-surface-default);
     opacity: 0;
     transition: opacity 0.2s ease-out;
     pointer-events: none;

@@ -384,10 +384,10 @@
   background: var(--chip-bg);
   color: var(--chip-fg);
   border-radius: var(--pl-radius-component-button-pill);
-  font-family: var(--pl-label-sm-semibold-font);
-  font-size: var(--pl-label-sm-semibold-size);
-  line-height: var(--pl-label-sm-semibold-lineheight);
-  font-weight: var(--pl-label-sm-semibold-weight);
+  font-family: var(--pl-body-sm-medium-font);
+  font-size: var(--pl-body-sm-medium-size);
+  line-height: var(--pl-body-sm-medium-lineheight);
+  font-weight: var(--pl-body-sm-medium-weight);
   cursor: pointer;
   white-space: nowrap;
   -webkit-tap-highlight-color: transparent;
