@@ -1,0 +1,1478 @@
+/* Playlist Design System — components
+   Hand-written from the Figma component specs (iOS component sets).
+   Requires tokens.css and typography.css to be linked first.
+
+   Source component sets:
+     PLButton      1560:1318   (page "iOS Button")
+     PLIconButton  1589:977    (page "iOS Icon Button")
+     PLChip        925:12624   (page "Chip")
+     Text field    798:1537    (page "Form")
+     Pasword field 800:31      (page "Form")
+     Class card    1361:5034   Schedule card 1194:1271   Schedule price 1194:1153
+     Map card      1662:1623   See all       1662:1693   Venue card    1456:15761
+     Icons         "Icons WIP" page (iOS set) — see icons/ and icons.js
+     Review card   1306:5340
+     Ratings summary 1321:5446   Rating distribution 1323:5708
+     Banner        2363:121    Tab bar       1495:394    (pages "Card", "Banner", "Tab bar")
+
+   Every value below traces to a bound variable in Figma. Where Figma had no
+   variable, or the binding was broken, it's called out in a comment and in
+   README.md under "Known gaps in the Figma source".
+*/
+
+/* ===========================================================================
+   PLButton — .pl-btn
+   Variant × State × Radius × Size. States are driven by real CSS pseudo-classes,
+   so :hover / :active / :disabled map to Figma's Hovered / Pressed / Disabled.
+   Each variant only sets custom properties; the base rule consumes them.
+   =========================================================================== */
+
+.pl-btn {
+  /* defaults, overridden per variant */
+  --btn-bg: transparent;
+  --btn-fg: var(--pl-text-primary);
+  --btn-border: transparent;
+  --btn-border-width: 0px;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  margin: 0;
+  border: var(--btn-border-width) solid var(--btn-border);
+  background: var(--btn-bg);
+  color: var(--btn-fg);
+  border-radius: var(--pl-radius-component-button-regular);
+  cursor: pointer;
+  text-decoration: none;
+  white-space: nowrap;
+  -webkit-tap-highlight-color: transparent;
+  transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease, opacity 0.15s ease;
+}
+
+.pl-btn:disabled,
+.pl-btn[aria-disabled="true"] {
+  cursor: default;
+  pointer-events: none;
+}
+
+/* --- Sizes. Heights in Figma: 34 / 48 / 56, achieved by padding + line-height.
+       Label: sm → buttonLabelSmall medium (13/18); md/lg → buttonLabelLarge medium (16/24). */
+.pl-btn--sm {
+  padding: var(--pl-button-sm-padding-y) var(--pl-button-sm-padding-x);
+  gap: var(--pl-space-xs);
+  font-family: var(--pl-label-sm-medium-font);
+  font-size: var(--pl-label-sm-medium-size);
+  line-height: var(--pl-label-sm-medium-lineheight);
+  font-weight: var(--pl-label-sm-medium-weight);
+  --btn-icon: var(--pl-symbol-size-md);
+}
+
+.pl-btn--md {
+  padding: var(--pl-button-md-padding-y) var(--pl-button-md-padding-x);
+  gap: var(--pl-space-xs);
+  font-family: var(--pl-label-lg-medium-font);
+  font-size: var(--pl-label-lg-medium-size);
+  line-height: var(--pl-label-lg-medium-lineheight);
+  font-weight: var(--pl-label-lg-medium-weight);
+  --btn-icon: var(--pl-symbol-size-md);
+}
+
+.pl-btn--lg {
+  padding: var(--pl-button-lg-padding-y) var(--pl-button-lg-padding-x);
+  gap: var(--pl-space-sm);
+  font-family: var(--pl-label-lg-medium-font);
+  font-size: var(--pl-label-lg-medium-size);
+  line-height: var(--pl-label-lg-medium-lineheight);
+  font-weight: var(--pl-label-lg-medium-weight);
+  --btn-icon: var(--pl-symbol-size-xl);
+}
+
+/* --- Radius */
+.pl-btn--pill { border-radius: var(--pl-radius-component-button-pill); }
+
+/* --- Icon placement. Figma "Edges" spreads label and icons to the edges;
+       only 24 of the 240 variants use it, and it only makes sense full-width. */
+.pl-btn--edges { justify-content: space-between; }
+.pl-btn--full { display: flex; width: 100%; }
+
+.pl-btn__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: var(--btn-icon);
+  height: var(--btn-icon);
+  font-size: var(--btn-icon);
+  line-height: 1;
+}
+.pl-btn__icon > svg { width: 100%; height: 100%; display: block; fill: currentColor; }
+
+/* --- Variants -------------------------------------------------------------- */
+
+.pl-btn--primary {
+  --btn-bg: var(--pl-accent-default);
+  --btn-fg: var(--pl-text-onaccent);
+}
+.pl-btn--primary:hover { --btn-bg: var(--pl-accent-hover); }
+.pl-btn--primary:active { --btn-bg: var(--pl-accent-pressed); }
+.pl-btn--primary:disabled,
+.pl-btn--primary[aria-disabled="true"] {
+  --btn-bg: var(--pl-surface-disabled);
+  --btn-fg: var(--pl-text-disabled);
+}
+
+.pl-btn--secondary {
+  --btn-bg: var(--pl-button-secondary-bg-default);
+  --btn-fg: var(--pl-button-secondary-fg-default);
+}
+.pl-btn--secondary:hover { --btn-bg: var(--pl-button-secondary-bg-hovered); }
+.pl-btn--secondary:active { --btn-bg: var(--pl-button-secondary-bg-pressed); }
+.pl-btn--secondary:disabled,
+.pl-btn--secondary[aria-disabled="true"] {
+  --btn-bg: var(--pl-button-secondary-bg-disabled);
+  --btn-fg: var(--pl-button-secondary-fg-disabled);
+}
+
+.pl-btn--neutral {
+  --btn-bg: var(--pl-button-neutral-bg-default);
+  --btn-fg: var(--pl-button-neutral-fg-default);
+}
+.pl-btn--neutral:hover { --btn-bg: var(--pl-button-neutral-bg-hovered); }
+.pl-btn--neutral:active { --btn-bg: var(--pl-button-neutral-bg-pressed); }
+.pl-btn--neutral:disabled,
+.pl-btn--neutral[aria-disabled="true"] {
+  --btn-bg: var(--pl-button-neutral-bg-disabled);
+  --btn-fg: var(--pl-button-neutral-fg-disabled);
+}
+
+.pl-btn--neutral-solid {
+  --btn-bg: var(--pl-button-neutralsolid-bg-default);
+  --btn-fg: var(--pl-button-neutralsolid-fg-default);
+}
+.pl-btn--neutral-solid:hover { --btn-bg: var(--pl-button-neutralsolid-bg-hovered); }
+.pl-btn--neutral-solid:active { --btn-bg: var(--pl-button-neutralsolid-bg-pressed); }
+.pl-btn--neutral-solid:disabled,
+.pl-btn--neutral-solid[aria-disabled="true"] {
+  --btn-bg: var(--pl-button-neutralsolid-bg-disabled);
+  --btn-fg: var(--pl-button-neutralsolid-fg-disabled);
+}
+
+.pl-btn--outline {
+  --btn-bg: var(--pl-button-outline-bg-default);
+  --btn-fg: var(--pl-button-outline-fg-default);
+  --btn-border: var(--pl-border-default);
+  --btn-border-width: var(--pl-border-semantic-100);
+}
+.pl-btn--outline:hover { --btn-bg: var(--pl-button-outline-bg-hovered); }
+.pl-btn--outline:active { --btn-bg: var(--pl-button-outline-bg-pressed); }
+.pl-btn--outline:disabled,
+.pl-btn--outline[aria-disabled="true"] {
+  --btn-bg: var(--pl-button-outline-bg-disabled);
+  --btn-fg: var(--pl-button-outline-fg-disabled);
+  --btn-border: var(--pl-border-disabled);
+}
+
+.pl-btn--destructive {
+  --btn-bg: var(--pl-button-destructive-bg-default);
+  --btn-fg: var(--pl-button-destructive-fg-default);
+}
+/* NOTE: Figma's Destructive "Hovered" is bound to bg/default — identical to rest.
+   The button/destructive/bg/hovered token exists but is unused. Wired up here so
+   hover isn't dead; swap to bg/default if you need to match Figma exactly. */
+.pl-btn--destructive:hover { --btn-bg: var(--pl-button-destructive-bg-hovered); }
+.pl-btn--destructive:active { --btn-bg: var(--pl-button-destructive-bg-pressed); }
+.pl-btn--destructive:disabled,
+.pl-btn--destructive[aria-disabled="true"] {
+  --btn-bg: var(--pl-button-destructive-bg-disabled);
+  /* Figma keeps fg/default here; button/destructive/fg/disabled exists but is unused. */
+  --btn-fg: var(--pl-button-destructive-fg-default);
+}
+
+.pl-btn--inverse {
+  --btn-bg: var(--pl-button-inverse-bg-default);
+  --btn-fg: var(--pl-button-inverse-fg-default);
+}
+.pl-btn--inverse:hover { --btn-bg: var(--pl-button-inverse-bg-hovered); }
+.pl-btn--inverse:active { --btn-bg: var(--pl-button-inverse-bg-pressed); }
+.pl-btn--inverse:disabled,
+.pl-btn--inverse[aria-disabled="true"] {
+  --btn-bg: var(--pl-button-inverse-bg-disabled);
+  --btn-fg: var(--pl-button-inverse-fg-disabled);
+}
+
+/* Ghost's Default stroke in Figma points at a variable that isn't in this file
+   (button/label/ghost/border/default) and renders fully transparent, so a
+   transparent border is kept purely to stop the box from resizing on hover. */
+.pl-btn--ghost {
+  --btn-bg: var(--pl-button-ghost-bg-default);
+  --btn-fg: var(--pl-button-ghost-fg-default);
+  --btn-border: transparent;
+  --btn-border-width: var(--pl-border-semantic-100);
+}
+.pl-btn--ghost:hover { --btn-bg: var(--pl-button-ghost-bg-hovered); }
+.pl-btn--ghost:active { --btn-bg: var(--pl-button-ghost-bg-pressed); }
+.pl-btn--ghost:disabled,
+.pl-btn--ghost[aria-disabled="true"] {
+  --btn-bg: var(--pl-button-ghost-bg-disabled);
+  /* Figma uses the *neutral* disabled fg here, not ghost's. */
+  --btn-fg: var(--pl-button-neutral-fg-disabled);
+}
+
+/* Link variants: no background, no padding — the box is just the text line. */
+.pl-btn--link,
+.pl-btn--link-accent {
+  padding: 0;
+  background: none;
+  border: 0;
+  border-radius: 0;
+}
+/* Link is underlined at every size and in every state, including Disabled.
+   Link Accent is never underlined.
+   NOTE: Figma's Link *Small* variants are missing the underline — confirmed as a
+   bug in the file, not a deliberate difference. This CSS is correct; don't
+   "fix" it to match Figma. */
+.pl-btn--link {
+  --btn-fg: var(--pl-button-ghost-fg-default);
+  text-decoration: underline;
+}
+.pl-btn--link-accent { --btn-fg: var(--pl-text-link); text-decoration: none; }
+.pl-btn--link:active,
+.pl-btn--link-accent:active { opacity: 0.6; }
+.pl-btn--link:disabled,
+.pl-btn--link[aria-disabled="true"],
+.pl-btn--link-accent:disabled,
+.pl-btn--link-accent[aria-disabled="true"] {
+  --btn-fg: var(--pl-button-neutral-fg-disabled);
+  opacity: 1;
+}
+
+/* ===========================================================================
+   PLIconButton — .pl-icon-btn
+   Square, pill radius. Sizes 36 / 44 / 52.
+   =========================================================================== */
+
+.pl-icon-btn {
+  --ibtn-bg: transparent;
+  --ibtn-fg: var(--pl-icon-default);
+  --ibtn-shadow: none;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  padding: 0;
+  margin: 0;
+  border: 0;
+  background: var(--ibtn-bg);
+  color: var(--ibtn-fg);
+  box-shadow: var(--ibtn-shadow);
+  border-radius: var(--pl-radius-component-button-icon);
+  cursor: pointer;
+  line-height: 1;
+  -webkit-tap-highlight-color: transparent;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+.pl-icon-btn:disabled,
+.pl-icon-btn[aria-disabled="true"] { cursor: default; pointer-events: none; }
+
+/* The icon box is always 20px (Symbol/size/xl); padding alone produces the
+   36 / 44 / 52 outer sizes. Size is set explicitly rather than by padding so a
+   bare text glyph with its own line box can't stretch the button.
+   Figma binds Small to icon/sm/padding-*, Medium to space/sm, and Large to
+   icon/lg/padding-* — icon/md/padding-* exists but is unused (also 12px, so
+   Medium lands in the right place regardless). */
+.pl-icon-btn--sm {
+  width: calc(var(--pl-symbol-size-xl) + 2 * var(--pl-icon-sm-padding-x));
+  height: calc(var(--pl-symbol-size-xl) + 2 * var(--pl-icon-sm-padding-y));
+  font-size: var(--pl-symbol-size-md);
+}
+.pl-icon-btn--md {
+  width: calc(var(--pl-symbol-size-xl) + 2 * var(--pl-space-sm));
+  height: calc(var(--pl-symbol-size-xl) + 2 * var(--pl-space-sm));
+  font-size: var(--pl-symbol-size-xl);
+}
+.pl-icon-btn--lg {
+  width: calc(var(--pl-symbol-size-xl) + 2 * var(--pl-icon-lg-padding-x));
+  height: calc(var(--pl-symbol-size-xl) + 2 * var(--pl-icon-lg-padding-y));
+  font-size: var(--pl-symbol-size-xl);
+}
+.pl-icon-btn > svg { width: 1em; height: 1em; display: block; fill: currentColor; }
+
+.pl-icon-btn--primary {
+  --ibtn-bg: var(--pl-accent-default);
+  --ibtn-fg: var(--pl-text-onaccent);
+}
+.pl-icon-btn--primary:hover { --ibtn-bg: var(--pl-accent-hover); }
+.pl-icon-btn--primary:active { --ibtn-bg: var(--pl-accent-pressed); }
+.pl-icon-btn--primary:disabled,
+.pl-icon-btn--primary[aria-disabled="true"] {
+  --ibtn-bg: var(--pl-surface-disabled);
+  --ibtn-fg: var(--pl-text-disabled);
+}
+
+.pl-icon-btn--raised {
+  --ibtn-bg: var(--pl-button-neutralsolid-bg-default);
+  --ibtn-fg: var(--pl-button-neutral-fg-default);
+  --ibtn-shadow: var(--pl-elevation-sm);
+}
+.pl-icon-btn--raised:hover { --ibtn-bg: var(--pl-button-neutralsolid-bg-hovered); }
+.pl-icon-btn--raised:active { --ibtn-bg: var(--pl-button-neutralsolid-bg-pressed); }
+.pl-icon-btn--raised:disabled,
+.pl-icon-btn--raised[aria-disabled="true"] {
+  --ibtn-bg: var(--pl-button-neutralsolid-bg-disabled);
+  --ibtn-fg: var(--pl-button-neutral-fg-disabled);
+}
+
+.pl-icon-btn--ghost {
+  --ibtn-bg: var(--pl-button-ghost-bg-default);
+  --ibtn-fg: var(--pl-button-ghost-fg-default);
+}
+.pl-icon-btn--ghost:hover { --ibtn-bg: var(--pl-button-ghost-bg-hovered); }
+/* Figma uses the neutral pressed/disabled backgrounds for ghost icon buttons. */
+.pl-icon-btn--ghost:active { --ibtn-bg: var(--pl-button-neutral-bg-pressed); }
+.pl-icon-btn--ghost:disabled,
+.pl-icon-btn--ghost[aria-disabled="true"] {
+  --ibtn-bg: var(--pl-button-neutral-bg-disabled);
+  --ibtn-fg: var(--pl-button-ghost-fg-disabled);
+}
+
+.pl-icon-btn--neutral {
+  --ibtn-bg: var(--pl-button-neutral-bg-default);
+  --ibtn-fg: var(--pl-button-neutral-fg-default);
+}
+.pl-icon-btn--neutral:hover { --ibtn-bg: var(--pl-button-neutral-bg-hovered); }
+.pl-icon-btn--neutral:active { --ibtn-bg: var(--pl-button-neutral-bg-pressed); }
+.pl-icon-btn--neutral:disabled,
+.pl-icon-btn--neutral[aria-disabled="true"] {
+  --ibtn-bg: var(--pl-button-neutral-bg-disabled);
+  --ibtn-fg: var(--pl-button-neutral-fg-disabled);
+}
+
+.pl-icon-btn--inverse {
+  --ibtn-bg: var(--pl-button-inverse-bg-default);
+  --ibtn-fg: var(--pl-button-inverse-fg-default);
+}
+.pl-icon-btn--inverse:hover { --ibtn-bg: var(--pl-button-inverse-bg-hovered); }
+.pl-icon-btn--inverse:active { --ibtn-bg: var(--pl-button-inverse-bg-pressed); }
+.pl-icon-btn--inverse:disabled,
+.pl-icon-btn--inverse[aria-disabled="true"] {
+  --ibtn-bg: var(--pl-button-inverse-bg-disabled);
+  --ibtn-fg: var(--pl-button-inverse-fg-disabled);
+}
+
+/* ===========================================================================
+   PLChip — .pl-chip
+   One size (44px tall). Style × State × Radius. Selection is a state, not a
+   pseudo-class, so drive it with .is-selected or [aria-pressed="true"].
+   =========================================================================== */
+
+.pl-chip {
+  --chip-bg: transparent;
+  --chip-fg: var(--pl-text-primary);
+  --chip-border: transparent;
+  --chip-border-width: 0px;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  margin: 0;
+  padding: var(--pl-button-md-padding-y) var(--pl-button-md-padding-x);
+  gap: var(--pl-space-xs);
+  border: var(--chip-border-width) solid var(--chip-border);
+  background: var(--chip-bg);
+  color: var(--chip-fg);
+  border-radius: var(--pl-radius-component-button-pill);
+  font-family: var(--pl-label-sm-semibold-font);
+  font-size: var(--pl-label-sm-semibold-size);
+  line-height: var(--pl-label-sm-semibold-lineheight);
+  font-weight: var(--pl-label-sm-semibold-weight);
+  cursor: pointer;
+  white-space: nowrap;
+  -webkit-tap-highlight-color: transparent;
+  transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.pl-chip--regular { border-radius: var(--pl-radius-component-button-regular); }
+
+/* Chip filter uses a tighter 4px gap than the other types. */
+.pl-chip--filter { gap: var(--pl-space-xxs); }
+
+/* 20px slot (Symbol/size/xl). Adding one takes the chip from 42 to 44 tall,
+   because the slot is taller than the 18px label line. */
+.pl-chip__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: var(--pl-symbol-size-xl);
+  height: var(--pl-symbol-size-xl);
+  font-size: var(--pl-symbol-size-xl);
+  line-height: 1;
+}
+.pl-chip__icon > svg { width: 100%; height: 100%; display: block; fill: currentColor; }
+
+.pl-chip--neutral {
+  --chip-bg: var(--pl-button-neutral-bg-default);
+  --chip-fg: var(--pl-button-neutral-fg-default);
+}
+.pl-chip--neutral-solid {
+  --chip-bg: var(--pl-button-neutralsolid-bg-default);
+  --chip-fg: var(--pl-button-neutralsolid-fg-default);
+}
+.pl-chip--outline {
+  --chip-bg: transparent;
+  --chip-fg: var(--pl-button-neutralsolid-fg-default);
+  --chip-border: var(--pl-border-default);
+  --chip-border-width: var(--pl-border-semantic-100);
+}
+
+/* Selected is identical across all three styles in Figma. Note the bg token is
+   button/inverse/bg/pressed — that's what the file binds, odd as it reads. */
+.pl-chip.is-selected,
+.pl-chip[aria-pressed="true"] {
+  --chip-bg: var(--pl-button-inverse-bg-pressed);
+  --chip-fg: var(--pl-text-onaccent);
+  --chip-border: transparent;
+}
+
+.pl-chip:disabled,
+.pl-chip[aria-disabled="true"] {
+  --chip-bg: var(--pl-button-neutral-bg-disabled);
+  --chip-fg: var(--pl-button-neutral-fg-disabled);
+  --chip-border: transparent;
+  cursor: default;
+  pointer-events: none;
+}
+
+/* ===========================================================================
+   Text field / Password field — .pl-field
+   Figma heights: 52 text, 56 password (the 24px visibility toggle sets the
+   floor). Focus and error strokes are 2px INSIDE in Figma, so a transparent
+   2px border is always present and the box never resizes.
+   =========================================================================== */
+
+.pl-field { display: flex; flex-direction: column; gap: var(--pl-input-icon-gap); }
+
+.pl-field__box {
+  display: flex;
+  align-items: center;
+  gap: var(--pl-space-xs);
+  box-sizing: border-box;
+  padding: calc(var(--pl-input-padding-y) - var(--pl-border-semantic-200))
+           calc(var(--pl-input-padding-x) - var(--pl-border-semantic-200));
+  background: var(--pl-surface-subtle);
+  border: var(--pl-border-semantic-200) solid transparent;
+  border-radius: var(--pl-radius-component-input-compact);
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.pl-field__input {
+  flex: 1;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  outline: none;
+  background: none;
+  color: var(--pl-text-primary);
+  font-family: var(--pl-label-md-medium-font);
+  font-size: var(--pl-label-md-medium-size);
+  line-height: var(--pl-label-md-medium-lineheight);
+  font-weight: var(--pl-label-md-medium-weight);
+}
+.pl-field__input::placeholder { color: var(--pl-text-secondary); }
+
+/* Figma's Focused state switches the value to SemiBold. Faithful to the design,
+   but it reflows the text as you focus/blur — see README. Drop this rule to
+   keep the weight stable. */
+.pl-field__box:focus-within .pl-field__input { font-weight: var(--pl-label-md-semibold-weight); }
+.pl-field__box:focus-within { border-color: var(--pl-border-focus); }
+
+.pl-field__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: var(--pl-icon-md);
+  height: var(--pl-icon-md);
+  font-size: var(--pl-symbol-size-md);
+  color: var(--pl-icon-default);
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+}
+.pl-field__icon > svg { width: 100%; height: 100%; display: block; fill: currentColor; }
+
+/* Password field is 56 tall because the visibility toggle is 24px. */
+.pl-field--password .pl-field__icon {
+  width: var(--pl-size-componentsize-24);
+  height: var(--pl-size-componentsize-24);
+}
+
+.pl-field__error {
+  font-family: var(--pl-caption-lg-font);
+  font-size: var(--pl-caption-lg-size);
+  line-height: var(--pl-caption-lg-lineheight);
+  font-weight: var(--pl-caption-lg-weight);
+  color: var(--pl-text-status-danger);
+}
+
+.pl-field.is-error .pl-field__box { border-color: var(--pl-border-danger); }
+
+.pl-field.is-disabled .pl-field__box { background: var(--pl-surface-disabled); }
+.pl-field.is-disabled .pl-field__input,
+.pl-field__input:disabled { color: var(--pl-text-disabled); -webkit-text-fill-color: var(--pl-text-disabled); }
+.pl-field__input:disabled::placeholder { color: var(--pl-text-disabled); }
+
+/* ===========================================================================
+   Search bar — .pl-search-bar (1832:2160)
+   48px tall, Radius/Semantic/xxl (24px), surface/default on a 1px
+   border/default stroke. Both icon slots are optional component booleans in
+   Figma — Leading icon defaults ON, Trailing icon defaults OFF (it's the clear
+   affordance, so it only shows once there's a value).
+
+   Figma binds 16px vertical padding but pins the frame to a FIXED 48 height,
+   which the 24px icon row can't fit inside. The height wins, so the vertical
+   padding here is the 12px that actually renders; only padding-x is tokenised.
+   =========================================================================== */
+
+.pl-search-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--pl-space-sm);
+  box-sizing: border-box;
+  width: 100%;
+  height: var(--pl-size-componentsize-48);
+  /* Stroke is INSIDE in Figma — absorb it so the bar stays 48 tall. */
+  padding: 0 calc(var(--pl-input-padding-x) - var(--pl-border-semantic-100));
+  background: var(--pl-surface-default);
+  border: var(--pl-border-semantic-100) solid var(--pl-border-default);
+  border-radius: var(--pl-radius-semantic-xxl);
+  color: var(--pl-text-primary);
+  font-family: var(--pl-type-font-primary);
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.pl-search-bar:focus-within { border-color: var(--pl-border-focus); }
+
+/* Both slots are Symbol/size/xxl (24) boxes; the glyph inside is smaller. */
+.pl-search-bar__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: var(--pl-symbol-size-xxl);
+  height: var(--pl-symbol-size-xxl);
+  color: var(--pl-icon-default);
+}
+.pl-search-bar__icon > svg { width: var(--pl-symbol-size-lg); height: var(--pl-symbol-size-lg); display: block; fill: currentColor; }
+
+/* Trailing slot is 20 wide in Figma, not 24, and its glyph is 16. */
+.pl-search-bar__clear {
+  width: var(--pl-symbol-size-xl);
+  margin: 0;
+  padding: 0;
+  background: none;
+  border: 0;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.pl-search-bar__clear > svg { width: var(--pl-symbol-size-md); height: var(--pl-symbol-size-md); }
+
+/* The Label instance: Active=False is the placeholder, Active=True the value. */
+.pl-search-bar__input {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  background: none;
+  border: 0;
+  outline: none;
+  color: var(--pl-text-primary);
+  font-family: var(--pl-body-md-regular-font);
+  font-size: var(--pl-body-md-regular-size);
+  line-height: var(--pl-body-md-regular-lineheight);
+  font-weight: var(--pl-body-md-regular-weight);
+}
+.pl-search-bar__input::placeholder { color: var(--pl-text-secondary); }
+
+.pl-search-bar.is-disabled,
+.pl-search-bar:has(.pl-search-bar__input:disabled) { background: var(--pl-surface-disabled); }
+.pl-search-bar.is-disabled .pl-search-bar__icon,
+.pl-search-bar:has(.pl-search-bar__input:disabled) .pl-search-bar__icon { color: var(--pl-icon-disabled); }
+.pl-search-bar__input:disabled { color: var(--pl-text-disabled); -webkit-text-fill-color: var(--pl-text-disabled); }
+
+/* ===========================================================================
+   Cards — shared shell
+   Class card, Schedule card, Map card and See all all sit on
+   surface/default with Radius/Component/Card/default (16px). The selected
+   border is 2px INSIDE in Figma, so it's always present but transparent and
+   the padding compensates — the card never changes size.
+
+   Source: Class card 1361:5034, Schedule card 1194:1271,
+           Map card 1662:1623, See all 1662:1693, Schedule price 1194:1153
+   =========================================================================== */
+
+.pl-card {
+  --card-border: var(--pl-border-default);
+  --card-border-width: var(--pl-border-semantic-100);
+  box-sizing: border-box;
+  background: var(--pl-surface-default);
+  border: var(--card-border-width) solid var(--card-border);
+  border-radius: var(--pl-radius-component-card-default);
+  /* Figma strokes are INSIDE, so they don't add to the frame size. Absorbing the
+     border into the padding keeps the card the same height when Selected swaps
+     the 1px border for 2px. */
+  padding: calc(var(--pl-card-padding-md) - var(--card-border-width));
+  color: var(--pl-text-primary);
+  text-align: left;
+  width: 100%;
+  font-family: var(--pl-type-font-primary);
+}
+
+button.pl-card { cursor: pointer; -webkit-tap-highlight-color: transparent; }
+
+.pl-card.is-selected {
+  --card-border: var(--pl-border-focus);
+  --card-border-width: var(--pl-border-semantic-200);
+}
+
+/* Unavailable / Sold out / Reserved / Booking window all render the card's
+   own text as text/disabled in Figma. The status label and message opt out. */
+.pl-card.is-dimmed {
+  color: var(--pl-text-disabled);
+}
+
+/* Right-hand status label — replaces the price in Sold out / Reserved. */
+.pl-card__status {
+  font-family: var(--pl-body-md-semibold-font);
+  font-size: var(--pl-body-md-semibold-size);
+  line-height: var(--pl-body-md-semibold-lineheight);
+  font-weight: var(--pl-body-md-semibold-weight);
+  white-space: nowrap;
+}
+.pl-card__status--sold-out { color: var(--pl-text-emphasis); }
+.pl-card__status--reserved { color: var(--pl-text-secondary); }
+
+/* Booking-window message: caption under the card body. Left aligned — the
+   wrapper frame in Figma is CENTER-justified, but the text fills it (grow 1),
+   so the text's own textAlignHorizontal: LEFT is what applies. */
+.pl-card__message {
+  padding-top: var(--pl-space-xs);
+  text-align: left;
+  color: var(--pl-text-secondary);
+  font-family: var(--pl-caption-sm-font);
+  font-size: var(--pl-caption-sm-size);
+  line-height: var(--pl-caption-sm-lineheight);
+  font-weight: var(--pl-caption-sm-weight);
+}
+
+/* --- Schedule price — .pl-price (1194:1153) ------------------------------- */
+
+.pl-price { display: inline-flex; align-items: center; gap: var(--pl-space-xs); }
+.pl-price__amounts { display: inline-flex; align-items: center; gap: var(--pl-space-xxs); }
+
+.pl-price__label,
+.pl-price__current,
+.pl-price__original {
+  font-family: var(--pl-label-md-semibold-font);
+  font-size: var(--pl-label-md-semibold-size);
+  line-height: var(--pl-label-md-semibold-lineheight);
+  font-weight: var(--pl-label-md-semibold-weight);
+}
+.pl-price__label { color: var(--pl-text-primary); }
+.pl-price__current { color: var(--pl-text-primary); }
+
+/* "From" prefix — body/sm/regular, secondary. */
+.pl-price__from {
+  color: var(--pl-text-secondary);
+  font-family: var(--pl-body-sm-regular-font);
+  font-size: var(--pl-body-sm-regular-size);
+  line-height: var(--pl-body-sm-regular-lineheight);
+  font-weight: var(--pl-body-sm-regular-weight);
+}
+
+/* Offer=True: current price turns green and the original is struck through. */
+.pl-price--offer .pl-price__current { color: var(--pl-text-price-discount); }
+.pl-price__original { color: var(--pl-text-secondary); text-decoration: line-through; }
+
+.pl-price.is-disabled .pl-price__label,
+.pl-price.is-disabled .pl-price__current,
+.pl-price.is-disabled .pl-price__original,
+.pl-price.is-disabled .pl-price__from,
+.pl-card.is-dimmed .pl-price__label,
+.pl-card.is-dimmed .pl-price__current,
+.pl-card.is-dimmed .pl-price__original,
+.pl-card.is-dimmed .pl-price__from { color: var(--pl-text-disabled); }
+
+/* --- Class card — .pl-class-card (1361:5034) ------------------------------ */
+
+.pl-class-card__body { display: flex; flex-direction: column; gap: var(--pl-space-xxs); }
+
+.pl-class-card__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--pl-space-xxs);
+}
+
+/* Time is buttonLabelMedium semibold; the instructor line below it is the
+   lighter bodyMedium medium. Both 14/20. */
+.pl-class-card__time {
+  font-family: var(--pl-label-md-semibold-font);
+  font-size: var(--pl-label-md-semibold-size);
+  line-height: var(--pl-label-md-semibold-lineheight);
+  font-weight: var(--pl-label-md-semibold-weight);
+  color: inherit;
+}
+
+.pl-class-card__instructor {
+  font-family: var(--pl-body-md-medium-font);
+  font-size: var(--pl-body-md-medium-size);
+  line-height: var(--pl-body-md-medium-lineheight);
+  font-weight: var(--pl-body-md-medium-weight);
+  color: inherit;
+}
+
+.pl-class-card__duration {
+  font-family: var(--pl-body-sm-regular-font);
+  font-size: var(--pl-body-sm-regular-size);
+  line-height: var(--pl-body-sm-regular-lineheight);
+  font-weight: var(--pl-body-sm-regular-weight);
+  color: inherit;
+}
+
+/* "3 spots left" — present in Figma but hidden on every variant. */
+.pl-class-card__spots {
+  font-family: var(--pl-caption-lg-font);
+  font-size: var(--pl-caption-lg-size);
+  line-height: var(--pl-caption-lg-lineheight);
+  font-weight: var(--pl-caption-lg-weight);
+  color: var(--pl-text-secondary);
+}
+
+/* --- Schedule card — .pl-schedule-card (1194:1271) ------------------------ */
+
+.pl-schedule-card__body { display: flex; flex-direction: column; }
+
+.pl-schedule-card__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--pl-space-xxs);
+}
+
+.pl-schedule-card__meta {
+  font-family: var(--pl-body-md-semibold-font);
+  font-size: var(--pl-body-md-semibold-size);
+  line-height: var(--pl-body-md-semibold-lineheight);
+  font-weight: var(--pl-body-md-semibold-weight);
+  color: inherit;
+}
+
+.pl-schedule-card__title {
+  font-family: var(--pl-body-md-medium-font);
+  font-size: var(--pl-body-md-medium-size);
+  line-height: var(--pl-body-md-medium-lineheight);
+  font-weight: var(--pl-body-md-medium-weight);
+  color: inherit;
+}
+
+.pl-schedule-card__duration,
+.pl-schedule-card__venue {
+  font-family: var(--pl-body-sm-regular-font);
+  font-size: var(--pl-body-sm-regular-size);
+  line-height: var(--pl-body-sm-regular-lineheight);
+  font-weight: var(--pl-body-sm-regular-weight);
+  color: inherit;
+}
+
+/* The rating line is bodySmall *medium*, a step heavier than the duration. */
+.pl-schedule-card__rating {
+  font-family: var(--pl-body-sm-medium-font);
+  font-size: var(--pl-body-sm-medium-size);
+  line-height: var(--pl-body-sm-medium-lineheight);
+  font-weight: var(--pl-body-sm-medium-weight);
+  color: inherit;
+}
+
+.pl-schedule-card__rating { display: inline-flex; align-items: center; gap: var(--pl-space-xxs); }
+.pl-schedule-card__star { color: var(--pl-icon-rating); display: inline-flex; }
+.pl-card.is-dimmed .pl-schedule-card__star { color: var(--pl-icon-disabled); }
+
+/* --- Map card — .pl-map-card (1662:1623) ---------------------------------- */
+
+.pl-map-card {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 0;
+  border: var(--pl-border-semantic-100) solid var(--pl-border-default);
+  border-radius: var(--pl-radius-component-card-default);
+  background: var(--pl-surface-default);
+}
+
+/* 168px map area in Figma. Drop a Mapbox canvas, an <img>, or an iframe in. */
+.pl-map-card__map { position: relative; height: 168px; background: var(--pl-surface-inset); }
+.pl-map-card__map > * { width: 100%; height: 100%; display: block; object-fit: cover; }
+
+.pl-map-card__pin {
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  color: var(--pl-accent-default);
+  width: 32px; height: 32px;
+}
+
+.pl-map-card__footer {
+  padding: var(--pl-space-md);
+  color: var(--pl-text-primary);
+  font-family: var(--pl-body-sm-regular-font);
+  font-size: var(--pl-body-sm-regular-size);
+  line-height: var(--pl-body-sm-regular-lineheight);
+  font-weight: var(--pl-body-sm-regular-weight);
+}
+
+/* --- See all — .pl-see-all (1662:1693) ------------------------------------ */
+
+/* Designed to sit at the end of a card carousel and match its neighbours'
+   height, so no height is set here — let the flex/grid row stretch it. */
+.pl-see-all {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--pl-space-xs);
+  width: auto;
+  padding: calc(var(--pl-card-padding-sm) - var(--pl-border-semantic-100))
+           calc(var(--pl-card-padding-md) - var(--pl-border-semantic-100));
+  border: var(--pl-border-semantic-100) solid var(--pl-border-default);
+  background: var(--pl-surface-default);
+  border-radius: var(--pl-radius-component-card-default);
+  color: var(--pl-text-primary);
+  font-family: var(--pl-body-md-semibold-font);
+  font-size: var(--pl-body-md-semibold-size);
+  line-height: var(--pl-body-md-semibold-lineheight);
+  font-weight: var(--pl-body-md-semibold-weight);
+  white-space: nowrap;
+  cursor: pointer;
+}
+.pl-see-all__icon {
+  display: inline-flex;
+  font-size: var(--pl-symbol-size-md);
+  line-height: 1;
+}
+
+/* --- Venue card — .pl-venue-card (1456:15761) ------------------------------
+
+   A square image beside a title / tags / rating / action column, with a
+   description underneath. Padding is card/padding-sm (12), not the -md the
+   other cards use.
+
+   The header is a GRID, not a flex row, purely so the image works: Figma's
+   image is `align-self: stretch` with a 1:1 aspect ratio, i.e. a square sized
+   by whatever height the info column resolves to (108 with the default
+   content: 64 text + 8 + 36 button). As a flex item its width stays
+   indefinite and `aspect-ratio` has nothing to resolve against, so it
+   collapses to 0; a grid track gives the stretched height enough definiteness
+   for the ratio to produce the width.
+
+   The action slot is a real PLButton — Figma's instance is
+   Neutral / Small / Pill with a leading icon. */
+
+.pl-venue-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: var(--pl-space-sm);
+  box-sizing: border-box;
+  width: 100%;
+  padding: calc(var(--pl-card-padding-sm) - var(--pl-border-semantic-100));
+  overflow: hidden;
+  background: var(--pl-surface-default);
+  border: var(--pl-border-semantic-100) solid var(--pl-border-default);
+  /* Bound to Radius/Semantic/xl (20px) in Figma, not Card/default like the
+     other cards — the venue card is deliberately rounder. */
+  border-radius: var(--pl-radius-semantic-xl);
+  color: var(--pl-text-primary);
+  text-align: left;
+  font-family: var(--pl-type-font-primary);
+}
+
+button.pl-venue-card { cursor: pointer; -webkit-tap-highlight-color: transparent; }
+
+.pl-venue-card__header {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: stretch;
+  gap: var(--pl-space-sm);
+  width: 100%;
+}
+
+.pl-venue-card__image {
+  align-self: stretch;
+  aspect-ratio: 1 / 1;
+  overflow: hidden;
+  background: var(--pl-surface-pressed);
+  border-radius: var(--pl-radius-semantic-md);
+}
+.pl-venue-card__image > img { width: 100%; height: 100%; display: block; object-fit: cover; }
+
+.pl-venue-card__info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  align-self: stretch;
+  gap: var(--pl-space-xs);
+  min-width: 0;
+}
+
+/* Text block: the 4px gap sits between the title/tags pair and the rating
+   row. Title and tags themselves are flush — hence the __headings wrapper. */
+.pl-venue-card__text {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--pl-space-xxs);
+  width: 100%;
+  min-width: 0;
+}
+
+.pl-venue-card__headings {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  width: 100%;
+  min-width: 0;
+}
+
+.pl-venue-card__title {
+  font-family: var(--pl-title-lg-medium-font);
+  font-size: var(--pl-title-lg-medium-size);
+  line-height: var(--pl-title-lg-medium-lineheight);
+  font-weight: var(--pl-title-lg-medium-weight);
+  color: inherit;
+}
+
+.pl-venue-card__tags {
+  font-family: var(--pl-body-sm-regular-font);
+  font-size: var(--pl-body-sm-regular-size);
+  line-height: var(--pl-body-sm-regular-lineheight);
+  font-weight: var(--pl-body-sm-regular-weight);
+  color: var(--pl-text-secondary);
+}
+
+/* The description is captionPrimary (12/16), a step down from the tags. */
+.pl-venue-card__desc {
+  width: 100%;
+  font-family: var(--pl-caption-lg-font);
+  font-size: var(--pl-caption-lg-size);
+  line-height: var(--pl-caption-lg-lineheight);
+  font-weight: var(--pl-caption-lg-weight);
+  color: var(--pl-text-secondary);
+}
+
+.pl-venue-card__meta {
+  display: flex;
+  align-items: center;
+  gap: var(--pl-space-xxs);
+  min-width: 0;
+}
+
+/* NOTE: Figma's rating group also carries surface/default and a pill radius.
+   Both are invisible on the card's own white surface, so they're omitted. */
+.pl-venue-card__rating {
+  display: inline-flex;
+  align-items: center;
+  white-space: nowrap;
+  font-family: var(--pl-caption-lg-bold-font);
+  font-size: var(--pl-caption-lg-bold-size);
+  line-height: var(--pl-caption-lg-bold-lineheight);
+  font-weight: var(--pl-caption-lg-bold-weight);
+  color: var(--pl-text-primary);
+}
+
+/* star-xs (2428:5472) — 16×16 frame (--pl-icon-sm). iOS star PNGs fill the slot. */
+.pl-star-xs {
+  display: inline-block;
+  flex: none;
+  width: var(--pl-icon-sm);
+  height: var(--pl-icon-sm);
+  line-height: 0;
+  vertical-align: top;
+}
+.pl-star-xs > .pl-icon {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* 12×12 slot — venue-card rating omits the nested inset; the smaller frame is enough. */
+.pl-venue-card__star {
+  display: inline-flex;
+  flex: none;
+  width: var(--pl-icon-xs);
+  height: var(--pl-icon-xs);
+  color: var(--pl-icon-rating);
+}
+.pl-venue-card__star > svg { width: 100%; height: 100%; display: block; }
+
+.pl-venue-card__reviews,
+.pl-venue-card__location {
+  font-family: var(--pl-caption-lg-font);
+  font-size: var(--pl-caption-lg-size);
+  line-height: var(--pl-caption-lg-lineheight);
+  font-weight: var(--pl-caption-lg-weight);
+  color: var(--pl-text-secondary);
+  white-space: nowrap;
+}
+.pl-venue-card__location { overflow: hidden; text-overflow: ellipsis; }
+
+/* --- Ratings summary — .pl-ratings-summary (1321:5446) --------------------
+
+   Big score + star row + optional review count and caption. Add
+   `.pl-ratings-summary--unrated` for the empty state (0.0, outline stars, no
+   count/caption). Star slots use `.pl-star-xs` + `#pl-star-fill` / `#pl-star-half`
+   / `#pl-star-outline`. */
+
+.pl-ratings-summary {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--pl-space-xxs);
+  color: var(--pl-text-primary);
+}
+
+.pl-ratings-summary__row {
+  display: flex;
+  flex-flow: row nowrap;
+  align-items: center;
+  gap: var(--pl-space-sm);
+  width: 100%;
+}
+
+.pl-ratings-summary__score {
+  font-family: var(--pl-display-lg-font);
+  font-size: var(--pl-display-lg-size);
+  line-height: var(--pl-display-lg-lineheight);
+  font-weight: var(--pl-display-lg-weight);
+  color: var(--pl-text-primary);
+  flex: none;
+}
+
+.pl-ratings-summary__meta {
+  display: flex;
+  flex-flow: row nowrap;
+  align-items: center;
+  gap: var(--pl-space-xxs);
+  flex: none;
+  min-width: 0;
+}
+
+.pl-ratings-summary__stars {
+  display: flex;
+  flex-flow: row nowrap;
+  flex: none;
+  align-items: center;
+  gap: 0;
+}
+
+.pl-ratings-summary__count {
+  font-family: var(--pl-label-lg-semibold-font);
+  font-size: var(--pl-label-lg-semibold-size);
+  line-height: var(--pl-label-lg-semibold-lineheight);
+  font-weight: var(--pl-label-lg-semibold-weight);
+  color: var(--pl-text-secondary);
+  white-space: nowrap;
+}
+
+.pl-ratings-summary__caption {
+  margin: 0;
+  font-family: var(--pl-caption-lg-font);
+  font-size: var(--pl-caption-lg-size);
+  line-height: var(--pl-caption-lg-lineheight);
+  font-weight: var(--pl-caption-lg-weight);
+  color: var(--pl-text-secondary);
+}
+
+.pl-ratings-summary--unrated .pl-ratings-summary__count,
+.pl-ratings-summary--unrated .pl-ratings-summary__caption {
+  display: none;
+}
+
+/* --- Rating distribution — .pl-rating-distribution (1323:5708) ------------
+
+   Card shell with five horizontal bars (5 → 1). Set each `__fill` width for
+   the rated state; omit fills or add `.pl-rating-distribution--unrated`. */
+
+.pl-rating-distribution {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--pl-space-sm);
+  width: 100%;
+  padding: calc(var(--pl-card-padding-md) - var(--pl-border-semantic-100));
+  background: var(--pl-surface-default);
+  border: var(--pl-border-semantic-100) solid var(--pl-border-default);
+  border-radius: var(--pl-radius-component-card-default);
+  color: var(--pl-text-primary);
+}
+
+.pl-rating-distribution__bars {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pl-space-xs);
+  width: 100%;
+}
+
+.pl-rating-distribution__row {
+  display: flex;
+  flex-flow: row nowrap;
+  align-items: center;
+  gap: var(--pl-space-xs);
+  width: 100%;
+}
+
+.pl-rating-distribution__label {
+  flex: none;
+  width: 12px;
+  font-family: var(--pl-caption-lg-font);
+  font-size: var(--pl-caption-lg-size);
+  line-height: var(--pl-caption-lg-lineheight);
+  font-weight: var(--pl-caption-lg-weight);
+  color: var(--pl-text-primary);
+  text-align: left;
+}
+
+.pl-rating-distribution__track {
+  display: block;
+  flex: 1 1 0%;
+  min-width: 0;
+  height: 8px;
+  overflow: hidden;
+  border-radius: 5px; /* Figma bar radius — no 5px primitive token yet. */
+  background: var(--pl-surface-subtle);
+}
+
+.pl-rating-distribution__fill {
+  display: block;
+  height: 100%;
+  min-height: 8px;
+  border-radius: inherit;
+  background: var(--pl-icon-rating);
+}
+
+.pl-rating-distribution--unrated .pl-rating-distribution__fill {
+  display: none;
+}
+
+/* --- Review card — .pl-review-card (1306:5340) ------------------------------
+
+   Avatar + name + star rating + date over a title and the review body.
+   Not a .pl-card: it has its own padding rhythm (16 all round, 12 between the
+   two blocks) but the same surface, radius and border. */
+
+.pl-review-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--pl-space-sm);
+  box-sizing: border-box;
+  width: 100%;
+  padding: calc(var(--pl-card-padding-md) - var(--pl-border-semantic-100));
+  background: var(--pl-surface-default);
+  border: var(--pl-border-semantic-100) solid var(--pl-border-default);
+  border-radius: var(--pl-radius-component-card-default);
+  color: var(--pl-text-primary);
+  text-align: left;
+  font-family: var(--pl-type-font-primary);
+}
+
+.pl-review-card__header { display: flex; align-items: center; gap: var(--pl-space-sm); width: 100%; }
+
+.pl-review-card__avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  box-sizing: border-box;
+  width: var(--pl-size-componentsize-32);
+  min-width: var(--pl-size-componentsize-32);
+  padding: 4px var(--pl-space-xs);
+  overflow: hidden;
+  background: var(--pl-orange-100);
+  border-radius: 28px; /* Figma Avatar radius — pill at 32px width. */
+  color: var(--pl-text-primary);
+  font-family: var(--pl-body-md-semibold-font);
+  font-size: var(--pl-body-md-semibold-size);
+  line-height: var(--pl-body-md-semibold-lineheight);
+  font-weight: var(--pl-body-md-semibold-weight);
+}
+.pl-review-card__avatar > img { width: 100%; height: 100%; display: block; object-fit: cover; }
+
+.pl-review-card__user { display: flex; flex-direction: column; min-width: 0; }
+
+.pl-review-card__name-row { display: flex; align-items: center; gap: var(--pl-space-xxs); min-width: 0; }
+
+.pl-review-card__name {
+  font-family: var(--pl-title-md-medium-font);
+  font-size: var(--pl-title-md-medium-size);
+  line-height: var(--pl-title-md-medium-lineheight);
+  font-weight: var(--pl-title-md-medium-weight);
+  color: var(--pl-text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Five star-xs slots, flush — Figma's Star rating row is exactly 80×16. */
+.pl-review-card__stars {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 0;
+}
+
+.pl-review-card__meta {
+  font-family: var(--pl-caption-lg-font);
+  font-size: var(--pl-caption-lg-size);
+  line-height: var(--pl-caption-lg-lineheight);
+  font-weight: var(--pl-caption-lg-weight);
+  color: var(--pl-text-secondary);
+}
+
+.pl-review-card__body { display: flex; flex-direction: column; gap: var(--pl-space-xxs); width: 100%; }
+
+.pl-review-card__title {
+  font-family: var(--pl-body-md-medium-font);
+  font-size: var(--pl-body-md-medium-size);
+  line-height: var(--pl-body-md-medium-lineheight);
+  font-weight: var(--pl-body-md-medium-weight);
+  color: var(--pl-text-primary);
+}
+
+.pl-review-card__text {
+  font-family: var(--pl-body-sm-regular-font);
+  font-size: var(--pl-body-sm-regular-size);
+  line-height: var(--pl-body-sm-regular-lineheight);
+  font-weight: var(--pl-body-sm-regular-weight);
+  color: var(--pl-text-primary);
+}
+
+/* ===========================================================================
+   Banner — .pl-banner (2363:121)
+   =========================================================================== */
+
+.pl-banner {
+  --banner-fg: var(--pl-text-primary);
+  --banner-icon: var(--pl-icon-default);
+
+  display: flex;
+  align-items: flex-start;
+  gap: var(--pl-space-sm);
+  box-sizing: border-box;
+  padding: var(--pl-space-sm) var(--pl-space-md) var(--pl-space-sm) var(--pl-space-sm);
+  background: var(--pl-surface-inset);
+  border-radius: var(--pl-radius-component-button-regular);
+  color: var(--banner-fg);
+}
+
+.pl-banner--red {
+  background: var(--pl-surface-status-dangersubtle);
+  --banner-fg: var(--pl-text-emphasis);
+  --banner-icon: var(--pl-icon-red);
+}
+
+.pl-banner__icon {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--pl-symbol-size-md);
+  height: var(--pl-symbol-size-md);
+  font-size: var(--pl-symbol-size-md);
+  line-height: 1;
+  color: var(--banner-icon);
+}
+.pl-banner__icon > svg { width: 100%; height: 100%; display: block; fill: currentColor; }
+
+.pl-banner__content { display: flex; flex-direction: column; gap: var(--pl-space-xxs); min-width: 0; }
+
+/* Optional — hidden on both Figma variants by default. */
+.pl-banner__title {
+  font-family: var(--pl-title-md-medium-font);
+  font-size: var(--pl-title-md-medium-size);
+  line-height: var(--pl-title-md-medium-lineheight);
+  font-weight: var(--pl-title-md-medium-weight);
+}
+
+.pl-banner__text {
+  font-family: var(--pl-caption-lg-medium-font);
+  font-size: var(--pl-caption-lg-medium-size);
+  line-height: var(--pl-caption-lg-medium-lineheight);
+  font-weight: var(--pl-caption-lg-medium-weight);
+}
+/* The call-to-action inside the message is bold + underlined in Figma. */
+.pl-banner__text a,
+.pl-banner__link {
+  color: inherit;
+  font-weight: var(--pl-type-weight-bold);
+  text-decoration: underline;
+}
+
+/* ===========================================================================
+   Tab bar — .pl-tab-bar / .pl-tab (1495:394)
+   Floating pill, 4 tabs, selected tab gets an inset pill.
+   =========================================================================== */
+
+.pl-tab-bar {
+  display: flex;
+  align-items: center;
+  box-sizing: border-box;
+  padding: var(--pl-space-1);
+  background: var(--pl-surface-default);
+  border-radius: var(--pl-radius-semantic-pill);
+  /* Figma: DROP_SHADOW blur 20, y 4, alpha 0.15 — no Shadow token matches it. */
+  box-shadow: 0 4px 20px rgb(var(--pl-shadow-rgb) / 0.15);
+}
+
+.pl-tab {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--pl-space-1);
+  padding: var(--pl-space-1);
+  min-height: 54px;
+  border: 0;
+  background: transparent;
+  border-radius: var(--pl-radius-semantic-pill);
+  color: var(--pl-text-primary);
+  font-family: var(--pl-caption-sm-font);
+  font-size: var(--pl-caption-sm-size);
+  line-height: var(--pl-caption-sm-lineheight);
+  font-weight: var(--pl-caption-sm-weight);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.pl-tab__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 25px;
+  height: 25px;
+  color: var(--pl-icon-default);
+}
+.pl-tab__icon > svg { width: 100%; height: 100%; display: block; fill: currentColor; }
+
+.pl-tab.is-selected,
+.pl-tab[aria-selected="true"] {
+  background: var(--pl-surface-inset);
+  color: var(--pl-accent-default);
+}
+.pl-tab.is-selected .pl-tab__icon,
+.pl-tab[aria-selected="true"] .pl-tab__icon { color: var(--pl-accent-default); }
+
+/* ===========================================================================
+   Tab navigation — .pl-tab-nav / .pl-tab-nav__item (1192:843 / 1192:834)
+   Underline-style text tabs for in-page section switching — not the bottom
+   tab bar (.pl-tab-bar, 1495:394).
+
+   Figma boolean Selected drives two variants:
+     True  — label/sm/semibold + 3px indicator (border/focus)
+     False — label/sm/medium, no indicator
+
+   The nav row is a 1px border/default bottom rule with space/xxl (32px) gaps.
+   Each item is a column: 12px top padding, 8px gap, then label (+ indicator
+   when selected). Selection via .is-selected or [aria-selected="true"].
+   =========================================================================== */
+
+.pl-tab-nav {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--pl-space-xxl);
+  border-bottom: 1px solid var(--pl-border-default);
+}
+
+.pl-tab-nav__item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--pl-space-xs);
+  padding: var(--pl-space-sm) 0 0;
+  margin: 0;
+  border: 0;
+  background: transparent;
+  color: var(--pl-text-primary);
+  cursor: pointer;
+  flex-shrink: 0;
+  -webkit-tap-highlight-color: transparent;
+  transition: color 0.15s ease;
+}
+
+.pl-tab-nav__label {
+  font-family: var(--pl-label-sm-medium-font);
+  font-size: var(--pl-label-sm-medium-size);
+  line-height: var(--pl-label-sm-medium-lineheight);
+  font-weight: var(--pl-label-sm-medium-weight);
+  white-space: nowrap;
+  text-align: center;
+}
+
+.pl-tab-nav__item.is-selected .pl-tab-nav__label,
+.pl-tab-nav__item[aria-selected="true"] .pl-tab-nav__label {
+  font-family: var(--pl-label-sm-semibold-font);
+  font-weight: var(--pl-label-sm-semibold-weight);
+}
+
+.pl-tab-nav__indicator {
+  display: none;
+  width: 100%;
+  height: 3px;
+  background: var(--pl-border-focus);
+  flex-shrink: 0;
+}
+
+.pl-tab-nav__item.is-selected .pl-tab-nav__indicator,
+.pl-tab-nav__item[aria-selected="true"] .pl-tab-nav__indicator {
+  display: block;
+}
+
+/* ===========================================================================
+   Icons — .pl-icon  (sprite injected by icons.js, from Figma frame 2428:5548)
+   <svg class="pl-icon" aria-hidden="true"><use href="#pl-back"></use></svg>
+   Monochrome icons inherit currentColor, so they take the colour of whatever
+   they sit in — including .pl-btn__icon, .pl-icon-btn and .pl-banner__icon.
+   =========================================================================== */
+
+.pl-icon {
+  width: var(--pl-icon-md);
+  height: var(--pl-icon-md);
+  display: inline-block;
+  flex: none;
+  fill: currentColor;
+  vertical-align: middle;
+}
+.pl-icon--xs { width: var(--pl-icon-xs); height: var(--pl-icon-xs); }
+.pl-icon--sm { width: var(--pl-icon-sm); height: var(--pl-icon-sm); }
+.pl-icon--lg { width: var(--pl-icon-lg); height: var(--pl-icon-lg); }
+
+/* Inside a slot that has an explicit size, fill it. */
+.pl-btn__icon > .pl-icon,
+.pl-chip__icon > .pl-icon,
+.pl-banner__icon > .pl-icon,
+.pl-field__icon > .pl-icon,
+.pl-tab__icon > .pl-icon { width: 100%; height: 100%; }
+
+/* .pl-icon-btn holds its icon as a direct child and .pl-see-all__icon is an
+   auto-width slot — both size from font-size, so 100% would resolve against the
+   wrong box (it made the icon fill the whole button). */
+.pl-icon-btn > .pl-icon,
+.pl-see-all__icon > .pl-icon { width: 1em; height: 1em; }
