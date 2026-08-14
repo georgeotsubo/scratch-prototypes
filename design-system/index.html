@@ -1,0 +1,1051 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Playlist Design System</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="typography.css">
+<link rel="stylesheet" href="components.css?v=20260814c">
+<style>
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    font-family: var(--pl-type-font-primary);
+    background: var(--pl-bg-default);
+    color: var(--pl-text-primary);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* --- Chrome ------------------------------------------------------------ */
+  .topbar {
+    position: sticky; top: 0; z-index: 20;
+    display: flex; align-items: center; gap: var(--pl-space-4);
+    padding: var(--pl-space-3) var(--pl-space-5);
+    background: var(--pl-surface-default);
+    border-bottom: 1px solid var(--pl-border-default);
+  }
+  .brand { display: flex; align-items: center; gap: var(--pl-space-3); flex: 1; min-width: 0; }
+  .brand svg { width: 26px; height: 26px; flex: none; border-radius: 7px; }
+  .brand h1 {
+    margin: 0;
+    font-size: var(--pl-title-md-semibold-size);
+    line-height: var(--pl-title-md-semibold-lineheight);
+    font-weight: var(--pl-title-md-semibold-weight);
+  }
+  .brand .meta { color: var(--pl-text-secondary); font-size: var(--pl-caption-lg-size); }
+
+  #search {
+    width: 260px; flex: none;
+    padding: 8px var(--pl-space-3);
+    border: 1px solid var(--pl-border-default);
+    border-radius: var(--pl-radius-semantic-pill);
+    background: var(--pl-surface-subtle);
+    color: var(--pl-text-primary);
+    font-family: inherit; font-size: var(--pl-body-sm-regular-size);
+    outline: none;
+  }
+  #search:focus { border-color: var(--pl-border-focus); }
+  #search::placeholder { color: var(--pl-text-secondary); }
+
+  .layout { display: grid; grid-template-columns: 216px minmax(0, 1fr); gap: var(--pl-space-6); }
+  @media (max-width: 820px) { .layout { grid-template-columns: 1fr; } nav.side { display: none; } }
+
+  nav.side {
+    position: sticky; top: 57px; align-self: start;
+    max-height: calc(100vh - 57px); overflow-y: auto;
+    padding: var(--pl-space-5) 0 var(--pl-space-8) var(--pl-space-5);
+  }
+  nav.side .group {
+    margin: var(--pl-space-4) 0 4px;
+    color: var(--pl-text-secondary);
+    font-size: var(--pl-caption-sm-size); font-weight: 600;
+    text-transform: uppercase; letter-spacing: .07em;
+  }
+  nav.side a {
+    display: block; padding: 5px var(--pl-space-3);
+    border-radius: var(--pl-radius-semantic-sm);
+    color: var(--pl-text-secondary); text-decoration: none;
+    font-size: var(--pl-body-sm-regular-size);
+  }
+  nav.side a:hover { background: var(--pl-surface-hover); color: var(--pl-text-primary); }
+  nav.side a.active { background: var(--pl-surface-inset); color: var(--pl-text-primary); font-weight: 600; }
+
+  main { padding: var(--pl-space-5) var(--pl-space-6) 120px 0; max-width: 1080px; }
+  @media (max-width: 820px) { main { padding: var(--pl-space-5); } }
+
+  section { scroll-margin-top: 72px; }
+  h2 {
+    margin: var(--pl-space-8) 0 var(--pl-space-2);
+    padding-bottom: var(--pl-space-2);
+    border-bottom: 1px solid var(--pl-border-subtle);
+    font-size: var(--pl-heading-h4-size);
+    line-height: var(--pl-heading-h4-lineheight);
+    font-weight: var(--pl-heading-h4-weight);
+  }
+  h2 .count { color: var(--pl-text-secondary); font-size: var(--pl-caption-lg-size); font-weight: 400; }
+  h3 {
+    margin: var(--pl-space-5) 0 var(--pl-space-2);
+    color: var(--pl-text-secondary);
+    font-size: var(--pl-caption-lg-size); font-weight: 600;
+    text-transform: uppercase; letter-spacing: .06em;
+  }
+  .lede { margin: 0 0 var(--pl-space-3); color: var(--pl-text-secondary);
+          font-size: var(--pl-body-sm-regular-size); line-height: 18px; max-width: 70ch; }
+  code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 12px; background: var(--pl-surface-inset);
+    padding: 1px 5px; border-radius: 4px;
+  }
+
+  /* --- Foundations ------------------------------------------------------- */
+  /* Swatches stack vertically, each one a row: colour block left, name + value right.
+     Set --swatch-cols to 2 or 3 if a section gets too long to scan. */
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(var(--swatch-cols, 1), minmax(0, 1fr));
+    gap: var(--pl-space-2);
+    max-width: 560px;
+  }
+  /* No card around the swatch — just the colour square and its labels. */
+  .swatch { display: flex; align-items: center; gap: var(--pl-space-4); }
+  .swatch .chip {
+    width: 56px; height: 56px; flex: none;
+    border-radius: var(--pl-radius-semantic-md);
+    /* Inset ring instead of a border so white and near-white chips stay visible
+       without inflating the square. */
+    box-shadow: inset 0 0 0 1px var(--pl-border-subtle);
+  }
+  .swatch .meta { min-width: 0; }
+  .name {
+    font-size: var(--pl-body-md-semibold-size);
+    line-height: var(--pl-body-md-semibold-lineheight);
+    font-weight: var(--pl-body-md-semibold-weight);
+  }
+  .val {
+    font-size: var(--pl-body-sm-regular-size);
+    line-height: var(--pl-body-sm-regular-lineheight);
+    color: var(--pl-text-secondary);
+    font-variant-numeric: tabular-nums;
+  }
+  /* Inline now that there's no container edge to pin it to. */
+  .themed::after {
+    content: "L/D"; margin-left: var(--pl-space-2);
+    font-size: var(--pl-caption-sm-size); font-weight: 500;
+    color: var(--pl-text-link);
+  }
+
+  table { width: 100%; border-collapse: collapse; }
+  td, th { padding: 6px var(--pl-space-3); border-bottom: 1px solid var(--pl-border-subtle);
+           text-align: left; font-size: var(--pl-caption-lg-size); vertical-align: middle; }
+  th { color: var(--pl-text-secondary); font-weight: 600; }
+  td.k { width: 290px; color: var(--pl-text-secondary); word-break: break-all; }
+  td.v { width: 84px; color: var(--pl-text-secondary); font-variant-numeric: tabular-nums; }
+  .bar { height: 13px; border-radius: 2px; background: var(--pl-accent-default); }
+  .radius-demo { width: 68px; height: 42px; background: var(--pl-surface-inset); border: 1px solid var(--pl-border-default); }
+  .shadow-demo { width: 100%; max-width: 260px; height: 56px;
+                 border-radius: var(--pl-radius-semantic-lg); background: var(--pl-surface-default); }
+  .shadow-wrap { padding: var(--pl-space-4); background: var(--pl-bg-subtle); border-radius: var(--pl-radius-semantic-lg); }
+  .type-row { padding: var(--pl-space-3) 0; border-bottom: 1px solid var(--pl-border-subtle); }
+  .type-row .label { font-size: var(--pl-caption-lg-size); color: var(--pl-text-secondary); margin-bottom: 3px; }
+  .type-row .label b { color: var(--pl-text-primary); font-weight: 600; }
+
+  .icons { display: grid; grid-template-columns: repeat(auto-fill, minmax(112px, 1fr));
+           gap: var(--pl-space-2); max-width: 820px; }
+  .icon-cell {
+    aspect-ratio: 1;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: var(--pl-space-3);
+    padding: var(--pl-space-2);
+    border: 1px solid var(--pl-border-subtle);
+    border-radius: var(--pl-radius-semantic-md);
+    background: var(--pl-surface-default);
+    text-align: center;
+  }
+  .icon-cell code { background: none; padding: 0; font-size: 11px; line-height: 1.3;
+                    color: var(--pl-text-secondary); overflow-wrap: anywhere; }
+
+  /* --- Component demo surfaces ------------------------------------------ */
+  .row { display: flex; flex-wrap: wrap; gap: var(--pl-space-3); align-items: center; }
+  .row + .row { margin-top: var(--pl-space-3); }
+  .on-dark { background: var(--pl-bg-inverse); padding: var(--pl-space-4); border-radius: var(--pl-radius-semantic-lg); }
+  /* Same idea as .on-dark, for variants whose fill matches --pl-bg-default and
+     would otherwise be invisible (chip Neutral Solid is pure white in light). */
+  .on-subtle { background: var(--pl-bg-subtle); padding: var(--pl-space-2); border-radius: var(--pl-radius-semantic-lg); display: inline-flex; }
+  .stage { background: var(--pl-bg-subtle); padding: var(--pl-space-4);
+           border-radius: var(--pl-radius-semantic-lg); display: flex; flex-direction: column; gap: var(--pl-space-3); }
+  .fields { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: var(--pl-space-4); }
+  .pass { color: var(--pl-text-status-success); font-weight: 600; }
+  .fail { color: var(--pl-text-status-danger); font-weight: 700; }
+  .hidden { display: none !important; }
+  .empty { color: var(--pl-text-secondary); font-size: var(--pl-body-sm-regular-size); padding: var(--pl-space-4) 0; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand">
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <rect width="24" height="24" rx="6.71805" fill="#E10E0E"/>
+      <path d="M19.6743 5.89746L16.6326 18.0968H11.579L14.6207 5.89746H19.6743Z" fill="white"/>
+      <path d="M11.3908 7.96289L9.37926 16.0305H4.32568L6.33723 7.96289H11.3908Z" fill="white"/>
+    </svg>
+    <h1>Playlist Design System</h1>
+    <span class="meta" id="meta"></span>
+  </div>
+  <input id="search" type="search" placeholder="Filter tokens & styles…" autocomplete="off">
+  <button class="pl-btn pl-btn--sm pl-btn--outline" id="theme">Dark</button>
+</div>
+
+<div class="layout">
+  <nav class="side" id="nav"></nav>
+  <main>
+    <p class="lede">
+      Generated from the Figma file <code>VMrMBZC3y8lOfxic25V7HT</code>. Link
+      <code>tokens.css</code> → <code>typography.css</code> → <code>components.css</code>,
+      in that order. See <code>README.md</code> for the regeneration workflow.
+    </p>
+
+    <!-- Foundations + text styles are rendered here by JS -->
+    <div id="foundations"></div>
+
+    <!-- ================= COMPONENTS ================= -->
+
+    <section id="c-button">
+      <h2>Button <span class="count">.pl-btn · PLButton 1560:1318</span></h2>
+      <h3>Variants — medium</h3>
+      <div class="row">
+        <button class="pl-btn pl-btn--md pl-btn--primary">Primary</button>
+        <button class="pl-btn pl-btn--md pl-btn--secondary">Secondary</button>
+        <button class="pl-btn pl-btn--md pl-btn--neutral">Neutral</button>
+        <button class="pl-btn pl-btn--md pl-btn--neutral-solid">Neutral Solid</button>
+        <button class="pl-btn pl-btn--md pl-btn--outline">Outline</button>
+        <button class="pl-btn pl-btn--md pl-btn--destructive">Destructive</button>
+        <button class="pl-btn pl-btn--md pl-btn--ghost">Ghost</button>
+        <button class="pl-btn pl-btn--md pl-btn--link" id="btn-link">Link</button>
+        <button class="pl-btn pl-btn--md pl-btn--link-accent" id="btn-linkacc">Link Accent</button>
+      </div>
+      <div class="row on-dark"><button class="pl-btn pl-btn--md pl-btn--inverse">Inverse</button></div>
+
+      <h3>Disabled</h3>
+      <div class="row">
+        <button class="pl-btn pl-btn--md pl-btn--primary" disabled>Primary</button>
+        <button class="pl-btn pl-btn--md pl-btn--secondary" disabled>Secondary</button>
+        <button class="pl-btn pl-btn--md pl-btn--neutral" disabled>Neutral</button>
+        <button class="pl-btn pl-btn--md pl-btn--neutral-solid" disabled>Neutral Solid</button>
+        <button class="pl-btn pl-btn--md pl-btn--outline" disabled>Outline</button>
+        <button class="pl-btn pl-btn--md pl-btn--destructive" disabled>Destructive</button>
+        <button class="pl-btn pl-btn--md pl-btn--ghost" disabled>Ghost</button>
+        <button class="pl-btn pl-btn--md pl-btn--link" id="btn-link-dis" disabled>Link</button>
+      </div>
+
+      <h3>Sizes — 34 / 48 / 56</h3>
+      <div class="row">
+        <button class="pl-btn pl-btn--sm pl-btn--primary" id="btn-sm">Small</button>
+        <button class="pl-btn pl-btn--md pl-btn--primary" id="btn-md">Medium</button>
+        <button class="pl-btn pl-btn--lg pl-btn--primary" id="btn-lg">Large</button>
+      </div>
+
+      <h3>Radius, icons, full width</h3>
+      <div class="row">
+        <button class="pl-btn pl-btn--md pl-btn--primary pl-btn--pill">Pill</button>
+        <button class="pl-btn pl-btn--md pl-btn--secondary"><span class="pl-btn__icon" aria-hidden="true">★</span>Leading icon</button>
+        <button class="pl-btn pl-btn--md pl-btn--outline">Trailing icon<span class="pl-btn__icon" aria-hidden="true">→</span></button>
+      </div>
+      <div class="row">
+        <button class="pl-btn pl-btn--lg pl-btn--primary pl-btn--full pl-btn--edges">
+          <span class="pl-btn__icon" aria-hidden="true">★</span>Edges placement<span class="pl-btn__icon" aria-hidden="true">→</span>
+        </button>
+      </div>
+    </section>
+
+    <section id="c-iconbutton">
+      <h2>Icon button <span class="count">.pl-icon-btn · PLIconButton 1589:977</span></h2>
+      <p class="lede"><code>aria-label</code> is required — there is no visible text.</p>
+      <div class="row">
+        <button class="pl-icon-btn pl-icon-btn--md pl-icon-btn--primary" aria-label="Search"><svg class="pl-icon" aria-hidden="true"><use href="#pl-search"></use></svg></button>
+        <button class="pl-icon-btn pl-icon-btn--md pl-icon-btn--raised" aria-label="Share"><svg class="pl-icon" aria-hidden="true"><use href="#pl-share"></use></svg></button>
+        <button class="pl-icon-btn pl-icon-btn--md pl-icon-btn--ghost" aria-label="Directions"><svg class="pl-icon" aria-hidden="true"><use href="#pl-directions"></use></svg></button>
+        <button class="pl-icon-btn pl-icon-btn--md pl-icon-btn--neutral" aria-label="Close"><svg class="pl-icon" aria-hidden="true"><use href="#pl-close"></use></svg></button>
+        <span class="on-dark" style="padding:12px"><button class="pl-icon-btn pl-icon-btn--md pl-icon-btn--inverse" aria-label="Back"><svg class="pl-icon" aria-hidden="true"><use href="#pl-back"></use></svg></button></span>
+        <button class="pl-icon-btn pl-icon-btn--md pl-icon-btn--primary" aria-label="Search" disabled><svg class="pl-icon" aria-hidden="true"><use href="#pl-search"></use></svg></button>
+      </div>
+      <h3>Sizes — 36 / 44 / 52</h3>
+      <div class="row">
+        <button class="pl-icon-btn pl-icon-btn--sm pl-icon-btn--neutral" id="ib-sm" aria-label="Close"><svg class="pl-icon" aria-hidden="true"><use href="#pl-close"></use></svg></button>
+        <button class="pl-icon-btn pl-icon-btn--md pl-icon-btn--neutral" id="ib-md" aria-label="Close"><svg class="pl-icon" aria-hidden="true"><use href="#pl-close"></use></svg></button>
+        <button class="pl-icon-btn pl-icon-btn--lg pl-icon-btn--neutral" id="ib-lg" aria-label="Close"><svg class="pl-icon" aria-hidden="true"><use href="#pl-close"></use></svg></button>
+      </div>
+    </section>
+
+    <section id="c-chip">
+      <h2>Chip <span class="count">.pl-chip · PLChip 925:12624</span></h2>
+      <div class="row">
+        <button class="pl-chip pl-chip--neutral pl-chip--filter" id="chip">Neutral</button>
+        <!-- Neutral Solid is pure white in light mode — same value as
+             --pl-bg-default — so it only reads on a contrasting backdrop. -->
+        <span class="on-subtle"><button class="pl-chip pl-chip--neutral-solid">Neutral Solid</button></span>
+        <button class="pl-chip pl-chip--outline">Outline</button>
+        <button class="pl-chip pl-chip--neutral is-selected">Selected</button>
+        <button class="pl-chip pl-chip--neutral" disabled>Disabled</button>
+      </div>
+      <div class="row">
+        <button class="pl-chip pl-chip--outline pl-chip--regular">Regular radius</button>
+        <button class="pl-chip pl-chip--neutral" id="chip-dd">Dropdown<span class="pl-chip__icon" aria-hidden="true"><svg class="pl-icon"><use href="#pl-chevron-down"></use></svg></span></button>
+        <span class="on-subtle"><button class="pl-chip pl-chip--neutral-solid">Dropdown<span class="pl-chip__icon" aria-hidden="true"><svg class="pl-icon"><use href="#pl-chevron-down"></use></svg></span></button></span>
+      </div>
+    </section>
+
+    <section id="c-field">
+      <h2>Text &amp; password field <span class="count">.pl-field · 798:1537 / 800:31</span></h2>
+      <div class="fields">
+        <div><h3>Placeholder</h3>
+          <label class="pl-field"><span class="pl-field__box" id="field"><input class="pl-field__input" placeholder="Value"></span></label></div>
+        <div><h3>Filled</h3>
+          <label class="pl-field"><span class="pl-field__box"><input class="pl-field__input" value="hello@playlist.com"></span></label></div>
+        <div><h3>Error</h3>
+          <div class="pl-field is-error"><span class="pl-field__box"><input class="pl-field__input" value="hello@playlist"></span>
+            <span class="pl-field__error">Enter a valid email address</span></div></div>
+        <div><h3>Disabled</h3>
+          <div class="pl-field is-disabled"><span class="pl-field__box"><input class="pl-field__input" placeholder="Value" disabled></span></div></div>
+        <div><h3>Password</h3>
+          <label class="pl-field pl-field--password"><span class="pl-field__box" id="pw">
+            <input class="pl-field__input" type="password" value="hunter2000">
+            <button class="pl-field__icon" type="button" aria-label="Show password">👁</button></span></label></div>
+      </div>
+    </section>
+
+    <section id="c-searchbar">
+      <h2>Search bar <span class="count">.pl-search-bar · 1832:2160</span></h2>
+      <p class="lede">Both icon slots are booleans in Figma — <code>Leading icon</code> defaults on,
+        <code>Trailing icon</code> defaults off, so the clear button only appears once there's a
+        value. The label is its own two-variant component: <code>Active=False</code> is the
+        placeholder (<code>text/secondary</code>), <code>Active=True</code> the typed value
+        (<code>text/primary</code>). Figma's icons are SF Symbol glyphs; these are the
+        sprite equivalents.</p>
+      <div class="stage" style="max-width:353px">
+        <div class="pl-search-bar" id="searchbar">
+          <span class="pl-search-bar__icon" aria-hidden="true"><svg class="pl-icon"><use href="#pl-search"></use></svg></span>
+          <input class="pl-search-bar__input" placeholder="Label" aria-label="Search">
+        </div>
+        <div class="pl-search-bar">
+          <span class="pl-search-bar__icon" aria-hidden="true"><svg class="pl-icon"><use href="#pl-search"></use></svg></span>
+          <input class="pl-search-bar__input" value="Pilates" aria-label="Search">
+          <button class="pl-search-bar__icon pl-search-bar__clear" type="button" aria-label="Clear search"><svg class="pl-icon"><use href="#pl-close"></use></svg></button>
+        </div>
+        <div class="pl-search-bar">
+          <input class="pl-search-bar__input" placeholder="No leading icon" aria-label="Search">
+        </div>
+        <div class="pl-search-bar is-disabled">
+          <span class="pl-search-bar__icon" aria-hidden="true"><svg class="pl-icon"><use href="#pl-search"></use></svg></span>
+          <input class="pl-search-bar__input" placeholder="Disabled" aria-label="Search" disabled>
+        </div>
+      </div>
+    </section>
+
+    <section id="c-classcard">
+      <h2>Class card <span class="count">.pl-class-card · 1361:5034</span></h2>
+      <div class="stage" style="max-width:363px">
+        <button class="pl-card pl-class-card" id="cc"><span class="pl-class-card__body">
+          <span class="pl-class-card__row"><span class="pl-class-card__time">12:00 PM</span><span class="pl-class-card__duration">60 min</span></span>
+          <span class="pl-class-card__row"><span class="pl-class-card__instructor">Tricia D</span>
+            <span class="pl-price"><span class="pl-price__amounts"><span class="pl-price__current">$25</span></span></span></span>
+        </span></button>
+        <button class="pl-card pl-class-card is-selected"><span class="pl-class-card__body">
+          <span class="pl-class-card__row"><span class="pl-class-card__time">12:00 PM</span><span class="pl-class-card__duration">60 min</span></span>
+          <span class="pl-class-card__row"><span class="pl-class-card__instructor">Tricia D</span>
+            <span class="pl-price"><span class="pl-price__amounts"><span class="pl-price__current">$25</span></span></span></span>
+        </span></button>
+        <div class="pl-card pl-class-card is-dimmed"><div class="pl-class-card__body">
+          <div class="pl-class-card__row"><span class="pl-class-card__time">12:00 PM</span><span class="pl-class-card__duration">60 min</span></div>
+          <div class="pl-class-card__row"><span class="pl-class-card__instructor">Tricia D</span>
+            <span class="pl-card__status pl-card__status--sold-out">Sold out</span></div>
+        </div></div>
+        <div class="pl-card pl-class-card is-dimmed"><div class="pl-class-card__body">
+          <div class="pl-class-card__row"><span class="pl-class-card__time">12:00 PM</span><span class="pl-class-card__duration">60 min</span></div>
+          <div class="pl-class-card__row"><span class="pl-class-card__instructor">Tricia D</span>
+            <span class="pl-card__status pl-card__status--reserved">Reserved</span></div>
+        </div></div>
+        <div class="pl-card pl-class-card is-dimmed" id="cc-bw"><div class="pl-class-card__body">
+          <div class="pl-class-card__row"><span class="pl-class-card__time">12:00 PM</span><span class="pl-class-card__duration">60 min</span></div>
+          <div class="pl-class-card__row"><span class="pl-class-card__instructor">Tricia D</span>
+            <span class="pl-price"><span class="pl-price__amounts"><span class="pl-price__current">$25</span></span></span></div>
+          <div class="pl-card__message">The booking window opens on May 4/23 at 5:00 AM</div>
+        </div></div>
+      </div>
+    </section>
+
+    <section id="c-schedulecard">
+      <h2>Schedule card <span class="count">.pl-schedule-card · 1194:1271</span></h2>
+      <div class="stage" style="max-width:321px">
+        <div class="pl-card pl-schedule-card" id="sc"><div class="pl-schedule-card__body">
+          <div class="pl-schedule-card__row"><span class="pl-schedule-card__meta">12:00 PM · Sue Dickey M.</span>
+            <span class="pl-schedule-card__duration">60 min</span></div>
+          <div class="pl-schedule-card__title">Class Title</div>
+          <div class="pl-schedule-card__row">
+            <span class="pl-schedule-card__rating"><span class="pl-schedule-card__star">★</span>4.9 (250)</span>
+            <span class="pl-price pl-price--offer"><span class="pl-price__amounts">
+              <span class="pl-price__current">$25</span><span class="pl-price__original">$35</span></span></span></div>
+        </div></div>
+        <div class="pl-card pl-schedule-card is-dimmed"><div class="pl-schedule-card__body">
+          <div class="pl-schedule-card__row"><span class="pl-schedule-card__meta">12:00 PM · Sue Dickey M.</span>
+            <span class="pl-schedule-card__duration">60 min</span></div>
+          <div class="pl-schedule-card__title">Class Title</div>
+          <div class="pl-schedule-card__row">
+            <span class="pl-schedule-card__rating"><span class="pl-schedule-card__star">★</span>4.9 (250)</span>
+            <span class="pl-card__status pl-card__status--sold-out">Sold out</span></div>
+        </div></div>
+      </div>
+    </section>
+
+    <section id="c-reviewcard">
+      <h2>Review card <span class="count">.pl-review-card · 1306:5340</span></h2>
+      <div class="stage" style="max-width:311px">
+        <div class="pl-review-card" id="rc">
+          <div class="pl-review-card__header">
+            <div class="pl-review-card__avatar">L</div>
+            <div class="pl-review-card__user">
+              <div class="pl-review-card__name-row">
+                <span class="pl-review-card__name">Liz</span>
+                <span class="pl-review-card__stars" aria-label="5 out of 5">
+                  <span class="pl-star-xs"><svg class="pl-icon" aria-hidden="true"><use href="#pl-star-fill"></use></svg></span>
+                  <span class="pl-star-xs"><svg class="pl-icon" aria-hidden="true"><use href="#pl-star-fill"></use></svg></span>
+                  <span class="pl-star-xs"><svg class="pl-icon" aria-hidden="true"><use href="#pl-star-fill"></use></svg></span>
+                  <span class="pl-star-xs"><svg class="pl-icon" aria-hidden="true"><use href="#pl-star-fill"></use></svg></span>
+                  <span class="pl-star-xs"><svg class="pl-icon" aria-hidden="true"><use href="#pl-star-fill"></use></svg></span>
+                </span>
+              </div>
+              <div class="pl-review-card__meta">Apr 14 · ClassPass</div>
+            </div>
+          </div>
+          <div class="pl-review-card__body">
+            <div class="pl-review-card__title">Sui Power Soul with Chauncie D.</div>
+            <div class="pl-review-card__text">I really appreciate Chauncie's flows. They're
+              physically challenging, often incorporating ashtanga elements, but never
+              aggressive for the sake of it...</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="c-ratingssummary">
+      <h2>Ratings summary <span class="count">.pl-ratings-summary · 1321:5446</span></h2>
+      <div class="row" style="align-items:flex-start">
+        <div class="pl-ratings-summary" id="rs-rated">
+          <div class="pl-ratings-summary__row">
+            <div class="pl-ratings-summary__score">4.7</div>
+            <div class="pl-ratings-summary__meta">
+              <div class="pl-ratings-summary__stars" role="img" aria-label="4.7 out of 5">
+                <span class="pl-star-xs"><svg class="pl-icon" aria-hidden="true"><use href="#pl-star-fill"></use></svg></span>
+                <span class="pl-star-xs"><svg class="pl-icon" aria-hidden="true"><use href="#pl-star-fill"></use></svg></span>
+                <span class="pl-star-xs"><svg class="pl-icon" aria-hidden="true"><use href="#pl-star-fill"></use></svg></span>
+                <span class="pl-star-xs"><svg class="pl-icon" aria-hidden="true"><use href="#pl-star-half"></use></svg></span>
+                <span class="pl-star-xs"><svg class="pl-icon" aria-hidden="true"><use href="#pl-star-fill"></use></svg></span>
+              </div>
+              <div class="pl-ratings-summary__count">(2500)</div>
+            </div>
+          </div>
+          <p class="pl-ratings-summary__caption">Ratings based from ClassPass and Playlist</p>
+        </div>
+        <div class="pl-ratings-summary pl-ratings-summary--unrated" id="rs-unrated">
+          <div class="pl-ratings-summary__row">
+            <div class="pl-ratings-summary__score">0.0</div>
+            <div class="pl-ratings-summary__meta">
+              <div class="pl-ratings-summary__stars" role="img" aria-label="No rating">
+                <span class="pl-star-xs"><svg class="pl-icon" aria-hidden="true"><use href="#pl-star-outline"></use></svg></span>
+                <span class="pl-star-xs"><svg class="pl-icon" aria-hidden="true"><use href="#pl-star-outline"></use></svg></span>
+                <span class="pl-star-xs"><svg class="pl-icon" aria-hidden="true"><use href="#pl-star-outline"></use></svg></span>
+                <span class="pl-star-xs"><svg class="pl-icon" aria-hidden="true"><use href="#pl-star-outline"></use></svg></span>
+                <span class="pl-star-xs"><svg class="pl-icon" aria-hidden="true"><use href="#pl-star-outline"></use></svg></span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="c-ratingdistribution">
+      <h2>Rating distribution <span class="count">.pl-rating-distribution · 1323:5708</span></h2>
+      <div class="row" style="align-items:flex-start">
+        <div class="pl-rating-distribution" id="rd-rated" style="width:321px">
+          <div class="pl-rating-distribution__bars">
+            <div class="pl-rating-distribution__row">
+              <span class="pl-rating-distribution__label">5</span>
+              <div class="pl-rating-distribution__track" id="rd-track"><div class="pl-rating-distribution__fill" style="width:100%"></div></div>
+            </div>
+            <div class="pl-rating-distribution__row">
+              <span class="pl-rating-distribution__label">4</span>
+              <div class="pl-rating-distribution__track"><div class="pl-rating-distribution__fill" style="width:25%"></div></div>
+            </div>
+            <div class="pl-rating-distribution__row">
+              <span class="pl-rating-distribution__label">3</span>
+              <div class="pl-rating-distribution__track"><div class="pl-rating-distribution__fill" style="width:9%"></div></div>
+            </div>
+            <div class="pl-rating-distribution__row">
+              <span class="pl-rating-distribution__label">2</span>
+              <div class="pl-rating-distribution__track"><div class="pl-rating-distribution__fill" style="width:6%"></div></div>
+            </div>
+            <div class="pl-rating-distribution__row">
+              <span class="pl-rating-distribution__label">1</span>
+              <div class="pl-rating-distribution__track"><div class="pl-rating-distribution__fill" style="width:4%"></div></div>
+            </div>
+          </div>
+        </div>
+        <div class="pl-rating-distribution pl-rating-distribution--unrated" id="rd-unrated" style="width:321px">
+          <div class="pl-rating-distribution__bars">
+            <div class="pl-rating-distribution__row">
+              <span class="pl-rating-distribution__label">5</span>
+              <div class="pl-rating-distribution__track"></div>
+            </div>
+            <div class="pl-rating-distribution__row">
+              <span class="pl-rating-distribution__label">4</span>
+              <div class="pl-rating-distribution__track"></div>
+            </div>
+            <div class="pl-rating-distribution__row">
+              <span class="pl-rating-distribution__label">3</span>
+              <div class="pl-rating-distribution__track"></div>
+            </div>
+            <div class="pl-rating-distribution__row">
+              <span class="pl-rating-distribution__label">2</span>
+              <div class="pl-rating-distribution__track"></div>
+            </div>
+            <div class="pl-rating-distribution__row">
+              <span class="pl-rating-distribution__label">1</span>
+              <div class="pl-rating-distribution__track"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="c-mapcard">
+      <h2>Map card &amp; See all <span class="count">.pl-map-card / .pl-see-all · 1662:1623 / 1662:1693</span></h2>
+      <div class="row" style="align-items:stretch">
+        <div class="pl-map-card" style="width:321px">
+          <div class="pl-map-card__map" id="mc-map">
+            <div style="width:100%;height:100%;background:linear-gradient(160deg,#cfe4f5,#e8eef2 60%,#dfe9d8)"></div>
+            <div class="pl-map-card__pin">📍</div>
+          </div>
+          <div class="pl-map-card__footer">172 Allen St floor 2, New York, NY 10002</div>
+        </div>
+        <button class="pl-see-all">See all<span class="pl-see-all__icon">›</span></button>
+      </div>
+    </section>
+
+    <section id="c-venuecard">
+      <h2>Venue card <span class="count">.pl-venue-card · 1456:15761</span></h2>
+      <p class="lede">The image is a square sized by the info column, not a fixed size — so the
+        header is a grid rather than a flex row (a flex item's width stays indefinite, leaving
+        <code>aspect-ratio</code> nothing to resolve against). The action slot is a real PLButton;
+        Figma's instance is Neutral / Small / Pill. † The header is 106px now that Small buttons
+        are 34px — Figma's saved card still reads 108 because that button instance is holding
+        stale geometry; its main component is 34.</p>
+      <div class="stage" style="max-width:353px">
+        <div class="pl-venue-card" id="vc">
+          <div class="pl-venue-card__header" id="vc-header">
+            <div class="pl-venue-card__image" id="vc-img"></div>
+            <div class="pl-venue-card__info">
+              <div class="pl-venue-card__text">
+                <div class="pl-venue-card__headings">
+                  <div class="pl-venue-card__title">Venue Title</div>
+                  <div class="pl-venue-card__tags">Tag, Second tag</div>
+                </div>
+                <div class="pl-venue-card__meta">
+                  <span class="pl-venue-card__rating"><span class="pl-venue-card__star"><svg class="pl-icon" aria-hidden="true"><use href="#pl-star-fill"></use></svg></span>4.9<span class="pl-venue-card__reviews">&nbsp;(2500)</span></span>
+                  <span class="pl-venue-card__location">Location · 0.2 mi</span>
+                </div>
+              </div>
+              <button class="pl-btn pl-btn--sm pl-btn--neutral pl-btn--pill">
+                <span class="pl-btn__icon" aria-hidden="true"><svg class="pl-icon"><use href="#pl-calendar-small"></use></svg></span>Book now</button>
+            </div>
+          </div>
+          <div class="pl-venue-card__desc">LLM generated short description of the venue so users can
+            get a general idea of what services are offered at the venue.</div>
+        </div>
+      </div>
+    </section>
+
+    <section id="c-banner">
+      <h2>Banner <span class="count">.pl-banner · 2363:121</span></h2>
+      <div style="display:flex;flex-direction:column;gap:12px;max-width:311px">
+        <div class="pl-banner pl-banner--red" id="banner">
+          <span class="pl-banner__icon" aria-hidden="true">⚠</span>
+          <div class="pl-banner__content"><div class="pl-banner__text">You already have a Playlist or ClassPass account.
+            <a href="#" class="pl-banner__link">Please sign in with Apple</a></div></div>
+        </div>
+        <div class="pl-banner">
+          <span class="pl-banner__icon" aria-hidden="true">⚠</span>
+          <div class="pl-banner__content"><div class="pl-banner__text">You already have a Playlist or ClassPass account.
+            <a href="#" class="pl-banner__link">Please sign in with Apple</a></div></div>
+        </div>
+        <div class="pl-banner">
+          <span class="pl-banner__icon" aria-hidden="true">⚠</span>
+          <div class="pl-banner__content">
+            <div class="pl-banner__title">Cancellation Policy</div>
+            <div class="pl-banner__text">Free cancellation up to 12 hours before the class starts.</div></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="c-tabnav">
+      <h2>Tab navigation <span class="count">.pl-tab-nav · 1192:843</span></h2>
+      <p class="lede">Underline tabs for switching sections within a screen — separate
+        from the bottom <code>.pl-tab-bar</code>. Selected tab uses
+        <code>label/sm/semibold</code> plus a 3px <code>border/focus</code>
+        indicator; unselected tabs use <code>label/sm/medium</code>.</p>
+      <div class="pl-tab-nav" id="tabnav" role="tablist">
+        <button class="pl-tab-nav__item is-selected" id="tabnav1" role="tab" aria-selected="true" type="button">
+          <span class="pl-tab-nav__label">Overview</span>
+          <span class="pl-tab-nav__indicator" aria-hidden="true"></span>
+        </button>
+        <button class="pl-tab-nav__item" role="tab" aria-selected="false" type="button">
+          <span class="pl-tab-nav__label">Schedule</span>
+          <span class="pl-tab-nav__indicator" aria-hidden="true"></span>
+        </button>
+        <button class="pl-tab-nav__item" role="tab" aria-selected="false" type="button">
+          <span class="pl-tab-nav__label">Reviews</span>
+          <span class="pl-tab-nav__indicator" aria-hidden="true"></span>
+        </button>
+      </div>
+    </section>
+
+    <section id="c-tabbar">
+      <h2>Tab bar <span class="count">.pl-tab-bar · 1495:394</span></h2>
+      <p class="lede">Icons are <code>#pl-tab-home</code> / <code>-search</code> / <code>-bookings</code> /
+        <code>-profile</code> from the sprite, at the 25px size Figma uses. Figma applies a GLASS
+        effect to the bar; there's no CSS equivalent, so this is a solid
+        <code>surface/default</code> pill with the drop shadow.</p>
+      <div style="max-width:317px">
+        <div class="pl-tab-bar" id="tabbar" role="tablist">
+          <button class="pl-tab is-selected" id="tab1" role="tab" aria-selected="true"><span class="pl-tab__icon"><svg class="pl-icon"><use href="#pl-tab-home"></use></svg></span>Home</button>
+          <button class="pl-tab" role="tab" aria-selected="false"><span class="pl-tab__icon"><svg class="pl-icon"><use href="#pl-tab-search"></use></svg></span>Search</button>
+          <button class="pl-tab" role="tab" aria-selected="false"><span class="pl-tab__icon"><svg class="pl-icon"><use href="#pl-tab-bookings"></use></svg></span>Bookings</button>
+          <button class="pl-tab" role="tab" aria-selected="false"><span class="pl-tab__icon"><svg class="pl-icon"><use href="#pl-tab-profile"></use></svg></span>Profile</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="c-icons">
+      <h2>Icons <span class="count">.pl-icon · Figma page &quot;iOS icons&quot;</span></h2>
+      <p class="lede">Injected as an inline SVG sprite by <code>icons.js</code> — external
+        <code>&lt;use href="file.svg#id"&gt;</code> is blocked on <code>file://</code>, and these
+        prototypes get opened directly as often as they get served. Monochrome icons are
+        <code>currentColor</code>, so they take the colour of whatever they sit in. The three
+        stars are two-tone by design and reference <code>icon/rating</code> and
+        <code>icon/disabled</code> directly. Each id is <code>#pl-</code> + the name below.</p>
+      <div id="icon-groups"></div>
+
+      <h3>In component slots</h3>
+      <div class="row">
+        <button class="pl-btn pl-btn--md pl-btn--primary">
+          <span class="pl-btn__icon"><svg class="pl-icon"><use href="#pl-calendar-small"></use></svg></span>Book</button>
+        <button class="pl-icon-btn pl-icon-btn--md pl-icon-btn--neutral" aria-label="Close">
+          <svg class="pl-icon"><use href="#pl-close"></use></svg></button>
+        <button class="pl-icon-btn pl-icon-btn--md pl-icon-btn--raised" aria-label="Share">
+          <svg class="pl-icon"><use href="#pl-share"></use></svg></button>
+        <button class="pl-chip pl-chip--neutral">Date<span class="pl-chip__icon">
+          <svg class="pl-icon"><use href="#pl-chevron-down"></use></svg></span></button>
+        <span class="pl-banner pl-banner--red" style="max-width:280px">
+          <span class="pl-banner__icon"><svg class="pl-icon"><use href="#pl-tag"></use></svg></span>
+          <span class="pl-banner__content"><span class="pl-banner__text">Offer applied</span></span></span>
+      </div>
+    </section>
+
+    <section id="parity">
+      <h2>Figma parity <span class="count">measured in this browser</span></h2>
+      <p class="lede">Every component above is measured live and compared against the dimension
+        Figma reports. If you edit <code>components.css</code>, reload and check this table.</p>
+      <table><thead><tr><th>Element</th><th>Figma</th><th>Rendered</th><th></th></tr></thead>
+        <tbody id="checks"></tbody></table>
+      <p class="lede" style="margin-top:12px">
+        † Venue card: 106px now that Small buttons are 34px — Figma's saved card still reads
+        108 because that button instance is holding stale geometry; its main component is 34.
+      </p>
+    </section>
+  </main>
+</div>
+
+<script src="icons.js?v=20260814"></script>
+<script src="tokens.js"></script>
+<script src="typography.js"></script>
+<script>
+(function () {
+  var T = window.PL_TOKENS || [];
+  var THEMED = new Set(window.PL_THEMED || []);
+  var ROLES = window.PL_ROLE_STYLES || [];
+  var esc = function (s) { return String(s).replace(/[&<>"]/g, function (c) {
+    return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
+  var has = function (re) { return T.filter(function (t) { return re.test(t.name); }); };
+  var short = function (n) { return n.replace('--pl-', ''); };
+  var TMAP = {};
+  T.forEach(function (t) { TMAP[t.name] = t.value; });
+  function px(name) {
+    var v = TMAP[name], guard = 0;
+    while (guard++ < 10) {
+      var m = /^var\((--[\w-]+)\)$/.exec(String(v).trim());
+      if (!m || TMAP[m[1]] === undefined) { break; }
+      v = TMAP[m[1]];
+    }
+    var n = parseFloat(v);
+    return isNaN(n) ? Infinity : n;
+  }
+
+  document.getElementById('meta').textContent =
+    T.length + ' tokens · ' + ROLES.length + ' text styles';
+
+  // ---------- Foundations -------------------------------------------------
+  var out = [];
+  function section(id, title, count, body, lede) {
+    out.push('<section id="' + id + '"><h2>' + title +
+      (count ? ' <span class="count">' + count + '</span>' : '') + '</h2>' +
+      (lede ? '<p class="lede">' + lede + '</p>' : '') + body + '</section>');
+  }
+  function swatches(tokens) {
+    return '<div class="grid">' + tokens.map(function (t) {
+      return '<div class="swatch" data-name="' + esc(short(t.name)) + '">' +
+        '<div class="chip" style="background:var(' + t.name + ')"></div><div class="meta">' +
+        '<div class="name' + (THEMED.has(t.name) ? ' themed' : '') + '">' + esc(short(t.name)) + '</div>' +
+        '<div class="val" data-resolve="' + t.name + '"></div></div></div>';
+    }).join('') + '</div>';
+  }
+  function rows(tokens, render) {
+    return '<table><tbody>' + tokens.map(function (t) {
+      return '<tr data-name="' + esc(short(t.name)) + '"><td class="k">' + esc(short(t.name)) + '</td>' +
+        '<td class="v" data-resolve="' + t.name + '"></td><td>' + render(t) + '</td></tr>';
+    }).join('') + '</tbody></table>';
+  }
+
+  // Figma hands these back in creation order, which scatters the 800/850/900 steps
+  // far below the 100–700 block and makes every ramp look like it stops at 700.
+  // Group by family, in the order each family first appears, and sort by step.
+  var primitives = has(/^--pl-(green|red|purple|blue|yellow|orange|neutral)-\d+$/);
+  var families = [];
+  var byFamily = {};
+  primitives.forEach(function (t) {
+    var m = t.name.match(/^--pl-([a-z]+)-(\d+)$/);
+    if (!byFamily[m[1]]) { byFamily[m[1]] = []; families.push(m[1]); }
+    byFamily[m[1]].push(t);
+  });
+  families.forEach(function (f) {
+    byFamily[f].sort(function (a, b) {
+      return parseInt(a.name.match(/-(\d+)$/)[1], 10) - parseInt(b.name.match(/-(\d+)$/)[1], 10);
+    });
+  });
+  var primHtml = families.map(function (f) {
+    var steps = byFamily[f];
+    var lo = steps[0].name.match(/-(\d+)$/)[1];
+    var hi = steps[steps.length - 1].name.match(/-(\d+)$/)[1];
+    return '<h3 data-group>' + f + ' — ' + lo + '–' + hi + ' · ' + steps.length + ' steps</h3>' +
+      swatches(steps);
+  }).join('');
+  section('f-primitives', 'Color — primitives',
+    primitives.length + ' · raw ramps · prefer semantic', primHtml);
+
+  var semantic = [
+    ['Text', /^--pl-text-/], ['Background & surface', /^--pl-(bg|surface)-/],
+    ['Border', /^--pl-border-(?!primitives|semantic)/], ['Accent', /^--pl-accent-/],
+    ['Icon', /^--pl-icon-(?!sm|md|lg|xs)/], ['Button', /^--pl-button-.*-(bg|fg)-/]
+  ];
+  var semHtml = semantic.map(function (g) {
+    var t = has(g[1]);
+    return t.length ? '<h3 data-group>' + g[0] + ' — ' + t.length + '</h3>' + swatches(t) : '';
+  }).join('');
+  section('f-semantic', 'Color — semantic', 'light / dark · L/D marks themed tokens', semHtml,
+    'These are what you should reach for. Toggle the theme in the header to see the dark values.');
+
+  var roleHtml = ROLES.map(function (r) {
+    return '<div class="type-row" data-name="' + esc(r.cls + ' ' + r.figma + ' ' + r.token) + '">' +
+      '<div class="label"><b>.' + esc(r.cls) + '</b> · ' + esc(r.figma) +
+      ' <span data-typemeta="' + esc(r.token) + '"></span></div>' +
+      '<div class="' + esc(r.cls) + '">The quick brown fox jumps</div></div>';
+  }).join('');
+  section('f-textstyles', 'Text styles', ROLES.length + ' · use these', roleHtml,
+    'The Figma <em>text styles</em> designers actually apply. Class names mirror the Figma names.');
+
+  var styles = {};
+  T.forEach(function (t) {
+    var m = t.name.match(/^--pl-((?:display|heading|title|body|label|caption)-[\w-]+?)-(font|size|lineheight|weight)$/);
+    if (m) { (styles[m[1]] = styles[m[1]] || {})[m[2]] = t.name; }
+  });
+  function byTypeSizeDesc(a, b) {
+    return px(styles[b].size) - px(styles[a].size) || a.localeCompare(b);
+  }
+  var tokenTypeHtml = Object.keys(styles).sort(byTypeSizeDesc).map(function (k) {
+    var s = styles[k];
+    return '<div class="type-row" data-name="' + esc(k) + '"><div class="label"><b>.pl-text-' + esc(k) +
+      '</b> <span data-typemeta="' + esc(k) + '"></span></div>' +
+      '<div class="pl-text-' + esc(k) + '">The quick brown fox jumps</div></div>';
+  }).join('');
+  section('f-typetokens', 'Typography — token styles',
+    Object.keys(styles).length + ' · .pl-text-*', tokenTypeHtml,
+    'One per Typography/Semantic variable, largest → smallest. Use these only when no text style above fits.');
+
+  // Figma hands every token back in creation order, which scatters the families
+  // in the sized sections below. Two helpers put them back: px() resolves an
+  // alias chain (--pl-container-sm → var(--pl-space-4) → 16px) to a number, and
+  // bySize orders sm before md before lg — the t-shirt rank, not the px value,
+  // because button-md-padding-y (12) would otherwise sort below -x (16) and
+  // split the md pair across the lg one.
+  var RANK = { xs: 0, sm: 1, md: 2, lg: 3, xl: 4, xxl: 5 };
+  function sizeRank(name) {
+    // Whole segments only — "sheet" must not read as an "sm".
+    var seg = name.split('-'), i;
+    for (i = 0; i < seg.length; i++) { if (RANK[seg[i]] !== undefined) { return RANK[seg[i]]; } }
+    return -1; // unsized (card-gap, input-padding-x) sorts first, alphabetically
+  }
+  function bySize(a, b) {
+    return sizeRank(a.name) - sizeRank(b.name) || a.name.localeCompare(b.name);
+  }
+  function groups(defs, sort, render) {
+    return defs.map(function (g) {
+      var t = has(g[1]).sort(sort);
+      if (!t.length) { return ''; }
+      // Min/max across the whole group — under a rank sort the first row is the
+      // smallest size, not the smallest value (modal-dialog-padding is 24px).
+      var vals = t.map(function (x) { return px(x.name); });
+      var lo = Math.min.apply(null, vals), hi = Math.max.apply(null, vals);
+      return '<h3 data-group>' + g[0] + ' — ' + (lo === hi ? lo : lo + '–' + hi) + 'px · ' +
+        t.length + '</h3>' + rows(t, render);
+    }).join('');
+  }
+  function bar(t) { return '<div class="bar" style="width:var(' + t.name + ')"></div>'; }
+
+  section('f-spacing', 'Spacing', null,
+    rows(has(/^--pl-space-/), bar));
+
+  section('f-componentspacing', 'Spacing — component', null, groups([
+    ['Button', /^--pl-button-(xs|sm|md|lg|xl)-padding-/],
+    ['Icon button', /^--pl-icon-(xs|sm|md|lg|xl)-padding-/],
+    ['Chip', /^--pl-chip-(xs|sm|md|lg|xl)-padding-/],
+    ['Card', /^--pl-card-(gap|padding-)/],
+    ['Input', /^--pl-input-(padding-|label-gap|icon-gap)/],
+    ['List item', /^--pl-listitem-padding-/],
+    ['Modal', /^--pl-modal-\w+-(padding|section-gap)/]
+  ], bySize, bar));
+
+  section('f-radius', 'Radius', null,
+    rows(has(/^--pl-radius-(semantic|component)/),
+      function (t) { return '<div class="radius-demo" style="border-radius:var(' + t.name + ')"></div>'; }));
+
+  section('f-elevation', 'Elevation', 'derived — composed from the Shadow collection',
+    '<div class="shadow-wrap">' + rows(has(/^--pl-elevation-(xs|sm|md|lg|xl|overlay|modal)$/),
+      function (t) { return '<div class="shadow-demo" style="box-shadow:var(' + t.name + ')"></div>'; }) + '</div>');
+
+  // componentsize-24…140 carries no t-shirt segment, so this one sorts on the
+  // resolved px instead of the rank — bySize would order it 140, 24, 32.
+  // The icon-*-padding tokens are padding, and live under Spacing — component.
+  function byPx(a, b) { return px(a.name) - px(b.name); }
+  section('f-size', 'Size', null, groups([
+    ['Container', /^--pl-container-/],
+    ['Icon', /^--pl-icon-(xs|sm|md|lg)$/],
+    ['Component size', /^--pl-size-componentsize-/],
+    ['Symbol size', /^--pl-symbol-size-/]
+  ], byPx, bar));
+
+  document.getElementById('foundations').innerHTML = out.join('');
+
+  // ---------- Icons -------------------------------------------------------
+  var iconNames = [];
+  (window.PL_ICONS || []).forEach(function (g) { iconNames = iconNames.concat(g.names); });
+  var iconCount = iconNames.length;
+  document.getElementById('icon-groups').innerHTML = '<div class="icons">' +
+    iconNames.map(function (n) {
+      return '<div class="icon-cell"><svg class="pl-icon pl-icon--lg" aria-hidden="true">' +
+        '<use href="#pl-' + n + '"></use></svg><code>' + esc(n) + '</code></div>';
+    }).join('') + '</div>';
+  var ic = document.querySelector('#c-icons h2 .count');
+  if (ic) ic.textContent = iconCount + ' · .pl-icon · Figma page "iOS icons"';
+
+  // ---------- Resolve computed values -------------------------------------
+  function refresh() {
+    var c = getComputedStyle(document.documentElement);
+    document.querySelectorAll('[data-resolve]').forEach(function (el) {
+      el.textContent = c.getPropertyValue(el.dataset.resolve).trim();
+    });
+    document.querySelectorAll('[data-typemeta]').forEach(function (el) {
+      var k = el.dataset.typemeta;
+      var g = function (a) { return c.getPropertyValue('--pl-' + k + '-' + a).trim(); };
+      el.textContent = g('size') + ' / ' + g('lineheight') + ' · ' + g('weight');
+    });
+  }
+
+  // ---------- Figma parity ------------------------------------------------
+  var CHECKS = [
+    ['Button small', 'btn-sm', 'offsetHeight', 34], ['Button medium', 'btn-md', 'offsetHeight', 48],
+    ['Button large', 'btn-lg', 'offsetHeight', 56],
+    ['Icon button small', 'ib-sm', 'offsetHeight', 36], ['Icon button small width', 'ib-sm', 'offsetWidth', 36],
+    ['Icon button medium', 'ib-md', 'offsetHeight', 44], ['Icon button medium width', 'ib-md', 'offsetWidth', 44],
+    ['Icon button large', 'ib-lg', 'offsetHeight', 52], ['Icon button large width', 'ib-lg', 'offsetWidth', 52],
+    ['Chip height', 'chip', 'offsetHeight', 42], ['Chip with icon', 'chip-dd', 'offsetHeight', 44],
+    ['Text field height', 'field', 'offsetHeight', 52], ['Password field height', 'pw', 'offsetHeight', 56],
+    ['Search bar height', 'searchbar', 'offsetHeight', 48],
+    ['Search bar radius', 'searchbar', 'style:border-radius', '24px'],
+    ['Class card height', 'cc', 'offsetHeight', 76], ['Class card booking window', 'cc-bw', 'offsetHeight', 102],
+    ['Schedule card height', 'sc', 'offsetHeight', 92], ['Review card height', 'rc', 'offsetHeight', 180],
+    ['Ratings summary height', 'rs-rated', 'offsetHeight', 68],
+    ['Rating distribution height', 'rd-rated', 'offsetHeight', 144],
+    ['Rating distribution track height', 'rd-track', 'offsetHeight', 8],
+    ['Map card map area', 'mc-map', 'offsetHeight', 168],
+    ['Venue card header†', 'vc-header', 'offsetHeight', 106], ['Venue card image†', 'vc-img', 'offsetWidth', 106],
+    ['Banner height @311px', 'banner', 'offsetHeight', 56],
+    ['Tab navigation height', 'tabnav', 'offsetHeight', 41],
+    ['Tab bar height', 'tabbar', 'offsetHeight', 62], ['Tab min height', 'tab1', 'offsetHeight', 54],
+    ['Link underline', 'btn-link', 'style:text-decoration-line', 'underline'],
+    ['Link underline when disabled', 'btn-link-dis', 'style:text-decoration-line', 'underline'],
+    ['Link Accent has no underline', 'btn-linkacc', 'style:text-decoration-line', 'none']
+  ];
+  // A check is [label, elementId, prop, expected]. If prop is prefixed "style:"
+  // it reads that computed CSS property and compares strings — dimensions alone
+  // can't catch a missing text-decoration or colour.
+  function runChecks() {
+    var pass = 0;
+    document.getElementById('checks').innerHTML = CHECKS.map(function (c) {
+      var el = document.getElementById(c[1]);
+      var isStyle = c[2].indexOf('style:') === 0;
+      var got, unit = 'px';
+      if (!el) { got = '—'; }
+      else if (isStyle) { got = getComputedStyle(el).getPropertyValue(c[2].slice(6)).trim(); unit = ''; }
+      else { got = el[c[2]]; }
+      var ok = got === c[3];
+      if (ok) pass++;
+      return '<tr><td>' + c[0] + '</td><td>' + c[3] + unit + '</td><td>' + got + unit + '</td>' +
+        '<td class="' + (ok ? 'pass">PASS' : 'fail">FAIL') + '</td></tr>';
+    }).join('');
+    var h = document.querySelector('#parity h2 .count');
+    if (h) h.textContent = pass + ' / ' + CHECKS.length + ' matching Figma';
+  }
+
+  // ---------- Nav ---------------------------------------------------------
+  var GROUPS = [
+    ['Foundations', ['f-primitives', 'f-semantic', 'f-textstyles', 'f-typetokens',
+                     'f-spacing', 'f-componentspacing', 'f-radius', 'f-elevation', 'f-size']],
+    ['Components', ['c-button', 'c-iconbutton', 'c-chip', 'c-field', 'c-searchbar', 'c-classcard',
+                    'c-schedulecard', 'c-reviewcard', 'c-ratingssummary', 'c-ratingdistribution',
+                    'c-mapcard', 'c-venuecard', 'c-banner', 'c-tabnav', 'c-tabbar', 'c-icons']],
+    ['Reference', ['parity']]
+  ];
+  document.getElementById('nav').innerHTML = GROUPS.map(function (g) {
+    return '<div class="group">' + g[0] + '</div>' + g[1].map(function (id) {
+      var s = document.getElementById(id);
+      if (!s) { return ''; }
+      var t = s.querySelector('h2');
+      var label = t ? t.childNodes[0].textContent.trim() : id;
+      return '<a href="#' + id + '" data-id="' + id + '">' + esc(label) + '</a>';
+    }).join('');
+  }).join('');
+
+  var links = {};
+  document.querySelectorAll('nav.side a').forEach(function (a) { links[a.dataset.id] = a; });
+  var io = new IntersectionObserver(function (entries) {
+    entries.forEach(function (e) {
+      var a = links[e.target.id];
+      if (!a) { return; }
+      if (e.isIntersecting) {
+        Object.keys(links).forEach(function (k) { links[k].classList.remove('active'); });
+        a.classList.add('active');
+      }
+    });
+  }, { rootMargin: '-70px 0px -75% 0px' });
+  document.querySelectorAll('section[id]').forEach(function (s) { io.observe(s); });
+
+  // ---------- Search ------------------------------------------------------
+  var search = document.getElementById('search');
+  search.addEventListener('input', function () {
+    var q = search.value.trim().toLowerCase();
+    document.querySelectorAll('[data-name]').forEach(function (el) {
+      el.classList.toggle('hidden', !!q && el.dataset.name.toLowerCase().indexOf(q) === -1);
+    });
+    // hide foundation sections and sub-headings that ended up empty
+    document.querySelectorAll('#foundations section').forEach(function (s) {
+      var items = s.querySelectorAll('[data-name]');
+      var visible = [].slice.call(items).filter(function (el) { return !el.classList.contains('hidden'); });
+      s.classList.toggle('hidden', !!q && items.length > 0 && visible.length === 0);
+    });
+    document.querySelectorAll('#foundations .grid, #foundations table').forEach(function (c) {
+      var items = c.querySelectorAll('[data-name]');
+      var visible = [].slice.call(items).filter(function (el) { return !el.classList.contains('hidden'); });
+      var head = c.previousElementSibling;
+      if (head && head.hasAttribute('data-group')) { head.classList.toggle('hidden', !!q && visible.length === 0); }
+    });
+  });
+
+  // ---------- Tab navigation demo -----------------------------------------
+  var tabnav = document.getElementById('tabnav');
+  if (tabnav) {
+    var navTabs = [].slice.call(tabnav.querySelectorAll('.pl-tab-nav__item'));
+    var selectNavTab = function (tab) {
+      navTabs.forEach(function (t) {
+        var on = t === tab;
+        t.classList.toggle('is-selected', on);
+        t.setAttribute('aria-selected', on ? 'true' : 'false');
+        t.tabIndex = on ? 0 : -1;
+      });
+    };
+    tabnav.addEventListener('click', function (e) {
+      var tab = e.target.closest('.pl-tab-nav__item');
+      if (tab) { selectNavTab(tab); }
+    });
+    tabnav.addEventListener('keydown', function (e) {
+      var d = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0;
+      if (!d) { return; }
+      e.preventDefault();
+      var next = navTabs[(navTabs.indexOf(document.activeElement) + d + navTabs.length) % navTabs.length];
+      selectNavTab(next);
+      next.focus();
+    });
+    selectNavTab(navTabs[0]);
+  }
+
+  // ---------- Tab bar demo ------------------------------------------------
+  // Selection is a state the component doesn't manage itself, so the gallery
+  // drives it — otherwise Home is the only tab you ever see selected.
+  var tabbar = document.getElementById('tabbar');
+  if (tabbar) {
+    var tabs = [].slice.call(tabbar.querySelectorAll('.pl-tab'));
+    var selectTab = function (tab) {
+      tabs.forEach(function (t) {
+        var on = t === tab;
+        t.classList.toggle('is-selected', on);
+        t.setAttribute('aria-selected', on ? 'true' : 'false');
+        t.tabIndex = on ? 0 : -1;
+      });
+    };
+    tabbar.addEventListener('click', function (e) {
+      var tab = e.target.closest('.pl-tab');
+      if (tab) { selectTab(tab); }
+    });
+    // role="tablist" promises arrow-key navigation; honour it.
+    tabbar.addEventListener('keydown', function (e) {
+      var d = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0;
+      if (!d) { return; }
+      e.preventDefault();
+      var next = tabs[(tabs.indexOf(document.activeElement) + d + tabs.length) % tabs.length];
+      selectTab(next);
+      next.focus();
+    });
+    selectTab(tabs[0]);
+  }
+
+  // ---------- Theme -------------------------------------------------------
+  var btn = document.getElementById('theme');
+  btn.addEventListener('click', function () {
+    var dark = document.documentElement.getAttribute('data-theme') === 'dark';
+    document.documentElement.setAttribute('data-theme', dark ? 'light' : 'dark');
+    btn.textContent = dark ? 'Dark' : 'Light';
+    refresh();
+  });
+
+  refresh();
+  runChecks();
+  if (document.fonts && document.fonts.ready) {
+    document.fonts.ready.then(function () { refresh(); runChecks(); });
+  }
+})();
+</script>
+</body>
+</html>

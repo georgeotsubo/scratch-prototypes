@@ -1,0 +1,699 @@
+* { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+html, body { -webkit-user-select: none; user-select: none; }
+input, textarea { -webkit-user-select: text; user-select: text; }
+
+:root {
+  --accent: #e10e0e;
+  --text-primary: #020203;
+  --border-default: #e4e5e7;
+  --surface-white: #ffffff;
+  --link-blue: #0032d7;
+  --brand-blue: #0055ff;
+  --surface-subtle: #f1f2f3;
+  --text-secondary: #43454c;
+}
+
+body {
+  font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', sans-serif;
+  font-optical-sizing: auto;
+  background: #fff;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  overflow: hidden;
+}
+
+/* iPhone frame for desktop */
+.device-frame {
+  --frame-radius: 40px;
+  width: 393px;
+  height: 852px;
+  background: #fff;
+  border: 1px solid #dfe2e5;
+  border-radius: var(--frame-radius);
+  overflow: hidden;
+  position: relative;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.08);
+}
+
+/* On mobile, go full screen */
+@media (max-width: 430px) {
+  body { background: #fff; align-items: flex-start; }
+  .device-frame {
+    --frame-radius: 0px;
+    width: 100vw;
+    height: 100vh;
+    height: 100dvh;
+    border: none;
+    box-shadow: none;
+  }
+}
+
+/* Screen container — transform-based push navigation.
+   All screens stay in the layout; inactive ones sit off-screen (right) or
+   pushed behind (left). The device-frame clips the overflow. */
+.screen {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface-white);
+  overflow: hidden;
+  transform: translateX(100%);
+  pointer-events: none;
+  transition: transform 0.38s cubic-bezier(0.32, 0.72, 0, 1);
+}
+/* Only promote a screen to its own layer while it's on-screen or animating,
+   to avoid overwhelming embedded-browser compositors with 8 permanent layers. */
+.screen.active,
+.screen.behind {
+  will-change: transform;
+}
+.screen.active {
+  transform: translateX(0);
+  pointer-events: auto;
+}
+/* Previous screen pushed behind, iOS-style parallax + dim */
+.screen.behind {
+  transform: translateX(-25%);
+  pointer-events: none;
+}
+/* The dim lives on every screen and fades with the push, so it reads as one
+   movement instead of snapping to full the instant .behind is applied. */
+.screen::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 50;
+  background: rgba(0, 0, 0, 0.06);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.38s cubic-bezier(0.32, 0.72, 0, 1);
+}
+.screen.behind::after { opacity: 1; }
+/* No transition on initial paint to avoid a flash */
+.screen.no-anim { transition: none; }
+
+/* Status bar */
+.status-bar {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  z-index: 100;
+  pointer-events: none;
+}
+.status-bar img { width: 100%; display: block; }
+.status-bar { transition: opacity 0.28s ease-out; }
+.status-bar.hidden { opacity: 0; }
+
+/* ===== Home screen (app launcher) =====
+   The springboard is a flat export; only the Playlist icon is interactive. */
+.home-screen {
+  z-index: 80;
+  background: #000;
+}
+/* Wallpaper and icon sheet are both 393x854 pinned to the top-left, matching
+   how Figma places them — not scaled to fit, so the icon grid stays on grid. */
+.home-wallpaper,
+.home-icons {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: auto;
+  display: block;
+}
+/* Source status bar is black glyphs; the springboard needs white ones */
+.home-status-bar {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  display: block;
+  filter: invert(1);
+}
+
+.home-app-icon {
+  position: absolute;
+  left: 29px;
+  top: 481px;
+  width: 62.6px;
+  height: 62.6px;
+  padding: 0;
+  border: none;
+  /* The icon SVG carries its own squircle and gradient */
+  background: transparent;
+  cursor: pointer;
+  transition: transform 0.15s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+.home-app-icon img {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.home-app-icon:active { transform: scale(0.97); }
+.home-app-label {
+  position: absolute;
+  left: 29px;
+  top: 549px;
+  width: 62.6px;
+  text-align: center;
+  font-size: 11px;
+  line-height: 14px;
+  font-weight: 400;
+  color: #fff;
+  text-shadow: 0 0 3px rgba(0, 0, 0, 0.3);
+  letter-spacing: 0.02em;
+}
+
+/* Springboard zooms in and fades as the app takes over, iOS-style */
+.home-screen.launching {
+  opacity: 0;
+  transform: translateX(0) scale(1.12);
+  pointer-events: none;
+  will-change: transform, opacity;
+  /* Same curve on both properties so the fade and the zoom read as one move */
+  transition: opacity 0.3s cubic-bezier(0.22, 0.61, 0.36, 1),
+              transform 0.42s cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+/* Applied once the launch has settled — drop the GPU layer we no longer need */
+.home-screen.launching.settled { will-change: auto; }
+
+/* App-launch tile. Sized to the frame and scaled down onto the icon, so the
+   whole launch runs on transform + opacity only — both GPU-composited.
+   (An earlier version animated clip-path, which repaints the clipped layer
+   every frame and went choppy once the prototype was inside the index iframe.)
+
+   It starts 5px INSIDE the icon rect so its square corners stay hidden behind
+   the icon's squircle; that removes any need to animate border-radius, which
+   would have put paint back on the main thread. The frame's own overflow clip
+   supplies the rounded corners at the end.
+   scaleX = 52.6/393, scaleY = 52.6/852. */
+.launch-tile {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 90;
+  /* Matches the icon's own gradient so the first frame of the launch is
+     indistinguishable from the icon it grows out of */
+  background: linear-gradient(180deg, #ff0000 0%, #d00000 100%);
+  opacity: 0;
+  pointer-events: none;
+  transform-origin: 0 0;
+  transform: translate(34px, 486px) scale(0.133842, 0.061737);
+}
+.launch-tile.running {
+  opacity: 1;
+  transform: translate(0, 0) scale(1, 1);
+  will-change: transform, opacity;
+  transition: transform 0.42s cubic-bezier(0.22, 0.61, 0.36, 1),
+              opacity 0.08s linear;
+}
+.launch-tile.done {
+  opacity: 0;
+  transition: opacity 0.22s ease-out;
+}
+
+/* ===== Welcome screen ===== */
+
+/* Photo collage — tiles are absolutely placed at their Figma offsets and
+   deliberately bleed past the left/right edges; .screen clips them. */
+.collage {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+.collage-tile {
+  position: absolute;
+  overflow: hidden;
+}
+/* Default fill: image covers the tile exactly. Tiles whose Figma fill is
+   panned/zoomed override the img box below (percentages are Figma's, relative
+   to the tile) and let object-fit:cover keep the aspect honest. */
+.collage-tile img {
+  position: absolute;
+  display: block;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.tile-bottomleft { left: 42px;  top: 449px; width: 99px;    height: 119px;   border-radius: 18px; }
+.tile-left       { left: -34px; top: 278px; width: 124px;   height: 152px;   border-radius: 29.5px; }
+.tile-topleft    { left: 37px;  top: 112px; width: 123.7px; height: 146.9px; border-radius: 27px; }
+.tile-right      { left: 239px; top: 378px; width: 134px;   height: 164px;   border-radius: 27px; }
+.tile-topright   { left: 262px; top: 108px; width: 157px;   height: 185px;   border-radius: 24px; }
+.tile-center     { left: 114px; top: 232px; width: 180px;   height: 244px;   border-radius: 24.5px; }
+
+.tile-topleft  img { left: -41.37%; top: 0;        width: 225.93%; height: 100%; }
+.tile-right    img { left: -79.56%; top: -25.68%;  width: 247.26%; height: 134.76%; }
+.tile-topright img { left: 0;       top: -15.66%;  width: 100%;    height: 124.69%; }
+
+.brand-logo {
+  position: absolute;
+  top: 70px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1;
+}
+.brand-logo img {
+  display: block;
+  width: 166px;
+  height: auto;
+}
+
+.welcome-actions {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 0 24px 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  /* Opaque so the collage never bleeds into the copy on shorter viewports —
+     the tiles sit at fixed offsets and don't reflow with the frame. */
+  background: var(--surface-white);
+}
+
+/* Legal copy + divider are inset a further 16px from the button edges */
+.welcome-preamble {
+  width: 100%;
+  padding: 0 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* "Use your Playlist or ClassPass login", separated by a hairline rule */
+.login-lockup {
+  width: 100%;
+  border-top: 1px solid var(--border-default);
+  padding-top: 16px;
+  display: flex;
+  justify-content: center;
+}
+.login-lockup-label {
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 600;
+  color: var(--text-primary);
+  text-align: center;
+}
+
+.legal-text {
+  font-size: 13px;
+  line-height: 16px;
+  color: var(--text-primary);
+  text-align: center;
+  font-weight: 400;
+}
+.legal-link {
+  color: var(--link-blue);
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-position: from-font;
+}
+
+.button-group {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+}
+
+.btn {
+  width: 100%;
+  height: 48px;
+  border: none;
+  border-radius: 999px;
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.15s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+              filter 0.15s ease;
+}
+.btn:active { transform: scale(0.97); }
+
+/* Primary red pill */
+.btn-primary {
+  background: var(--accent);
+  color: #fff;
+}
+.btn-primary:active { filter: brightness(0.92); }
+
+/* Neutral grey pill */
+.btn-neutral {
+  background: var(--surface-subtle);
+  color: var(--text-primary);
+}
+.btn-neutral:active { filter: brightness(0.95); }
+
+/* Welcome CTAs use the semibold body style from the design system */
+.welcome-actions .btn { font-weight: 600; }
+
+/* ===== Sign in with ClassPass screen ===== */
+.toolbar {
+  position: absolute;
+  top: 54px;
+  left: 0;
+  right: 0;
+  height: 54px;
+  z-index: 30;
+  padding: 0 16px;
+  display: flex;
+  align-items: center;
+}
+.icon-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: 999px;
+  background: #fff;
+  border: none;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: transform 0.15s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+.icon-btn:active { transform: scale(0.97); }
+
+.cp-content {
+  position: absolute;
+  top: 108px;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 20px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.cp-title {
+  font-size: 24px;
+  line-height: 28px;
+  font-weight: 900;
+  color: var(--text-primary);
+}
+
+/* Social sign-in buttons (Apple / Google) */
+.btn-social {
+  position: relative;
+  background: #fff;
+  border: 1px solid var(--border-default);
+  color: var(--text-primary);
+  padding: 0 16px;
+}
+.btn-social:active { background: #f7f7f8; }
+.social-icon {
+  position: absolute;
+  left: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 24px;
+  height: 24px;
+  display: flex;
+}
+.social-icon img { width: 100%; height: 100%; display: block; }
+.btn-social-label { width: 100%; text-align: center; }
+
+/* Divider with "or" */
+.divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.divider-line {
+  flex: 1 0 0;
+  height: 1px;
+  background: var(--border-default);
+}
+.divider-label {
+  font-size: 18px;
+  line-height: 28px;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+/* Form */
+.cp-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+.input-field {
+  position: relative;
+  background: var(--surface-subtle, #f1f2f3);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+}
+.input-field input {
+  flex: 1;
+  width: 100%;
+  border: none;
+  background: transparent;
+  outline: none;
+  padding: 16px;
+  font-family: inherit;
+  font-size: 16px;
+  line-height: 20px;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+.input-field input::placeholder {
+  color: #43454c;
+  font-weight: 500;
+}
+.visibility-toggle {
+  position: absolute;
+  right: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 24px;
+  height: 24px;
+  border: none;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+  display: flex;
+}
+/* Keep the 24px glyph but meet the 44x44 minimum tap target */
+.visibility-toggle::before {
+  content: "";
+  position: absolute;
+  inset: -10px;
+}
+.visibility-toggle img { width: 100%; height: 100%; display: block; }
+
+.cp-footer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+.forgot-link {
+  font-size: 16px;
+  line-height: 20px;
+  font-weight: 600;
+  color: var(--text-primary);
+  text-decoration: underline;
+  text-underline-position: from-font;
+}
+.cp-legal {
+  font-size: 13px;
+  line-height: 16px;
+  color: var(--text-primary);
+  font-weight: 400;
+}
+.cp-footer .btn-primary { width: 100%; }
+
+/* ===== Sign up with Playlist screen ===== */
+.signup-screen .field-group { gap: 12px; }
+.name-row {
+  display: flex;
+  gap: 12px;
+}
+.name-row .input-field { flex: 1 0 0; min-width: 0; }
+
+/* Info callout box */
+.info-box {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 8px;
+  background: #fff;
+  border: 1px solid var(--border-default);
+  border-radius: 12px;
+}
+.info-icon {
+  flex-shrink: 0;
+  display: flex;
+  padding-top: 4px;
+}
+.info-icon svg { display: block; }
+.info-text {
+  flex: 1 0 0;
+  min-width: 0;
+  font-size: 13px;
+  line-height: 16px;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+.signup-screen .btn-primary { width: 100%; }
+
+/* ===== Create a password screen ===== */
+.password-screen .field-group { gap: 12px; }
+.password-screen .btn-primary { width: 100%; }
+
+/* Validation message */
+.validation-msg {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+.validation-indicator {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  /* currentColor drives the circle fill; grey until requirements are met */
+  color: #c4c6cd;
+  transition: color 0.2s ease;
+}
+.validation-msg.valid .validation-indicator { color: #16a34a; }
+.validation-indicator svg { display: block; }
+.validation-text {
+  flex: 1 0 0;
+  min-width: 0;
+  font-size: 13px;
+  line-height: 16px;
+  font-weight: 400;
+  color: var(--text-primary);
+}
+
+/* Disabled primary button */
+.btn.btn-disabled {
+  background: #f7f7f8;
+  color: #b3b5bc;
+  cursor: default;
+}
+.btn.btn-disabled:active { transform: none; filter: none; }
+
+/* ===== Verify your number screen ===== */
+.cp-heading {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.cp-subtitle {
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 400;
+  color: var(--text-secondary);
+}
+.verify-screen .btn-primary { width: 100%; }
+
+/* Phone field — static "US +1" prefix + editable number */
+.phone-field { gap: 0; padding-left: 16px; }
+.phone-prefix {
+  flex-shrink: 0;
+  font-size: 16px;
+  line-height: 20px;
+  font-weight: 500;
+  color: var(--text-primary);
+  margin-right: 8px;
+  pointer-events: none;
+  user-select: none;
+}
+
+/* ===== Enter code screen ===== */
+.code-inputs {
+  display: flex;
+  gap: 12px;
+}
+.code-box {
+  width: 48px;
+  height: 52px;
+  background: var(--surface-subtle, #f1f2f3);
+  border: 1px solid transparent;
+  border-radius: 12px;
+  outline: none;
+  text-align: center;
+  font-family: inherit;
+  font-size: 20px;
+  font-weight: 500;
+  color: var(--text-primary);
+  transition: border-color 0.15s ease;
+}
+.code-box:focus { border-color: #020203; }
+.resend-text {
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 400;
+  color: var(--text-secondary);
+}
+.resend-text.active {
+  color: var(--text-primary);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-position: from-font;
+  cursor: pointer;
+}
+
+/* ===== Reset your password screen ===== */
+.reset-screen .btn-primary { width: 100%; }
+
+/* ===== Reduced motion =====
+   Gentler, not zero: the crossfades that explain what happened are kept, all
+   travel and zoom is dropped. Screens hide with opacity/visibility instead of
+   translateX, and the app launch becomes a plain dissolve (the red tile would
+   otherwise flash full-screen with nothing to justify it). */
+@media (prefers-reduced-motion: reduce) {
+  .screen {
+    transform: none;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.2s ease, visibility 0.2s;
+  }
+  .screen.active {
+    transform: none;
+    opacity: 1;
+    visibility: visible;
+  }
+  .screen.behind {
+    transform: none;
+    opacity: 0;
+    visibility: hidden;
+  }
+  .screen::after { display: none; }
+
+  .launch-tile { display: none; }
+  .home-screen.launching {
+    transform: none;
+    opacity: 0;
+    transition: opacity 0.25s ease;
+  }
+}

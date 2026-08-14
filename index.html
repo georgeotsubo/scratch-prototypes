@@ -39,7 +39,7 @@
 
     h1 {
       font-size: 20px;
-      font-weight: 600;
+      font-weight: 400;
     }
 
     h2 {
@@ -77,6 +77,12 @@
       display: inline-flex;
       align-items: center;
       gap: 8px;
+    }
+
+    /* Sits on its own, without a section heading — needs the separation the
+       heading used to provide so it doesn't read as another prototype. */
+    .item--standalone {
+      margin-top: 24px;
     }
 
     .proto-link .caret {
@@ -211,6 +217,28 @@
       <div class="item">
         <h2>Prototypes</h2>
         <div class="proto-item">
+          <a href="/prototype-13/prototype.html" class="proto-link">Booking Flow v6 — Design System</a>
+          <p>Forked from Booking Flow v5 and rebuilt on the shared Playlist design system.</p>
+          <ul class="changelog">
+            <li>Every colour, type style, radius, spacing and shadow now resolves to a --pl-* token</li>
+            <li>Buttons, icon buttons, chips, cards, prices, banner and tab bar replaced with the Figma components</li>
+            <li>Venue card rebuilt on the new .pl-venue-card component (18/26 title, 13/18 tags and description, 12/16 rating row)</li>
+            <li>Headings follow the design system's Medium weight (were 700–900)</li>
+            <li>Cards sit on the 16px component radius (were 24px) and chips on the 44px component height (were 36–40px)</li>
+            <li>Tab bar is the solid design-system pill, replacing the translucent-glass one</li>
+          </ul>
+        </div>
+        <div class="proto-item">
+          <a href="/prototype-12/prototype.html" class="proto-link">Sign Up Flow v2</a>
+          <p>Forked from v1 to update the login designs.</p>
+          <ul class="changelog">
+            <li>Starts on the iOS home screen — tapping the Playlist icon opens the app</li>
+            <li>Welcome screen rebuilt around a scattered photo collage</li>
+            <li>Legal copy, hairline divider, and "Use your Playlist or ClassPass login" above the CTAs</li>
+            <li>Actions reduced to "Continue" and "Create an account"</li>
+          </ul>
+        </div>
+        <div class="proto-item">
           <a href="/prototype-11/prototype.html" class="proto-link">Sign Up Flow v1</a>
           <p>Sign-up flow for MVP.</p>
           <ul class="changelog">
@@ -275,13 +303,17 @@
           <p>iOS 26 bottom search input pattern exploration for keyword and location search.</p>
         </div>
       </div>
-      
+
+      <div class="item item--standalone">
+        <a href="/design-system/index.html" class="ds-link" target="_blank" rel="noopener">Design System</a>
+      </div>
+
     </div>
   </div>
 
   <div class="preview-panel open" id="preview-panel">
     <div class="preview-panel-inner">
-      <iframe id="preview-frame" data-default-src="prototype-11/prototype.html"></iframe>
+      <iframe id="preview-frame" data-default-src="prototype-13/prototype.html"></iframe>
     </div>
   </div>
 
