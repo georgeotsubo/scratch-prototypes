@@ -413,7 +413,7 @@ Underline-style section tabs for detail screens. The row gets a
 <svg class="pl-icon" aria-hidden="true"><use href="#pl-back"></use></svg>
 ```
 
-23 icons in five groups. The `-small` / `-large` suffixes are the Figma frame the
+24 icons in five groups. The `-small` / `-large` suffixes are the Figma frame the
 artwork was drawn for, not a rendered size — SF Symbols drawn for a smaller frame are
 weighted heavier, so `#pl-calendar-small` (20px frame) reads bolder than
 `#pl-calendar-large` (24px). Pick by weight, then set the size with a modifier.
@@ -421,10 +421,14 @@ weighted heavier, so `#pl-calendar-small` (20px frame) reads bolder than
 | Group | Ids |
 | --- | --- |
 | Navigation | `#pl-back` `#pl-close` `#pl-chevron-down` `#pl-right-chevron` `#pl-search` `#pl-share` |
-| Contact & place | `#pl-location-pin` `#pl-location-pin-small` `#pl-person-small` `#pl-directions` `#pl-phone` `#pl-globe` `#pl-tag` |
+| Contact & place | `#pl-location-pin` `#pl-location-pin-small` `#pl-person-small` `#pl-directions` `#pl-phone` `#pl-globe` `#pl-tag` `#pl-map-pin` |
 | Booking | `#pl-calendar-small` `#pl-calendar-large` `#pl-stack` |
 | Rating | `#pl-star-fill` `#pl-star-half` `#pl-star-outline` |
 | Tab bar | `#pl-tab-home` `#pl-tab-search` `#pl-tab-bookings` `#pl-tab-profile` (25px) |
+
+`#pl-map-pin` is a vector marker like the stars — its red/white colours are baked
+in, so it ignores `currentColor`. Used in `.pl-map-card__pin` (the Location card
+in venue/class detail).
 
 Sizes default to `icon/md` (20px); `--xs` `--sm` `--lg` map to the other `Icon/*`
 tokens. Dropped into any component slot (`.pl-btn__icon`, `.pl-icon-btn`,
@@ -432,8 +436,12 @@ tokens. Dropped into any component slot (`.pl-btn__icon`, `.pl-icon-btn`,
 `.pl-see-all__icon`) it sizes itself to that slot automatically.
 
 Monochrome icons are `fill="currentColor"`, so they inherit the colour of whatever
-they sit in and invert correctly in dark mode. The three stars are 16×16 PNG rasters
-with colours baked in (full, half, empty) — they do not inherit `currentColor`.
+they sit in and invert correctly in dark mode. The three stars and `#pl-map-pin`
+paint fixed colours instead: the stars are the exact SVGs exported for iOS
+(full/half/empty), with `#FFB54D` / `#B3B5BC` baked in as literal hex — not
+`currentColor` and not a design token — so they don't invert in dark mode.
+`map-pin` paints `icon/red` plus a literal white for the same reason (a map
+marker shouldn't invert either).
 
 **Why a JS-injected sprite** rather than `icons.svg` + `<use href="icons.svg#id">`:
 external `<use>` is blocked on `file://` in Chrome, and these prototypes get opened
@@ -447,9 +455,14 @@ directly as often as they get served.
    Most live in the `iOS icons` frame `2428:5548`; the tab icons are the components
    `1493:5` / `1493:4` / `1493:3` / `1493:2`.
 2. Save it as `icons/<name>.svg`, and rewrite every painted colour to `currentColor`.
-   **Stars are different:** export the three iOS star assets as 16×16 PNGs —
-   `icons/star-fill.png`, `icons/star-half.png`, `icons/star-outline.png` — with
-   colours baked in. `build-icons.mjs` wraps each PNG in an SVG automatically.
+   **Stars are different:** `icons/star-fill.svg`, `star-half.svg`, and
+   `star-outline.svg` are exact copies of the iOS star SVG exports — do not
+   redraw, re-trace, or edit their path data or fills. If the source artwork
+   changes, replace the file wholesale with the new export. `map-pin.svg` is
+   vector-traced from the original raster export (potrace, by colour region)
+   and paints fixed colours (`var(--pl-icon-red)`, literal `#fff`) directly
+   instead of `currentColor` — edit its path data in place rather than
+   re-exporting a raster.
 3. Add the name to `GROUPS` in `build-icons.mjs` — anything unlisted still ships, it
    just lands in an "Other" group.
 4. `node design-system/build-icons.mjs`

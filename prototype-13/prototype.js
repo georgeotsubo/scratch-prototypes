@@ -215,7 +215,11 @@
 
   // Display real places on map and in venue list
   function displayPlaces(places, screenId, search, location) {
-    places = ensureFeaturedVenueFirst(places);
+    // Only pin the featured demo venue first on the default (unsearched)
+    // map screen — an actual search/category query should show real results.
+    if (screenId === 'screen-map-default') {
+      places = ensureFeaturedVenueFirst(places);
+    }
     currentPins = places;
     currentSearchLabel = search || '';
     currentLocationLabel = location || '';
@@ -628,7 +632,7 @@
   // Average center of the hardcoded NYC studio data
   const STUDIOS_CENTER_LAT = 40.7380, STUDIOS_CENTER_LNG = -73.9855;
 
-  // Hero demo venue — pinned first whenever search results load.
+  // Hero demo venue — pinned first only on the default (unsearched) map screen.
   const JETSET_PILATES_PIN = {
     name: 'JetSet Pilates',
     lat: 40.7395,
@@ -653,8 +657,20 @@
   }
 
   function ensureFeaturedVenueFirst(places) {
+    // Case/whitespace-insensitive: the live Foursquare feed sometimes returns
+    // a second listing for the same chain with slightly different casing
+    // (e.g. "Jetset Pilates" vs "JetSet Pilates"), which an exact-match
+    // filter lets slip through as an apparent duplicate right under the
+    // featured pin.
+    var normalize = function(name) { return (name || '').trim().toLowerCase(); };
+    var excluded = [normalize(JETSET_PILATES_PIN.name), 'power pilates'];
+    var seen = {};
     var list = (places || []).filter(function(p) {
-      return p.name !== JETSET_PILATES_PIN.name && p.name !== 'Power Pilates';
+      var key = normalize(p.name);
+      if (excluded.indexOf(key) !== -1) return false;
+      if (seen[key]) return false;
+      seen[key] = true;
+      return true;
     });
     return [Object.assign({}, JETSET_PILATES_PIN)].concat(list);
   }
@@ -3557,7 +3573,7 @@
     // Expose for the desktop mouse-drag handler
     window.__snapVdDatePicker = snapVdDatePickerToTarget;
 
-    var STAR_SVG = '<svg class="pl-icon pl-icon--sm" aria-hidden="true"><use href="#pl-star-fill"></use></svg>';
+    var STAR_SVG = window.plStarXsSvg('star-fill');
 
     function plPriceHtml(c) {
       if (c.finalPrice) {
@@ -3983,7 +3999,6 @@
       "A high-energy class combining yoga fundamentals with bodyweight strength training. Expect to sweat, breathe, and build serious core stability over the course of 50 intense minutes. Modifications are offered, but expect to work hard from start to finish."
     ];
     var CD_PREP = "All classes are hot. Mats + towels are complimentary on your first visit and always available for a small rental fee after. Water + electrolytes are available for purchase at the front desk. Arrive 10 minutes early to check in and settle your mat.";
-    var CD_INTRO_CHIP_SVG = '<svg class="cd-intro-chip-icon" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M5.38223 17.1763C4.62285 17.1763 4.05596 16.9891 3.68154 16.6147C3.30713 16.2403 3.11992 15.6708 3.11992 14.9061V13.2529C3.11992 13.1263 3.0751 13.0156 2.98545 12.9207L1.81475 11.75C1.27158 11.2121 1 10.6795 1 10.1521C1 9.62478 1.27158 9.08953 1.81475 8.54636L2.98545 7.36775C3.0751 7.2781 3.11992 7.17 3.11992 7.04343V5.3823C3.11992 4.61238 3.30449 4.04285 3.67363 3.67371C4.04805 3.30457 4.61758 3.12 5.38223 3.12H7.04336C7.17519 3.12 7.2833 3.07517 7.36768 2.98552L8.54629 1.81482C9.08945 1.27166 9.62207 1.00008 10.1441 1.00008C10.6715 0.994802 11.2067 1.26638 11.7499 1.81482L12.9285 2.98552C13.0182 3.07517 13.1263 3.12 13.2528 3.12H14.914C15.6786 3.12 16.2455 3.3072 16.6146 3.68162C16.9891 4.05603 17.1763 4.62293 17.1763 5.3823V7.04343C17.1763 7.17 17.2237 7.2781 17.3187 7.36775L18.4894 8.54636C19.0272 9.08953 19.2962 9.62478 19.2962 10.1521C19.2962 10.6795 19.0272 11.2121 18.4894 11.75L17.3187 12.9207C17.2237 13.0156 17.1763 13.1263 17.1763 13.2529V14.9061C17.1763 15.6761 16.9891 16.2456 16.6146 16.6147C16.2455 16.9891 15.6786 17.1763 14.914 17.1763H13.2528C13.1263 17.1763 13.0182 17.2212 12.9285 17.3108L11.7499 18.4815C11.212 19.0247 10.6794 19.2963 10.1521 19.2963C9.62471 19.2963 9.08945 19.0247 8.54629 18.4815L7.36768 17.3108C7.2833 17.2212 7.17519 17.1763 7.04336 17.1763H5.38223Z" fill="var(--pl-text-price-discount)"/><path d="M7.38359 10.2655C6.85889 10.2655 6.43965 10.0875 6.12588 9.73154C5.81475 9.37295 5.65918 8.87988 5.65918 8.25234C5.65918 7.61689 5.81606 7.12515 6.12983 6.7771C6.4436 6.42905 6.86152 6.25503 7.38359 6.25503C7.9083 6.25503 8.32754 6.42905 8.64131 6.7771C8.95508 7.12251 9.11196 7.61294 9.11196 8.24839C9.11196 8.87593 8.9564 9.36899 8.64526 9.72759C8.33413 10.0862 7.91357 10.2655 7.38359 10.2655ZM7.38359 9.32812C7.55762 9.32812 7.68813 9.23848 7.77515 9.05918C7.86216 8.87988 7.90566 8.61094 7.90566 8.25234C7.90566 7.89902 7.86216 7.63403 7.77515 7.45737C7.68813 7.28071 7.55762 7.19238 7.38359 7.19238C7.21221 7.19238 7.08169 7.28071 6.99204 7.45737C6.90503 7.63403 6.86152 7.89902 6.86152 8.25234C6.86152 8.61094 6.90503 8.87988 6.99204 9.05918C7.08169 9.23848 7.21221 9.32812 7.38359 9.32812ZM12.9167 13.7618C12.3894 13.7618 11.9688 13.5838 11.6551 13.2278C11.3439 12.8719 11.1884 12.3788 11.1884 11.7486C11.1884 11.1132 11.3453 10.6214 11.659 10.2734C11.9728 9.92534 12.392 9.75132 12.9167 9.75132C13.4388 9.75132 13.8567 9.92534 14.1705 10.2734C14.4843 10.6214 14.6412 11.1132 14.6412 11.7486C14.6412 12.3735 14.4856 12.8653 14.1745 13.2239C13.8633 13.5825 13.4441 13.7618 12.9167 13.7618ZM12.9167 12.8284C13.0881 12.8284 13.2173 12.7387 13.3043 12.5594C13.394 12.3775 13.4388 12.1072 13.4388 11.7486C13.4388 11.3927 13.394 11.1277 13.3043 10.9537C13.2173 10.777 13.0881 10.6887 12.9167 10.6887C12.7427 10.6887 12.6122 10.777 12.5252 10.9537C12.4382 11.1303 12.3947 11.3953 12.3947 11.7486C12.3947 12.1072 12.4382 12.3775 12.5252 12.5594C12.6122 12.7387 12.7427 12.8284 12.9167 12.8284ZM7.70395 13.7064C7.56157 13.6247 7.4772 13.5073 7.45083 13.3544C7.42446 13.2015 7.46006 13.0512 7.55762 12.9035L11.8251 6.49629C11.9201 6.35654 12.04 6.26953 12.1851 6.23525C12.3301 6.19834 12.4672 6.2168 12.5964 6.29062C12.7414 6.36973 12.8297 6.48838 12.8614 6.64658C12.893 6.80215 12.8601 6.95376 12.7625 7.10142L8.49497 13.5284C8.40532 13.6629 8.28271 13.7446 8.12715 13.7736C7.97422 13.8053 7.83315 13.7829 7.70395 13.7064Z" fill="white"/></svg>';
     var CD_CANCEL = "You must cancel your reservation at least 12 hours prior to the class start time in order to return the credit to your account with no penalty. Late cancellations with less than 12 hours notice will be assessed a $10 charge to your card. The credit will be returned to your account.";
     var CD_VENUE_NAMES = ['ID Hot Yoga', 'Sui Power Yoga', 'Heated Reformer Co.', 'Studio Sweat', 'Mindful Movement'];
     var CD_NEIGHBORHOODS = ['Lower East Side', 'East Village', 'SoHo', 'Williamsburg', 'West Village'];
@@ -4358,6 +4373,14 @@
       return dayShort + ', ' + monthShort + ' ' + date.getDate();
     }
 
+    function updateClassHeaderMeta(slot) {
+      if (!slot) return;
+      var dt = document.getElementById('cd-meta-datetime');
+      var inst = document.getElementById('cd-meta-instructor');
+      if (dt) dt.textContent = cdShortDate() + ' · ' + slot.time;
+      if (inst) inst.textContent = slot.instructor;
+    }
+
     function updateBookingBar(slot) {
       cdLastSlot = slot;
       // Top row: "Tue, Mar 1 · 2:00 PM" (datetime only — no instructor).
@@ -4367,6 +4390,7 @@
       // suffix ("$25.00 $35 · Regina N.").
       var instructorEl = document.getElementById('cd-booking-instructor');
       if (instructorEl) instructorEl.textContent = slot.instructor;
+      updateClassHeaderMeta(slot);
       // CTA label/style is driven by whether the currently-viewed slot
       // matches the reservation — black "Cancel" for the reserved slot,
       // red "Book" for any other.
@@ -4379,6 +4403,7 @@
       if (!cdLastSlot) return;
       var timeEl = document.getElementById('cd-booking-time');
       if (timeEl) timeEl.textContent = cdShortDate() + ' · ' + cdLastSlot.time;
+      updateClassHeaderMeta(cdLastSlot);
     };
 
     // Stable review pool generated once per class detail open.
@@ -4517,9 +4542,14 @@
         document.getElementById('cd-header-rating-num').textContent = ratingParts[1];
         document.getElementById('cd-header-rating-count').textContent = '(' + ratingParts[2] + ')';
       }
-      var venueName = (currentPins[0] && currentPins[0].name) || pick(CD_VENUE_NAMES);
-      var hood = (currentPins[0] && currentPins[0].locality) || pick(CD_NEIGHBORHOODS);
-      document.getElementById('cd-venue-text').textContent = venueName + ' · ' + hood;
+      var venueName = (window.__currentVenuePin && window.__currentVenuePin.name)
+        || (currentPins[0] && currentPins[0].name)
+        || pick(CD_VENUE_NAMES);
+      var hood = (window.__currentVenuePin && window.__currentVenuePin.locality)
+        || (currentPins[0] && currentPins[0].locality)
+        || pick(CD_NEIGHBORHOODS);
+      document.getElementById('cd-venue-text').textContent = venueName;
+      updateClassHeaderMeta({ time: cls.time, instructor: cls.instructor });
       // Amenities — inherit the venue's amenity set so a class shows the
       // same Mats / Towels / Showers as its venue.
       var cdAmenitiesList = ['Mats', 'Towels'];
@@ -4549,20 +4579,6 @@
       function cdFormatPrice(p) {
         if (!p) return p;
         return /\.\d{2}$/.test(p) ? p : (p + '.00');
-      }
-      // Intro offer chip: intro venues show the pill; others show a plain
-      // price in the same slot (no icon, no strike, no pill background).
-      var introChipEl = document.getElementById('cd-intro-chip');
-      if (introChipEl) {
-        if (hasVenueIntroOffer(window.__currentVenuePin)) {
-          introChipEl.classList.remove('cd-intro-chip--plain');
-          introChipEl.innerHTML = CD_INTRO_CHIP_SVG
-            + '<span class="cd-intro-chip-price">' + cdFormatPrice(cls.finalPrice || '$25') + '</span>'
-            + '<span class="cd-intro-chip-strike">' + cdFormatPrice(cls.strikePrice || '$35') + '</span>';
-        } else {
-          introChipEl.classList.add('cd-intro-chip--plain');
-          introChipEl.innerHTML = '<span class="cd-intro-chip-plain">' + cdFormatPrice(cls.plainPrice || '$25') + '</span>';
-        }
       }
       // Date/slots — picker leads with today (absIdx = 0)
       renderCdDatePicker(0);
@@ -4644,13 +4660,15 @@
       // the default first slot is pre-selected.
       classDetailOpen = true;
       populateClassDetail(cls);
-      // Sync the class hero carousel to the current venue's photos so a
-      // class pushed from venue A matches the thumbnail you tapped through.
+      // Sync the compact header thumb + hidden lightbox slides to the
+      // current venue's photos so a class pushed from venue A matches
+      // the thumbnail you tapped through.
       var cdHeroSlideEls = document.querySelectorAll('#cd-hero-track .cd-hero-slide');
       var cdTriple = pickVenueImages(window.__currentVenuePin, window.__currentVenueIndex);
       for (var ci = 0; ci < cdHeroSlideEls.length; ci++) {
         setVenuePhotoBg(cdHeroSlideEls[ci], cdTriple ? cdTriple[ci] : null);
       }
+      setVenuePhotoBg(document.getElementById('cd-thumb'), cdTriple ? cdTriple[0] : null);
       // Reset class scroll to the top so the hero is visible on every push.
       classDetailScroll.scrollTop = 0;
       // Drop .scrolled on the shared nav — class scroll is at 0, so the
@@ -5430,7 +5448,7 @@
         var clusterSheetParent = el.closest('.cluster-sheet');
         if (clusterSheetParent && !clusterSheetParent.classList.contains('is-expanded')) return;
       }
-      if (e.target.closest('button, a, .venue-action-btn, .vd-action-pill, .vd-slot-btn, .vd-quick-btn, .venue-detail-close, .vd-nav-back, .venue-detail-handle, .vd-sticky-nav, .vd-actions-pill, .pl-tab-nav__item, .cd-hero')) return;
+      if (e.target.closest('button, a, .venue-action-btn, .vd-action-pill, .vd-slot-btn, .vd-quick-btn, .venue-detail-close, .vd-nav-back, .venue-detail-handle, .vd-sticky-nav, .vd-actions-pill, .pl-tab-nav__item, .cd-thumb')) return;
       var hscrollChild = e.target.closest('.vd-hscroll, .vd-date-picker, .cd-date-picker');
       if (hscrollChild) {
         pendingDrag = { el: el, x: e.clientX, y: e.clientY, scroll: el.scrollTop, time: Date.now(), hscroll: hscrollChild };
@@ -6149,128 +6167,23 @@
       });
     });
 
-    // Wire class-detail hero carousel — 3 swipeable slides, "1/N" counter.
-    // Tapping any slide opens the lightbox at that slide's index.
-    var cdHero = document.getElementById('cd-hero');
+    // Compact header thumb opens the lightbox. Hidden #cd-hero-track slides
+    // hold the extra photos so paging still works; page 0 FLIPs back to
+    // the visible 80×80 thumb.
+    var cdThumb = document.getElementById('cd-thumb');
     var cdHeroTrack = document.getElementById('cd-hero-track');
-    var cdHeroCounter = document.getElementById('cd-hero-counter');
-    if (cdHero && cdHeroTrack) {
-      var cdHeroSlides = Array.prototype.slice.call(cdHeroTrack.querySelectorAll('.cd-hero-slide'));
-      var cdHeroPage = 0;
-      function setCdHeroPage(page, animate) {
-        page = Math.max(0, Math.min(cdHeroSlides.length - 1, page));
-        cdHeroPage = page;
-        if (!animate) cdHeroTrack.classList.add('dragging');
-        cdHeroTrack.style.transform = 'translate3d(' + (-page * 100) + '%, 0, 0)';
-        if (!animate) requestAnimationFrame(function() { cdHeroTrack.classList.remove('dragging'); });
-        if (cdHeroCounter) cdHeroCounter.textContent = (page + 1) + '/' + cdHeroSlides.length;
-      }
-      function cdHeroCurrentIndex() { return cdHeroPage; }
-      // Reset to slide 0 whenever class detail re-opens (called from the
-      // class-scroll reset path via this expose).
-      window.__resetCdHeroCarousel = function() { setCdHeroPage(0, false); };
-      // Allow the lightbox to keep the hero in sync as the user swipes
-      // between slides — so a swipe-down dismiss lands on the matching
-      // hero slide and the morph FLIPs to a thumb that's actually visible.
-      window.__setCdHeroPage = function(idx) { setCdHeroPage(idx, false); };
-      setCdHeroPage(0, false);
-
-      // Transform-based drag pagination — same pattern as the lightbox.
-      // Lock to horizontal-only after a 6px commit so vertical scroll on
-      // the page still works when the gesture is mostly vertical.
-      var cdHeroDrag = null;
-      function cdHeroDragStart(x, y) {
-        cdHeroDrag = {
-          startX: x,
-          startY: y,
-          startOffsetPx: -cdHeroPage * cdHero.clientWidth,
-          mode: null,
-          moved: false
-        };
-        cdHeroTrack.classList.add('dragging');
-      }
-      function cdHeroDragMove(x, y) {
-        if (!cdHeroDrag) return;
-        var dx = x - cdHeroDrag.startX;
-        var dy = y - cdHeroDrag.startY;
-        var absX = Math.abs(dx), absY = Math.abs(dy);
-        if (cdHeroDrag.mode === null && (absX > 6 || absY > 6)) {
-          // If the user is mostly scrolling vertically, abort horizontal
-          // drag so the page scroll takes over.
-          cdHeroDrag.mode = absX > absY ? 'page' : 'abort';
-          if (cdHeroDrag.mode === 'abort') {
-            cdHeroTrack.classList.remove('dragging');
-            cdHeroDrag = null;
-            return;
-          }
-        }
-        if (absX > 4 || absY > 4) { cdHeroDrag.moved = true; wasDragging = true; }
-        if (cdHeroDrag.mode === 'page') {
-          cdHeroTrack.style.transform =
-            'translate3d(' + (cdHeroDrag.startOffsetPx + dx) + 'px, 0, 0)';
-        }
-      }
-      function cdHeroDragEnd(x) {
-        if (!cdHeroDrag) return;
-        var moved = cdHeroDrag.moved;
-        var mode = cdHeroDrag.mode;
-        var dx = x - cdHeroDrag.startX;
-        cdHeroDrag = null;
-        cdHeroTrack.classList.remove('dragging');
-        if (mode === 'page') {
-          var pageW = cdHero.clientWidth;
-          var nextPage = cdHeroPage;
-          if (Math.abs(dx) > pageW * 0.2) nextPage = cdHeroPage + (dx < 0 ? 1 : -1);
-          setCdHeroPage(nextPage, true);
-        } else {
-          // No commit — return to current page in case anything moved.
-          setCdHeroPage(cdHeroPage, true);
-        }
-        if (moved) setTimeout(function() { wasDragging = false; }, 0);
-      }
-
-      cdHeroTrack.addEventListener('mousedown', function(e) {
-        e.preventDefault();
-        // Stop the addVerticalDragScroll handler on .class-detail-scroll
-        // from also starting a drag — otherwise the carousel swipe and a
-        // parallel vertical scroll-drag both fire and the page scrolls.
-        e.stopPropagation();
-        cdHeroDragStart(e.clientX, e.clientY);
-      });
-      document.addEventListener('mousemove', function(e) {
-        if (cdHeroDrag) cdHeroDragMove(e.clientX, e.clientY);
-      });
-      document.addEventListener('mouseup', function(e) {
-        if (cdHeroDrag) cdHeroDragEnd(e.clientX);
-      });
-      cdHeroTrack.addEventListener('touchstart', function(e) {
-        var t = e.touches[0];
-        cdHeroDragStart(t.clientX, t.clientY);
-      }, { passive: true });
-      cdHeroTrack.addEventListener('touchmove', function(e) {
-        if (!cdHeroDrag) return;
-        var t = e.touches[0];
-        cdHeroDragMove(t.clientX, t.clientY);
-        // Once we've committed to a horizontal page swipe, actively block
-        // the browser's default vertical scroll so it can't shift the
-        // class-detail-scroll position while the user is paging.
-        if (cdHeroDrag && cdHeroDrag.mode === 'page' && e.cancelable) {
-          e.preventDefault();
-        }
-      }, { passive: false });
-      cdHeroTrack.addEventListener('touchend', function(e) {
-        if (!cdHeroDrag) return;
-        var t = e.changedTouches[0];
-        cdHeroDragEnd(t ? t.clientX : cdHeroDrag.startX);
-      });
-
-      cdHeroSlides.forEach(function(slide) {
-        slide.addEventListener('click', function() {
-          if (wasDragging) return;
-          var titleEl = document.getElementById('cd-title');
-          var name = (titleEl && titleEl.textContent) || 'Class';
-          openLightbox(cdHeroSlides, cdHeroCurrentIndex(), name);
-        });
+    var cdHeroSlides = cdHeroTrack
+      ? Array.prototype.slice.call(cdHeroTrack.querySelectorAll('.cd-hero-slide'))
+      : [];
+    window.__resetCdHeroCarousel = function() {};
+    window.__setCdHeroPage = function() {};
+    if (cdThumb) {
+      cdThumb.addEventListener('click', function() {
+        if (wasDragging) return;
+        var titleEl = document.getElementById('cd-title');
+        var name = (titleEl && titleEl.textContent) || 'Class';
+        var thumbs = [cdThumb].concat(cdHeroSlides.slice(1));
+        openLightbox(thumbs, 0, name);
       });
     }
   })();
