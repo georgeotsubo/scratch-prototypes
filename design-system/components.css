@@ -799,8 +799,10 @@ button.pl-card { cursor: pointer; -webkit-tap-highlight-color: transparent; }
 }
 
 .pl-schedule-card__rating { display: inline-flex; align-items: center; gap: var(--pl-space-xxs); }
-.pl-schedule-card__star { color: var(--pl-icon-rating); display: inline-flex; }
-.pl-card.is-dimmed .pl-schedule-card__star { color: var(--pl-icon-disabled); }
+.pl-schedule-card__star { display: inline-flex; align-items: center; flex: none; }
+.pl-schedule-card__star > .pl-icon { width: var(--pl-icon-sm); height: var(--pl-icon-sm); }
+/* Stars paint fixed baked-in hex colours (not currentColor) — dimmed cards fade them with opacity instead. */
+.pl-card.is-dimmed .pl-schedule-card__star > .pl-icon { opacity: 0.45; }
 
 /* --- Map card — .pl-map-card (1662:1623) ---------------------------------- */
 
@@ -823,8 +825,9 @@ button.pl-card { cursor: pointer; -webkit-tap-highlight-color: transparent; }
   top: 50%; left: 50%;
   transform: translate(-50%, -50%);
   color: var(--pl-accent-default);
-  width: 32px; height: 32px;
+  width: 48px; height: 51px;
 }
+.pl-map-card__pin > .pl-icon { width: 100%; height: 100%; }
 
 .pl-map-card__footer {
   padding: var(--pl-space-md);
@@ -943,7 +946,7 @@ button.pl-venue-card { cursor: pointer; -webkit-tap-highlight-color: transparent
 .pl-venue-card__headings {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
+  align-items: stretch;
   width: 100%;
   min-width: 0;
 }
@@ -954,6 +957,12 @@ button.pl-venue-card { cursor: pointer; -webkit-tap-highlight-color: transparent
   line-height: var(--pl-title-lg-medium-lineheight);
   font-weight: var(--pl-title-lg-medium-weight);
   color: inherit;
+  width: 100%;
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
 }
 
 .pl-venue-card__tags {
@@ -987,14 +996,14 @@ button.pl-venue-card { cursor: pointer; -webkit-tap-highlight-color: transparent
   display: inline-flex;
   align-items: center;
   white-space: nowrap;
-  font-family: var(--pl-caption-lg-bold-font);
-  font-size: var(--pl-caption-lg-bold-size);
-  line-height: var(--pl-caption-lg-bold-lineheight);
-  font-weight: var(--pl-caption-lg-bold-weight);
+  font-family: var(--pl-caption-lg-medium-font);
+  font-size: var(--pl-caption-lg-medium-size);
+  line-height: var(--pl-caption-lg-medium-lineheight);
+  font-weight: var(--pl-caption-lg-medium-weight);
   color: var(--pl-text-primary);
 }
 
-/* star-xs (2428:5472) — 16×16 frame (--pl-icon-sm). iOS star PNGs fill the slot. */
+/* star-xs (2428:5472) — 16×16 frame (--pl-icon-sm). iOS star SVGs fill the slot. */
 .pl-star-xs {
   display: inline-block;
   flex: none;
@@ -1015,9 +1024,8 @@ button.pl-venue-card { cursor: pointer; -webkit-tap-highlight-color: transparent
   flex: none;
   width: var(--pl-icon-xs);
   height: var(--pl-icon-xs);
-  color: var(--pl-icon-rating);
 }
-.pl-venue-card__star > svg { width: 100%; height: 100%; display: block; }
+.pl-venue-card__star > .pl-icon { width: 100%; height: 100%; display: block; }
 
 .pl-venue-card__reviews,
 .pl-venue-card__location {
@@ -1321,6 +1329,61 @@ button.pl-venue-card { cursor: pointer; -webkit-tap-highlight-color: transparent
   color: inherit;
   font-weight: var(--pl-type-weight-bold);
   text-decoration: underline;
+}
+
+/* ===========================================================================
+   Promo banner — .pl-promo-banner (2488:7845)
+   Surface/variant/green card used to call out a venue's intro/promo offer
+   (e.g. "New member trial class for $20"). A tag.fill glyph sits in a 16px
+   column, top-aligned with the title's cap-height via a 4px (space/xxs)
+   padding-top; title is body/md/medium, the fine-print line below is
+   caption/lg regular. Unlike .pl-banner this component has no red/neutral
+   variant — it is always the green promo treatment.
+   =========================================================================== */
+
+.pl-promo-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--pl-space-sm);
+  box-sizing: border-box;
+  width: 100%;
+  padding: var(--pl-card-padding-sm) var(--pl-card-padding-md);
+  background: var(--pl-surface-variant-green);
+  border-radius: var(--pl-radius-component-card-default);
+}
+
+.pl-promo-banner__icon {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  padding-top: var(--pl-space-xxs);
+  color: var(--pl-text-price-discount);
+}
+.pl-promo-banner__icon > .pl-icon { width: var(--pl-symbol-size-sm); height: var(--pl-symbol-size-sm); }
+
+.pl-promo-banner__content {
+  display: flex;
+  flex: 1 1 0%;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.pl-promo-banner__title {
+  font-family: var(--pl-body-md-medium-font);
+  font-size: var(--pl-body-md-medium-size);
+  line-height: var(--pl-body-md-medium-lineheight);
+  font-weight: var(--pl-body-md-medium-weight);
+  color: var(--pl-text-primary);
+}
+
+.pl-promo-banner__subtitle {
+  font-family: var(--pl-caption-lg-font);
+  font-size: var(--pl-caption-lg-size);
+  line-height: var(--pl-caption-lg-lineheight);
+  font-weight: var(--pl-caption-lg-weight);
+  color: var(--pl-text-secondary);
 }
 
 /* ===========================================================================

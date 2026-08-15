@@ -4,9 +4,14 @@
    The SVGs are exported from the "iOS icons" frame (2428:5548) and the tab-bar
    icon components on the "Icons WIP" page of the Playlist Design System Figma
    file, then normalised so every painted colour is `currentColor` — an icon
-   takes the colour of whatever it sits in. The three stars are the exception:
-   they ship as 16×16 PNG rasters (star-fill.png, star-half.png, star-outline.png)
-   with colours baked in; this script wraps each PNG in a tiny SVG for the sprite.
+   takes the colour of whatever it sits in. A couple icons are two-tone by
+   design and paint fixed colours instead of `currentColor`: map-pin paints
+   icon/red plus a literal white (a map marker shouldn't invert in dark mode).
+   The three stars (star-fill/star-half/star-outline) are an exception to the
+   whole pipeline — they are exact, unmodified copies of the iOS star SVG
+   exports (baked-in `#FFB54D` / `#B3B5BC` hex, not `currentColor`, not a
+   design token). Do not redraw, re-trace, or hand-edit their path data; if
+   the source artwork changes, replace the file wholesale with the new export.
 
    icons.js injects an inline <symbol> sprite rather than shipping the files as
    external references, because `<use href="file.svg#id">` is blocked on
@@ -15,35 +20,17 @@
    Run after adding or re-exporting an icon:  node design-system/build-icons.mjs
 */
 
-import { readFileSync, writeFileSync, readdirSync, existsSync } from 'node:fs';
+import { readFileSync, writeFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 
 const DIR = new URL('./icons/', import.meta.url).pathname;
-
-/* iOS star PNGs (16×16) — drop updated exports here, then rebuild. */
-const STAR_PNGS = ['star-fill', 'star-half', 'star-outline'];
-
-function syncStarPngs() {
-  for (const name of STAR_PNGS) {
-    const pngPath = join(DIR, `${name}.png`);
-    if (!existsSync(pngPath)) continue;
-    const b64 = readFileSync(pngPath).toString('base64');
-    const svg = `<svg width="16" height="16" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">\n` +
-      `<!-- iOS star asset (${name}.png) — 16×16 raster, exported from Figma. -->\n` +
-      `<image width="16" height="16" href="data:image/png;base64,${b64}"/>\n` +
-      `</svg>\n`;
-    writeFileSync(join(DIR, `${name}.svg`), svg);
-  }
-}
-
-syncStarPngs();
 
 /* Display order on the design-system page. Anything not listed still ships —
    it lands in "Other" so a newly-exported icon is never silently dropped. */
 const GROUPS = [
   ['Navigation', ['back', 'close', 'chevron-down', 'right-chevron', 'search', 'share']],
   ['Contact & place', ['location-pin', 'location-pin-small', 'person-small',
-                       'directions', 'phone', 'globe', 'tag']],
+                       'directions', 'phone', 'globe', 'tag', 'map-pin']],
   ['Booking', ['calendar-small', 'calendar-large', 'stack']],
   ['Rating', ['star-fill', 'star-half', 'star-outline']],
   ['Tab bar', ['tab-home', 'tab-search', 'tab-bookings', 'tab-profile']],

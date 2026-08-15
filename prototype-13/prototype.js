@@ -215,7 +215,11 @@
 
   // Display real places on map and in venue list
   function displayPlaces(places, screenId, search, location) {
-    places = ensureFeaturedVenueFirst(places);
+    // Only pin the featured demo venue first on the default (unsearched)
+    // map screen — an actual search/category query should show real results.
+    if (screenId === 'screen-map-default') {
+      places = ensureFeaturedVenueFirst(places);
+    }
     currentPins = places;
     currentSearchLabel = search || '';
     currentLocationLabel = location || '';
@@ -628,7 +632,7 @@
   // Average center of the hardcoded NYC studio data
   const STUDIOS_CENTER_LAT = 40.7380, STUDIOS_CENTER_LNG = -73.9855;
 
-  // Hero demo venue — pinned first whenever search results load.
+  // Hero demo venue — pinned first only on the default (unsearched) map screen.
   const JETSET_PILATES_PIN = {
     name: 'JetSet Pilates',
     lat: 40.7395,
@@ -653,8 +657,20 @@
   }
 
   function ensureFeaturedVenueFirst(places) {
+    // Case/whitespace-insensitive: the live Foursquare feed sometimes returns
+    // a second listing for the same chain with slightly different casing
+    // (e.g. "Jetset Pilates" vs "JetSet Pilates"), which an exact-match
+    // filter lets slip through as an apparent duplicate right under the
+    // featured pin.
+    var normalize = function(name) { return (name || '').trim().toLowerCase(); };
+    var excluded = [normalize(JETSET_PILATES_PIN.name), 'power pilates'];
+    var seen = {};
     var list = (places || []).filter(function(p) {
-      return p.name !== JETSET_PILATES_PIN.name && p.name !== 'Power Pilates';
+      var key = normalize(p.name);
+      if (excluded.indexOf(key) !== -1) return false;
+      if (seen[key]) return false;
+      seen[key] = true;
+      return true;
     });
     return [Object.assign({}, JETSET_PILATES_PIN)].concat(list);
   }
@@ -3557,7 +3573,7 @@
     // Expose for the desktop mouse-drag handler
     window.__snapVdDatePicker = snapVdDatePickerToTarget;
 
-    var STAR_SVG = '<svg class="pl-icon pl-icon--sm" aria-hidden="true"><use href="#pl-star-fill"></use></svg>';
+    var STAR_SVG = window.plStarXsSvg('star-fill');
 
     function plPriceHtml(c) {
       if (c.finalPrice) {

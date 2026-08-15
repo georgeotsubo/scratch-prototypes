@@ -388,7 +388,7 @@
             <span class="pl-schedule-card__duration">60 min</span></div>
           <div class="pl-schedule-card__title">Class Title</div>
           <div class="pl-schedule-card__row">
-            <span class="pl-schedule-card__rating"><span class="pl-schedule-card__star">★</span>4.9 (250)</span>
+            <span class="pl-schedule-card__rating"><span class="pl-schedule-card__star"><svg class="pl-icon" aria-hidden="true"><use href="#pl-star-fill"></use></svg></span>4.9 (250)</span>
             <span class="pl-price pl-price--offer"><span class="pl-price__amounts">
               <span class="pl-price__current">$25</span><span class="pl-price__original">$35</span></span></span></div>
         </div></div>
@@ -397,7 +397,7 @@
             <span class="pl-schedule-card__duration">60 min</span></div>
           <div class="pl-schedule-card__title">Class Title</div>
           <div class="pl-schedule-card__row">
-            <span class="pl-schedule-card__rating"><span class="pl-schedule-card__star">★</span>4.9 (250)</span>
+            <span class="pl-schedule-card__rating"><span class="pl-schedule-card__star"><svg class="pl-icon" aria-hidden="true"><use href="#pl-star-fill"></use></svg></span>4.9 (250)</span>
             <span class="pl-card__status pl-card__status--sold-out">Sold out</span></div>
         </div></div>
       </div>
@@ -529,7 +529,7 @@
         <div class="pl-map-card" style="width:321px">
           <div class="pl-map-card__map" id="mc-map">
             <div style="width:100%;height:100%;background:linear-gradient(160deg,#cfe4f5,#e8eef2 60%,#dfe9d8)"></div>
-            <div class="pl-map-card__pin">📍</div>
+            <div class="pl-map-card__pin"><svg class="pl-icon" width="48" height="51" aria-hidden="true"><use href="#pl-map-pin"></use></svg></div>
           </div>
           <div class="pl-map-card__footer">172 Allen St floor 2, New York, NY 10002</div>
         </div>
@@ -592,6 +592,22 @@
       </div>
     </section>
 
+    <section id="c-promo-banner">
+      <h2>Promo banner <span class="count">.pl-promo-banner · 2488:7845</span></h2>
+      <p class="lede">Surface/variant/green card that calls out a venue's intro/promo offer.
+        Always the green treatment (no red/neutral variant) — used in venue detail
+        for venues with an active promo.</p>
+      <div style="max-width:353px">
+        <div class="pl-promo-banner" id="promo-banner">
+          <span class="pl-promo-banner__icon" aria-hidden="true"><svg class="pl-icon"><use href="#pl-tag"></use></svg></span>
+          <div class="pl-promo-banner__content">
+            <div class="pl-promo-banner__title">New member trial class for $20</div>
+            <div class="pl-promo-banner__subtitle">For new clients only.</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <section id="c-tabnav">
       <h2>Tab navigation <span class="count">.pl-tab-nav · 1192:843</span></h2>
       <p class="lede">Underline tabs for switching sections within a screen — separate
@@ -636,8 +652,10 @@
         <code>&lt;use href="file.svg#id"&gt;</code> is blocked on <code>file://</code>, and these
         prototypes get opened directly as often as they get served. Monochrome icons are
         <code>currentColor</code>, so they take the colour of whatever they sit in. The three
-        stars are two-tone by design and reference <code>icon/rating</code> and
-        <code>icon/disabled</code> directly. Each id is <code>#pl-</code> + the name below.</p>
+        stars and <code>map-pin</code> are vector paths that are two-tone by design, painting
+        fixed colours (<code>icon/rating</code> / <code>icon/disabled</code> / <code>icon/red</code>
+        + white) directly instead of <code>currentColor</code>. Each id is <code>#pl-</code> + the
+        name below.</p>
       <div id="icon-groups"></div>
 
       <h3>In component slots</h3>
@@ -670,7 +688,7 @@
   </main>
 </div>
 
-<script src="icons.js?v=20260814"></script>
+<script src="icons.js?v=20260815"></script>
 <script src="tokens.js"></script>
 <script src="typography.js"></script>
 <script>

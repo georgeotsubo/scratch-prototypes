@@ -95,9 +95,9 @@
     background: transparent;
     animation: fadeIn 0.2s ease-in backwards;
   }
-  /* Search sheet glass — Tier A glassmorphism over #live-map. The ::before is
-     the frost layer; it stops above the keyboard so keys stay on a solid tray.
-     anim-bg-fade-in/out only animate opacity — the frost values live here. */
+  /* Search sheet background — a solid layer over #live-map (glassmorphism
+     frost removed). Stops above the keyboard so keys stay on a solid tray.
+     anim-bg-fade-in/out only animate opacity. */
   .input-screen.active::before {
     content: '';
     position: absolute;
@@ -107,19 +107,7 @@
     bottom: var(--pl-prototype-keyboard-height, 282px);
     z-index: 0;
     pointer-events: none;
-    background: rgba(255, 255, 255, 0.62);
-    -webkit-backdrop-filter: blur(24px) saturate(1.6);
-    backdrop-filter: blur(24px) saturate(1.6);
-    box-shadow:
-      inset 0 0 0 1px rgba(255, 255, 255, 0.48),
-      inset 0 1px 0 rgba(255, 255, 255, 0.72),
-      inset 0 -24px 48px rgba(255, 255, 255, 0.08);
-  }
-  @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-    .input-screen.active::before {
-      background: var(--pl-bg-default);
-      box-shadow: none;
-    }
+    background: var(--pl-bg-default);
   }
   .input-screen.anim-bg-fade-in::before {
     animation: fadeIn 0.2s ease-in forwards;
@@ -316,11 +304,19 @@
     flex-shrink: 0;
     background: transparent;
   }
+  /* No focus ring — keep border/default even when a field is active. */
+  .pl-search-bar:focus-within {
+    border-color: var(--pl-border-default);
+  }
+  .pl-search-bar__input:focus {
+    outline: none;
+  }
+
   /* Search + location fields — PLSearchBar (.pl-search-bar, 1832:2160).
      The shell is entirely the DS component now: 48 tall, Radius/Semantic/xxl
      (24 — a full pill at this height, so the shape is unchanged),
      surface/default on a 1px border/default stroke, 12px gap, 16px padding-x,
-     body/md/regular label, :focus-within → border/focus.
+     body/md/regular label.
 
      That stroke is what gives the two fields an edge against the
      color/bg/default screen, so neither needs the surface/subtle fill they
@@ -487,7 +483,7 @@
     gap: 10px;
     background: var(--pl-surface-default);
     border-radius: var(--pl-radius-semantic-lg);
-    padding: 16px;
+    padding: 16px 0;
     margin: 4px 20px 0;
   }
 
@@ -496,16 +492,16 @@
     display: flex;
     align-items: center;
     gap: 12px;
-    padding: 12px 34px;
+    padding: 12px 24px;
     cursor: pointer;
   }
   .current-location-cta:active {
     opacity: 0.6;
   }
   .cta-icon-pill {
-    width: 32px;
-    height: 32px;
-    background: var(--pl-neutral-300);
+    width: 36px;
+    height: 36px;
+    background: var(--pl-button-neutral-bg-default);
     border-radius: var(--pl-radius-primitives-8);
     display: flex;
     align-items: center;
@@ -528,7 +524,7 @@
     display: flex;
     align-items: center;
     gap: 14px;
-    padding: 14px 16px;
+    padding: 14px 24px;
     cursor: pointer;
     transition: background 0.15s;
   }
@@ -559,7 +555,7 @@
     display: flex;
     align-items: center;
     gap: 14px;
-    padding: 14px 16px;
+    padding: 14px 24px;
     cursor: pointer;
     transition: background 0.15s;
   }
@@ -570,7 +566,7 @@
   .loc-autocomplete-item .loc-ac-icon {
     width: 36px;
     height: 36px;
-    background: var(--pl-neutral-300);
+    background: var(--pl-button-neutral-bg-default);
     border-radius: 50%;
     display: flex;
     align-items: center;
@@ -579,9 +575,9 @@
   }
   .loc-autocomplete-item .loc-ac-icon svg { width: 24px; height: 24px; color: var(--pl-neutral-600); }
   .loc-autocomplete-item .loc-ac-info { display: flex; flex-direction: column; gap: 2px; }
-  .loc-autocomplete-item .loc-ac-name { font-size: var(--pl-body-lg-regular-size); color: var(--pl-text-primary); }
+  .loc-autocomplete-item .loc-ac-name { font-size: var(--pl-body-lg-regular-size); color: var(--pl-text-primary); font-weight: var(--pl-body-lg-medium-weight); }
   .loc-autocomplete-item .loc-ac-name strong { font-weight: 500; }
-  .loc-autocomplete-item .loc-ac-sub { font-size: var(--pl-body-sm-regular-size); color: var(--pl-neutral-600); }
+  .loc-autocomplete-item .loc-ac-sub { font-size: var(--pl-body-sm-regular-size); color: var(--pl-neutral-600); font-weight: var(--pl-body-sm-regular-weight); }
 
   /* Keyboard — solid tray; sits below the glass frost layer. */
   .keyboard {
@@ -1153,15 +1149,6 @@
     line-height: var(--pl-title-sm-bold-lineheight);
     color: var(--pl-text-status-success);
   }
-  /* Real venue names run long; Figma's single nowrap line would overflow. */
-  .venue-title {
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
   /* Figma's default venue-card image is a 108×108 square (64px text block +
      8px gap + 36px button). The DS grid stretches the image with the info
      column; with a 2-line title that makes thumbnails taller than 1-line cards. */
@@ -1458,10 +1445,10 @@
     right: 0;
     top: 50%;
     transform: translateY(-50%) translateY(6px);
-    font-family: var(--pl-title-md-bold-font);
-    font-size: var(--pl-title-md-bold-size);
-    font-weight: var(--pl-title-md-bold-weight);
-    line-height: var(--pl-title-md-bold-lineheight);
+    font-family: var(--pl-body-md-semibold-font);
+    font-size: var(--pl-body-md-semibold-size);
+    font-weight: var(--pl-body-md-semibold-weight);
+    line-height: var(--pl-body-md-semibold-lineheight);
     color: var(--pl-text-primary);
     opacity: 0;
     text-align: center;
@@ -1601,7 +1588,7 @@
     margin-top: 4px;
   }
   #vd-section-header > .vd-meta {
-    margin-top: 8px;
+    margin-top: 4px;
   }
   .vd-tags {
     font-family: var(--pl-body-lg-medium-font);
@@ -1614,23 +1601,22 @@
     display: flex;
     flex-direction: row;
     flex-wrap: wrap;
-    align-items: flex-start;
+    align-items: center;
     gap: 4px;
   }
-  .vd-star { display: flex; align-items: center; flex-shrink: 0; }
   .vd-rating-num {
-    font-family: var(--pl-title-md-bold-font);
-    font-size: var(--pl-title-md-bold-size);
-    font-weight: var(--pl-title-md-bold-weight);
-    line-height: var(--pl-title-md-bold-lineheight);
+    font-family: var(--pl-body-md-medium-font);
+    font-size: var(--pl-body-md-medium-size);
+    font-weight: var(--pl-body-md-medium-weight);
+    line-height: var(--pl-body-md-medium-lineheight);
     color: var(--pl-text-primary);
     flex-shrink: 0;
   }
   .vd-rating-meta {
-    font-family: var(--pl-body-lg-regular-font);
-    font-size: var(--pl-body-lg-regular-size);
-    font-weight: var(--pl-body-lg-regular-weight);
-    line-height: var(--pl-body-lg-regular-lineheight);
+    font-family: var(--pl-body-md-medium-font);
+    font-size: var(--pl-body-md-medium-size);
+    font-weight: var(--pl-body-md-medium-weight);
+    line-height: var(--pl-body-md-medium-lineheight);
     color: var(--pl-text-secondary);
     flex: 1 1 0;
     min-width: 0;
@@ -1870,32 +1856,12 @@
   }
   .vd-rev-list .pl-review-card { width: 100%; }
 
-  /* Promo card */
-  .vd-promo {
-    display: flex;
-    gap: 12px;
-    align-items: flex-start;
-    padding: 12px 16px;
-    background: var(--pl-surface-default);
-    border-radius: var(--pl-radius-component-card-default);
-    /* Tighten the gap below the promo card from the parent's 40px down to
-       24px (40 + (-16)), matching the image-carousel→promo spacing above. */
+  /* Promo banner — markup now uses the design-system .pl-promo-banner
+     (2488:7845, see components.css). Only the local placement tweak stays
+     here: tighten the gap below the banner from the parent's 40px down to
+     24px (40 + (-16)), matching the image-carousel→banner spacing above. */
+  #vd-section-promo {
     margin-bottom: -16px;
-  }
-  .vd-promo-icon { flex-shrink: 0; margin-top: 2px; }
-  .vd-promo-title {
-    font-family: var(--pl-title-md-bold-font);
-    font-size: var(--pl-title-md-bold-size);
-    font-weight: var(--pl-title-md-bold-weight);
-    line-height: var(--pl-title-md-bold-lineheight);
-    color: var(--pl-text-primary);
-  }
-  .vd-promo-subtitle {
-    font-family: var(--pl-body-sm-medium-font);
-    font-size: var(--pl-body-sm-medium-size);
-    font-weight: var(--pl-body-sm-medium-weight);
-    line-height: var(--pl-body-sm-medium-lineheight);
-    color: var(--pl-text-secondary);
   }
 
   /* Section titles */
@@ -2395,12 +2361,6 @@
     align-items: center;
     gap: var(--pl-space-1);
   }
-  .cd-header-rating .pl-icon {
-    width: var(--pl-icon-md);
-    height: var(--pl-icon-md);
-    color: var(--pl-icon-rating);
-    flex-shrink: 0;
-  }
   .cd-header-rating-num {
     font-family: var(--pl-body-md-semibold-font);
     font-size: var(--pl-body-md-semibold-size);
@@ -2454,8 +2414,8 @@
     gap: var(--pl-space-2);
   }
   .cd-meta-icon {
-    width: 20px;
-    height: 20px;
+    width: var(--pl-icon-lg);
+    height: var(--pl-icon-lg);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -2463,8 +2423,8 @@
     color: var(--pl-icon-default);
   }
   .cd-meta-icon .pl-icon {
-    width: var(--pl-symbol-size-md);
-    height: var(--pl-symbol-size-md);
+    width: var(--pl-icon-md);
+    height: var(--pl-icon-md);
   }
   .cd-meta-text {
     font-family: var(--pl-body-md-regular-font);
@@ -2829,33 +2789,24 @@
     min-width: 0;
     gap: 2px;
   }
-  /* Top row: bold black datetime — "Tue, Mar 1 · 2:00 PM" */
-  /* Booking bar AND checkout-sheet mini-summary share the same type stack
-     so the morph endpoint matches the bar pixel-for-pixel — drifted sizes
-     read as a visible font flicker at the end of the close animation. */
+  /* Footer now shows only the class price (body/lg/semibold) — date/time
+     and instructor moved up into the compact header meta rows, so the
+     datetime + instructor elements stay in the DOM (JS still reads their
+     text for the checkout summary) but are hidden here. Booking bar AND
+     checkout-sheet mini-summary share the same rules so the morph endpoint
+     matches the bar pixel-for-pixel. */
   .cd-booking-datetime,
-  .cd-mini-meta {
-    font-family: var(--pl-label-md-semibold-font);
-    font-size: var(--pl-label-md-semibold-size);
-    font-weight: var(--pl-label-md-semibold-weight);
-    line-height: var(--pl-label-md-semibold-lineheight);
-    color: var(--pl-text-primary);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    max-width: 100%;
+  .cd-mini-meta,
+  .cd-booking-price-sep,
+  .cd-mini-price-sep,
+  .cd-booking-instructor,
+  .cd-mini-instructor {
+    display: none;
   }
-  /* Bottom row: green final price, optional strike, then "· {instructor}" */
   .cd-booking-price-row,
   .cd-mini-price-row {
     display: flex;
     align-items: baseline;
-    gap: 4px;
-    font-family: var(--pl-body-md-medium-font);
-    font-size: var(--pl-body-md-medium-size);
-    font-weight: var(--pl-body-md-medium-weight);
-    line-height: var(--pl-body-md-medium-lineheight);
-    color: var(--pl-text-secondary);
     max-width: 100%;
     overflow: hidden;
   }
@@ -2864,10 +2815,10 @@
     display: flex;
     align-items: baseline;
     gap: 4px;
-    font-family: var(--pl-label-md-semibold-font);
-    font-size: var(--pl-label-md-semibold-size);
-    font-weight: var(--pl-label-md-semibold-weight);
-    line-height: var(--pl-label-md-semibold-lineheight);
+    font-family: var(--pl-body-lg-semibold-font);
+    font-size: var(--pl-body-lg-semibold-size);
+    font-weight: var(--pl-body-lg-semibold-weight);
+    line-height: var(--pl-body-lg-semibold-lineheight);
     color: var(--pl-text-primary);
   }
   .cd-booking-price-strike {
@@ -2882,20 +2833,6 @@
   }
   .cd-booking-price-plain {
     color: var(--pl-text-primary);
-    font-size: var(--pl-label-md-semibold-size);
-    font-weight: var(--pl-label-md-semibold-weight);
-  }
-  .cd-booking-price-sep,
-  .cd-mini-price-sep {
-    color: var(--pl-text-secondary);
-  }
-  .cd-booking-instructor,
-  .cd-mini-instructor {
-    color: var(--pl-text-secondary);
-    font-size: var(--pl-body-md-regular-size);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
   }
   /* PLButton Primary / Medium / Pill. */
   .cd-booking-cta {
@@ -3548,8 +3485,8 @@
   }
   /* Compact info inside the sheet that mirrors .cd-booking-info. Hidden
      while the sheet is open; fades in during the close so the sheet's
-     end-of-morph state visually matches the bar (meta on top, price below
-     — same order as .cd-booking-info) instead of showing an empty white
+     end-of-morph state visually matches the bar (price only, since
+     datetime/instructor are hidden) instead of showing an empty white
      card. The bar takes over once the sheet hides — both display the
      same content in the same position so the swap is invisible. */
   .cd-checkout-mini-summary {
@@ -3557,10 +3494,10 @@
     /* 20 matches the bar's padding-left so the swap from mini-summary to
        the actual booking bar's info doesn't shift content horizontally. */
     left: 20px;
-    /* Bar height ≈ 96 (padding 16+32 + cta content 48). Info content
-       (datetime 20 + 2 gap + price-row 20 = 42) is centered in the 48px
-       content row, so info bottom is ~35px above the bar's bottom. */
-    bottom: 35px;
+    /* Bar height ≈ 96 (padding 16+32 + cta content 48). The single
+       price-row (24px) is centered in the 48px content row, so the row's
+       bottom sits ~44px above the bar's bottom edge. */
+    bottom: 44px;
     display: flex;
     flex-direction: column;
     gap: 2px;
