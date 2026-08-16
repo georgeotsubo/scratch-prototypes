@@ -4707,15 +4707,14 @@
       if (!classDetailOpen) return;
       if (window.__closeCheckoutIfOpen) window.__closeCheckoutIfOpen();
       classDetailOpen = false;
-      // The class pane's own grey backdrop slides out with the class pane,
-      // and the venue pane's grey backdrop is already in the right state
-      // (it never lost it — venuePaneBg tracks venue scroll independently
-      // of pane visibility). All we have to do is sync the shared nav's
-      // .scrolled flag to the venue's scroll position so the icons + title
-      // styling matches the now-active pane.
+      // Back from class detail always lands at the top of venue detail —
+      // don't restore the scroll position the user left on the way in.
+      venueDetailScroll.scrollTop = 0;
+      venueDetailScroll.scrollLeft = 0;
       var sharedNav = document.getElementById('vd-sticky-nav');
-      var venueIsScrolled = venueDetailScroll.scrollTop > 10;
-      if (sharedNav) sharedNav.classList.toggle('scrolled', venueIsScrolled);
+      if (sharedNav) sharedNav.classList.remove('scrolled');
+      var venuePaneBg = document.getElementById('vd-pane-nav-bg-venue');
+      if (venuePaneBg) venuePaneBg.classList.remove('scrolled');
       venueDetailSheet.classList.remove('show-class');
       // Booking bar: slide back down alongside the pane swap
       cdBookingBar.classList.remove('cd-booking-visible');

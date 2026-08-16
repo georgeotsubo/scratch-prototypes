@@ -804,6 +804,102 @@ button.pl-card { cursor: pointer; -webkit-tap-highlight-color: transparent; }
 /* Stars paint fixed baked-in hex colours (not currentColor) — dimmed cards fade them with opacity instead. */
 .pl-card.is-dimmed .pl-schedule-card__star > .pl-icon { opacity: 0.45; }
 
+/* --- Pack — .pl-pack (2491:8059) ------------------------------------------
+
+   Drop-in / Pack picker used in the booking flow. Same .pl-card shell
+   (surface/default, Card/default radius, card/padding-md, 1px border/default
+   → 2px border/focus when .is-selected). Figma Type is structural, not a
+   modifier: Drop-in is title + qty/price; Pack adds the per-class badge
+   and a terms footer. Omit those children for Drop-in.
+
+   Figma binds padding-x to inline/md, which isn't in the token export —
+   it renders 16px, same as space/md / card/padding-md, which .pl-card
+   already applies. Body stack gap is 4px (space/xxs); card↔footer gap
+   is space/sm. The Selected Pack footer is a bulleted list in Figma;
+   Default is stacked lines. That's text-formatting drift, not a state —
+   the CSS follows Default. */
+
+.pl-pack {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--pl-space-sm);
+}
+
+.pl-pack__body {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--pl-space-xxs);
+  width: 100%;
+  min-width: 0;
+}
+
+.pl-pack__badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  padding: var(--pl-space-xxs) var(--pl-space-xs);
+  background: var(--pl-surface-variant-green);
+  border-radius: var(--pl-radius-semantic-sm);
+  color: var(--pl-text-status-green);
+  font-family: var(--pl-label-md-semibold-font);
+  font-size: var(--pl-label-md-semibold-size);
+  line-height: var(--pl-label-md-semibold-lineheight);
+  font-weight: var(--pl-label-md-semibold-weight);
+  white-space: nowrap;
+}
+
+.pl-pack__title {
+  font-family: var(--pl-body-md-semibold-font);
+  font-size: var(--pl-body-md-semibold-size);
+  line-height: var(--pl-body-md-semibold-lineheight);
+  font-weight: var(--pl-body-md-semibold-weight);
+  color: var(--pl-text-primary);
+  white-space: nowrap;
+}
+
+.pl-pack__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  gap: var(--pl-space-xs);
+}
+
+.pl-pack__qty {
+  font-family: var(--pl-body-sm-regular-font);
+  font-size: var(--pl-body-sm-regular-size);
+  line-height: var(--pl-body-sm-regular-lineheight);
+  font-weight: var(--pl-body-sm-regular-weight);
+  color: var(--pl-text-secondary);
+}
+
+.pl-pack__price {
+  font-family: var(--pl-label-sm-semibold-font);
+  font-size: var(--pl-label-sm-semibold-size);
+  line-height: var(--pl-label-sm-semibold-lineheight);
+  font-weight: var(--pl-label-sm-semibold-weight);
+  color: var(--pl-text-primary);
+  white-space: nowrap;
+}
+
+/* Top rule is drawn inside the 12px pad so the card stays 172 with or
+   without a 1px stroke — same absorb trick as .pl-card's selected border. */
+.pl-pack__footer {
+  box-sizing: border-box;
+  width: 100%;
+  padding-top: calc(var(--pl-space-sm) - var(--pl-border-semantic-100));
+  border-top: var(--pl-border-semantic-100) solid var(--pl-border-default);
+  color: var(--pl-text-secondary);
+  font-family: var(--pl-caption-sm-font);
+  font-size: var(--pl-caption-sm-size);
+  line-height: var(--pl-caption-sm-lineheight);
+  font-weight: var(--pl-caption-sm-weight);
+  white-space: pre-line;
+}
+
 /* --- Map card — .pl-map-card (1662:1623) ---------------------------------- */
 
 .pl-map-card {
@@ -816,18 +912,33 @@ button.pl-card { cursor: pointer; -webkit-tap-highlight-color: transparent; }
   background: var(--pl-surface-default);
 }
 
-/* 168px map area in Figma. Drop a Mapbox canvas, an <img>, or an iframe in. */
+/* 168px map area in Figma. Drop a Mapbox canvas, an <img>, or an iframe in.
+   The pin is also a child of this frame — don't stretch it with the canvas. */
 .pl-map-card__map { position: relative; height: 168px; background: var(--pl-surface-inset); }
-.pl-map-card__map > * { width: 100%; height: 100%; display: block; object-fit: cover; }
+.pl-map-card__map > :not(.pl-map-card__pin) {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+}
 
+/* Native size of assets/Map card pin.svg (49×52). Explicit both axes so
+   .pl-icon's square 20px default can't squash the artwork. */
 .pl-map-card__pin {
   position: absolute;
   top: 50%; left: 50%;
   transform: translate(-50%, -50%);
-  color: var(--pl-accent-default);
-  width: 48px; height: 51px;
+  width: 49px;
+  height: 52px;
+  pointer-events: none;
 }
-.pl-map-card__pin > .pl-icon { width: 100%; height: 100%; }
+.pl-map-card__pin > .pl-icon,
+.pl-map-card__pin > svg,
+.pl-map-card__pin > img {
+  width: 49px;
+  height: 52px;
+  display: block;
+}
 
 .pl-map-card__footer {
   padding: var(--pl-space-md);

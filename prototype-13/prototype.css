@@ -1143,10 +1143,10 @@
   }
   .venue-intro-badge svg { display: block; flex-shrink: 0; }
   .venue-intro-badge-label {
-    font-family: var(--pl-title-sm-bold-font);
-    font-size: var(--pl-title-sm-bold-size);
-    font-weight: var(--pl-title-sm-bold-weight);
-    line-height: var(--pl-title-sm-bold-lineheight);
+    font-family: var(--pl-title-sm-semibold-font);
+    font-size: var(--pl-title-sm-semibold-size);
+    font-weight: var(--pl-title-sm-semibold-weight);
+    line-height: var(--pl-title-sm-semibold-lineheight);
     color: var(--pl-text-status-success);
   }
   /* Figma's default venue-card image is a 108×108 square (64px text block +

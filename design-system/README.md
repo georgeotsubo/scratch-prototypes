@@ -104,8 +104,8 @@ style fits; roughly half have no role style pointing at them.
 
 Open [index.html](index.html) and use the sidebar. The **Figma parity** section at the
 bottom measures every component live and compares it against the dimension Figma
-reports — all 31 checks pass; if you change `components.css`, reload and make sure
-they still do. To read the results without a browser:
+reports. If you change `components.css`, reload and make sure they still pass.
+To read the results without a browser:
 
 ```
 chrome --headless --allow-file-access-from-files --virtual-time-budget=6000 \
@@ -229,7 +229,7 @@ on a dark surface.
 
 ### Cards — `.pl-card` + a per-card class
 
-Class card, Schedule card, Map card and See all share one shell: `surface/default`,
+Class card, Schedule card, Pack, Map card and See all share one shell: `surface/default`,
 16px radius, `card/padding-md`, and a **1px `border/default` outline** — every card
 gained that border in the 2026-08-13 update. Selected swaps it for a 2px
 `border/focus`; because Figma strokes are drawn *inside* the frame, the border is
@@ -270,6 +270,46 @@ states are really three independent things:
 optional `__original`. Add `.pl-price--offer` to turn the current price green
 (`text/price/discount`) and strike through the original. `.is-disabled`, or an
 ancestor `.is-dimmed`, greys the whole thing.
+
+**`.pl-pack`** (`2491:8059`) — Drop-in / Pack picker for the booking flow. Same
+`.pl-card` shell; selected is `.is-selected`. Drop-in is title + qty/price;
+Pack adds the per-class badge and a terms footer — omit those children for
+Drop-in.
+
+```html
+<button class="pl-card pl-pack">
+  <span class="pl-pack__body">
+    <span class="pl-pack__title">Nomad Drop-in Class (inc. Mat + Towel)</span>
+    <span class="pl-pack__row">
+      <span class="pl-pack__qty">1 class</span>
+      <span class="pl-pack__price">$40.00</span>
+    </span>
+  </span>
+</button>
+
+<button class="pl-card pl-pack is-selected">
+  <span class="pl-pack__body">
+    <span class="pl-pack__badge">$27.25 / class</span>
+    <span class="pl-pack__title">Nomad 5 class card (mat + towel included)</span>
+    <span class="pl-pack__row">
+      <span class="pl-pack__qty">5 classes</span>
+      <span class="pl-pack__price">$200.00</span>
+    </span>
+  </span>
+  <span class="pl-pack__footer">Expires 6 months after first use.
+Eligible at ID Hot Yoga - Chelsea.
+Valid for all classes.</span>
+</button>
+```
+
+Title is `bodyMedium semiBold`, qty is `bodySmall regular` / `text/secondary`,
+price is `buttonLabelSmall semibold`. The badge is `label/md/semibold` on
+`surface/variant/green` with `text/status/green` — `Radius/Semantic/sm`,
+`space/xxs` × `space/xs` padding. Footer is `captionSecondary`. Figma binds
+padding-x to `inline/md` (not in the export; renders 16, same as
+`card/padding-md`). The Selected Pack footer is a bulleted list in Figma;
+Default is stacked lines — that's text-formatting drift, so the CSS follows
+Default.
 
 **`.pl-review-card`** (`1306:5340`) — avatar, name, star rating and date over a title
 and the review body:
@@ -426,9 +466,10 @@ weighted heavier, so `#pl-calendar-small` (20px frame) reads bolder than
 | Rating | `#pl-star-fill` `#pl-star-half` `#pl-star-outline` |
 | Tab bar | `#pl-tab-home` `#pl-tab-search` `#pl-tab-bookings` `#pl-tab-profile` (25px) |
 
-`#pl-map-pin` is a vector marker like the stars — its red/white colours are baked
-in, so it ignores `currentColor`. Used in `.pl-map-card__pin` (the Location card
-in venue/class detail).
+`#pl-map-pin` is the exact `assets/Map card pin.svg` export (49×52) — red/white
+colours and drop-shadow filter baked in, so it ignores `currentColor`. Used in
+`.pl-map-card__pin` (the Location card in venue/class detail). Do not redraw
+or re-trace it.
 
 Sizes default to `icon/md` (20px); `--xs` `--sm` `--lg` map to the other `Icon/*`
 tokens. Dropped into any component slot (`.pl-btn__icon`, `.pl-icon-btn`,
@@ -440,8 +481,8 @@ they sit in and invert correctly in dark mode. The three stars and `#pl-map-pin`
 paint fixed colours instead: the stars are the exact SVGs exported for iOS
 (full/half/empty), with `#FFB54D` / `#B3B5BC` baked in as literal hex — not
 `currentColor` and not a design token — so they don't invert in dark mode.
-`map-pin` paints `icon/red` plus a literal white for the same reason (a map
-marker shouldn't invert either).
+`map-pin` is the exact `assets/Map card pin.svg` export (`#E10E0E` + white)
+for the same reason — a map marker shouldn't invert either.
 
 **Why a JS-injected sprite** rather than `icons.svg` + `<use href="icons.svg#id">`:
 external `<use>` is blocked on `file://` in Chrome, and these prototypes get opened
@@ -459,10 +500,8 @@ directly as often as they get served.
    `star-outline.svg` are exact copies of the iOS star SVG exports — do not
    redraw, re-trace, or edit their path data or fills. If the source artwork
    changes, replace the file wholesale with the new export. `map-pin.svg` is
-   vector-traced from the original raster export (potrace, by colour region)
-   and paints fixed colours (`var(--pl-icon-red)`, literal `#fff`) directly
-   instead of `currentColor` — edit its path data in place rather than
-   re-exporting a raster.
+   the same: an exact copy of `assets/Map card pin.svg`. Do not redraw,
+   re-trace, or edit its path data.
 3. Add the name to `GROUPS` in `build-icons.mjs` — anything unlisted still ships, it
    just lands in an "Other" group.
 4. `node design-system/build-icons.mjs`
