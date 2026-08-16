@@ -5,13 +5,14 @@
    icon components on the "Icons WIP" page of the Playlist Design System Figma
    file, then normalised so every painted colour is `currentColor` — an icon
    takes the colour of whatever it sits in. A couple icons are two-tone by
-   design and paint fixed colours instead of `currentColor`: map-pin paints
-   icon/red plus a literal white (a map marker shouldn't invert in dark mode).
-   The three stars (star-fill/star-half/star-outline) are an exception to the
-   whole pipeline — they are exact, unmodified copies of the iOS star SVG
-   exports (baked-in `#FFB54D` / `#B3B5BC` hex, not `currentColor`, not a
-   design token). Do not redraw, re-trace, or hand-edit their path data; if
-   the source artwork changes, replace the file wholesale with the new export.
+   design and paint fixed colours instead of `currentColor`.
+
+   Exact-export exceptions — do not redraw, re-trace, or hand-edit path data;
+   if the source artwork changes, replace the file wholesale with the new export:
+   - star-fill / star-half / star-outline: iOS star SVGs (`#FFB54D` / `#B3B5BC`)
+   - map-pin: exact copy of `assets/Map card pin.svg` (49×52, baked red/white
+     plus its drop-shadow filter). IDs are kept so the filter url(#…) still
+     resolves. A map marker shouldn't invert in dark mode.
 
    icons.js injects an inline <symbol> sprite rather than shipping the files as
    external references, because `<use href="file.svg#id">` is blocked on
@@ -57,10 +58,12 @@ const symbols = groups.flatMap((g) => g.names).map((name) => {
   const raw = readFileSync(join(DIR, `${name}.svg`), 'utf8');
   const viewBox = (raw.match(/viewBox="([^"]+)"/) || [])[1];
   if (!viewBox) throw new Error(`${name}.svg has no viewBox`);
-  const body = raw
+  /* map-pin's drop shadow is `filter="url(#filter0_d_…)"` — stripping ids
+     would break the reference. Other icons have no internal id refs. */
+  const stripped = name === 'map-pin' ? raw : raw.replace(/ id="[^"]*"/g, '');
+  const body = stripped
     .replace(/^[\s\S]*?<svg[^>]*>/, '')
     .replace(/<\/svg>\s*$/, '')
-    .replace(/ id="[^"]*"/g, '')
     .replace(/\s*\n\s*/g, '')
     .trim();
   return `<symbol id="pl-${name}" viewBox="${viewBox}">${body}</symbol>`;
