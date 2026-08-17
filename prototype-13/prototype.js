@@ -3343,7 +3343,7 @@
             cls.strikePrice = '$35';
             cls.finalPrice = '$25';
           } else {
-            cls.plainPrice = '$25';
+            cls.plainPrice = '$35';
           }
           if (typeof window.__openClassDetail === 'function') window.__openClassDetail(cls);
         });
@@ -3398,7 +3398,7 @@
             cls.strikePrice = '$35';
             cls.finalPrice = '$25';
           } else {
-            cls.plainPrice = '$25';
+            cls.plainPrice = '$35';
           }
           if (typeof window.__openClassDetail === 'function') window.__openClassDetail(cls);
         });
@@ -3624,14 +3624,12 @@
       'Jordan T.', 'Kai N.', 'Emma R.', 'David C.', 'Nina L.'
     ];
     var DURATIONS = [45, 50, 60, 75];
-    var PRICES = [20, 25, 28, 30, 32, 35, 38, 40];
+    var VENUE_DROPIN_PRICE = '$35';
 
     function generateClasses() {
       var classes = [];
-      // One venue-wide price for all non-intro classes so a user doesn't see
-      // different prices for the same class at the same venue. Intro venues
+      // One venue-wide drop-in price for all non-intro classes. Intro venues
       // override this with the $25/$35 pair on each card below.
-      var venuePrice = PRICES[Math.floor(Math.random() * PRICES.length)];
       // One venue-wide class duration so the start times can be spaced in a way
       // that respects how long each class actually runs (no overlapping slots).
       var venueDuration = DURATIONS[Math.floor(Math.random() * DURATIONS.length)];
@@ -3712,7 +3710,7 @@
           cls.strikePrice = '$35';
           cls.finalPrice = '$25';
         } else {
-          cls.plainPrice = '$' + venuePrice;
+          cls.plainPrice = VENUE_DROPIN_PRICE;
         }
         classes.push(cls);
       }
@@ -4226,7 +4224,7 @@
               duration: dur,
               instructor: c.instructor,
               // Price: prefer the intro-offer final price, else the plain price.
-              price: c.finalPrice || c.plainPrice || '$25',
+              price: c.finalPrice || c.plainPrice || '$35',
               strikePrice: c.strikePrice || null
             };
           }
@@ -4637,7 +4635,7 @@
           priceEl.innerHTML = '<span class="cd-booking-price-final">' + cdFormatPrice(cls.finalPrice) + '</span>'
             + '<span class="cd-booking-price-strike">' + cdFormatPrice(cls.strikePrice) + '</span>';
         } else {
-          priceEl.innerHTML = '<span class="cd-booking-price-plain">' + cdFormatPrice(cls.plainPrice || '$25') + '</span>';
+          priceEl.innerHTML = '<span class="cd-booking-price-plain">' + cdFormatPrice(cls.plainPrice || '$35') + '</span>';
         }
       }
       // Reset all scroll positions so the modal always opens fresh
@@ -4803,14 +4801,21 @@
       return 'Expires ' + month + ' ' + d.getDate() + ', ' + d.getFullYear();
     }
 
+    function cdCurrentVenueHasIntroOffer() {
+      return typeof hasVenueIntroOffer === 'function' && hasVenueIntroOffer(window.__currentVenuePin);
+    }
+
     function cdBuildCheckoutOptionsCatalog(venueName) {
       var venue = venueName || 'ID Hot Yoga - Chelsea';
-      var trialPriceEl = document.querySelector('.cd-booking-price-final');
       var plainPriceEl = document.querySelector('.cd-booking-price-plain');
-      var trialPrice = trialPriceEl ? trialPriceEl.textContent.trim() : '$20.00';
-      var dropinPrice = plainPriceEl ? plainPriceEl.textContent.trim() : '$40.00';
-      return [
-        { id: 'trial', section: 'dropins', type: 'dropin', title: 'New Member Trial Class', qty: '1 class', price: trialPrice },
+      var strikePriceEl = document.querySelector('.cd-booking-price-strike');
+      var dropinPrice = plainPriceEl ? plainPriceEl.textContent.trim()
+        : (strikePriceEl ? strikePriceEl.textContent.trim() : '$35.00');
+      var options = [];
+      if (cdCurrentVenueHasIntroOffer()) {
+        options.push({ id: 'trial', section: 'dropins', type: 'dropin', title: 'New Member Trial Class', qty: '1 class', price: '$25.00' });
+      }
+      options.push(
         { id: 'dropin', section: 'dropins', type: 'dropin', title: 'Drop-in Class (inc. Mat + Towel)', qty: '1 class', price: dropinPrice },
         { id: 'pack5', section: 'packs', type: 'pack', badge: '$40 / class', title: '5 class card (mat + towel included)', qty: '5 classes', price: '$200.00', classes: 5, expiryMonths: 6,
           footerLines: ['Expires 6 months after first use.', 'Eligible at ' + venue + '.', 'Valid for all classes.'] },
@@ -4818,7 +4823,8 @@
           footerLines: ['Expires 12 months after first use.', 'Eligible at ' + venue + '.', 'Valid for all classes.'] },
         { id: 'pack20', section: 'packs', type: 'pack', badge: '$27.25 / class', title: '20 class card (mat + towel included)', qty: '20 classes', price: '$545.00', classes: 20, expiryMonths: 12,
           footerLines: ['Expires 12 months after first use.', 'Eligible at ' + venue + '.', 'Valid for all classes.'] }
-      ];
+      );
+      return options;
     }
 
     function cdGetCheckoutOptionById(id) {
@@ -4829,7 +4835,12 @@
     }
 
     function cdDefaultCheckoutOptionId() {
-      return document.querySelector('.cd-booking-price-final') ? 'trial' : 'dropin';
+      return cdCurrentVenueHasIntroOffer() ? 'trial' : 'dropin';
+    }
+
+    function cdEnsureValidCheckoutOptionId(id) {
+      if (id && cdGetCheckoutOptionById(id)) return id;
+      return cdDefaultCheckoutOptionId();
     }
 
     function cdRenderOptionCard(opt) {
@@ -4946,7 +4957,7 @@
       if (!cdCheckoutOpen || cdCheckoutSheet.classList.contains('is-cancel-mode')) return;
       var venueText = document.getElementById('cd-venue-text');
       cdCheckoutOptionsCatalog = cdBuildCheckoutOptionsCatalog(venueText ? venueText.textContent : '');
-      if (!cdCheckoutSelectedId) cdCheckoutSelectedId = cdDefaultCheckoutOptionId();
+      cdCheckoutSelectedId = cdEnsureValidCheckoutOptionId(cdCheckoutSelectedId);
       cdCheckoutPendingId = cdCheckoutSelectedId;
       cdRenderCheckoutOptionsLists();
       cdSyncOptionsDoneVisibility();
@@ -5172,7 +5183,7 @@
       document.getElementById('cd-checkout-instructor').textContent = instructor;
       document.getElementById('cd-checkout-venue').textContent = venueStr;
       cdCheckoutOptionsCatalog = cdBuildCheckoutOptionsCatalog(venueStr);
-      if (!cdCheckoutSelectedId) cdCheckoutSelectedId = cdDefaultCheckoutOptionId();
+      cdCheckoutSelectedId = cdEnsureValidCheckoutOptionId(cdCheckoutSelectedId);
       cdApplyCheckoutOptionToCard();
       var cancelTitleEl = document.getElementById('cd-cancel-class-title');
       var cancelTimeEl = document.getElementById('cd-cancel-time');
