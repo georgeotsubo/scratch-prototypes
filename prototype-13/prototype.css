@@ -2924,12 +2924,16 @@
   .cd-checkout-sheet .cd-checkout-header,
   .cd-checkout-sheet .cd-checkout-pane-stack {
     opacity: 0;
-    transition: opacity 0.22s ease;
+    transition:
+      opacity 0.28s cubic-bezier(0.32, 0.72, 0, 1),
+      transform 0.36s cubic-bezier(0.32, 0.72, 0, 1);
   }
   .cd-checkout-sheet.is-open .cd-checkout-header,
   .cd-checkout-sheet.is-open .cd-checkout-pane-stack {
     opacity: 1;
-    transition: opacity 0.22s ease 0.18s;
+    transition:
+      opacity 0.28s cubic-bezier(0.32, 0.72, 0, 1) 0.18s,
+      transform 0.36s cubic-bezier(0.32, 0.72, 0, 1) 0.18s;
   }
   .cd-checkout-header {
     position: relative;
@@ -3062,56 +3066,126 @@
     /* Cancel mode has no footer dock — reserve space for the CTA only. */
     padding-bottom: 72px;
   }
-  .cd-checkout-sheet.is-success .cd-checkout-pane--main .cd-checkout-body,
-  .cd-checkout-sheet.is-success .cd-checkout-pane--main .cd-checkout-footer {
+  /* Success — crossfade checkout chrome into design-system .pl-success-modal. */
+  .cd-checkout-sheet.is-open .cd-checkout-cta {
+    transition:
+      left 0.44s cubic-bezier(.32,.72,0,1),
+      right 0.44s cubic-bezier(.32,.72,0,1),
+      transform 0.12s cubic-bezier(.25,.46,.45,.94),
+      background-color 0.22s ease,
+      color 0.22s ease,
+      opacity 0.24s ease,
+      visibility 0s linear 0.24s;
+  }
+  .cd-checkout-sheet.is-success .cd-checkout-header,
+  .cd-checkout-sheet.is-success .cd-checkout-pane-stack,
+  .cd-checkout-sheet.is-success .cd-checkout-cta {
+    position: absolute;
+    left: 0;
+    right: 0;
     opacity: 0;
     pointer-events: none;
+    transition:
+      opacity 0.28s cubic-bezier(0.32, 0.72, 0, 1),
+      transform 0.36s cubic-bezier(0.32, 0.72, 0, 1);
   }
-  /* Success-state content: 176×176 phone image stacked above the
-     "You're all set!" caption. Positioned absolutely between the header
-     (top: sheet padding 24 + header 44 + gap 16 = 84) and the CTA
-     (bottom: cta-bottom 32 + cta-height 48 + gap 16 = 96). Hidden by
-     default; fades + scales in AFTER the body has finished fading out
-     (180ms delay) so the two don't visually overlap mid-transition. */
-  .cd-checkout-success {
+  .cd-checkout-sheet.is-success .cd-checkout-header {
+    top: 0;
+    z-index: 4;
+    transform: translateY(-10px);
+  }
+  .cd-checkout-sheet.is-success .cd-checkout-pane-stack {
+    top: 0;
+    bottom: 0;
+    z-index: 3;
+    background: var(--pl-surface-default);
+    transform: translateY(-10px);
+  }
+  .cd-checkout-sheet.is-success .cd-checkout-cta {
+    bottom: 16px;
+    z-index: 5;
+    visibility: hidden;
+  }
+  .cd-checkout-success-modal {
     position: absolute;
-    left: 24px;
-    right: 24px;
-    top: 84px;
-    bottom: 96px;
+    left: 0;
+    right: 0;
+    z-index: 1;
     display: flex;
     flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 20px;
-    transform: scale(0.6);
+    flex: none;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transform: translateY(16px);
+    background: var(--pl-surface-default);
+    border-radius: var(--pl-radius-semantic-xl) var(--pl-radius-semantic-xl) 0 0;
+    overflow: hidden;
+    transition:
+      opacity 0.38s cubic-bezier(0.22, 1, 0.36, 1),
+      transform 0.44s cubic-bezier(0.32, 0.72, 0, 1),
+      visibility 0s linear 0.38s;
+  }
+  .cd-checkout-sheet.is-success .cd-checkout-success-modal {
+    position: relative;
+    inset: auto;
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    transform: translateY(0);
+    transition:
+      opacity 0.38s cubic-bezier(0.22, 1, 0.36, 1) 0.1s,
+      transform 0.44s cubic-bezier(0.32, 0.72, 0, 1) 0.1s,
+      visibility 0s linear 0s;
+  }
+  .cd-checkout-success-modal .pl-success-modal__header {
+    opacity: 0;
+    transition: opacity 0.28s ease 0.08s;
+  }
+  .cd-checkout-success-modal .pl-success-modal__content,
+  .cd-checkout-success-modal .pl-success-modal__footer {
+    opacity: 0;
+    transform: translateY(10px);
+    transition:
+      opacity 0.32s cubic-bezier(0.22, 1, 0.36, 1) 0.14s,
+      transform 0.38s cubic-bezier(0.32, 0.72, 0, 1) 0.14s;
+  }
+  .cd-checkout-success-modal .pl-success-modal__footer {
+    transition-delay: 0.2s, 0.2s;
+  }
+  .cd-checkout-sheet.is-success .cd-checkout-success-modal .pl-success-modal__header,
+  .cd-checkout-sheet.is-success .cd-checkout-success-modal .pl-success-modal__content,
+  .cd-checkout-sheet.is-success .cd-checkout-success-modal .pl-success-modal__footer {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  .cd-checkout-success-modal .pl-success-modal__check {
+    transform: scale(0.88);
+    transition: transform 0.45s cubic-bezier(0.22, 1, 0.36, 1) 0.22s;
+  }
+  .cd-checkout-sheet.is-success .cd-checkout-success-modal .pl-success-modal__check {
+    transform: scale(1);
+  }
+  .cd-checkout-sheet.is-collapsing .cd-checkout-success-modal {
     opacity: 0;
     pointer-events: none;
-    transition: opacity 0.25s ease, transform 0.25s ease;
-  }
-  .cd-checkout-sheet.is-success .cd-checkout-success {
-    opacity: 1;
-    transform: scale(1);
     transition:
-      opacity 0.25s ease 0.18s,
-      transform 0.4s cubic-bezier(0.22, 1, 0.36, 1) 0.18s;
+      opacity 0.22s ease,
+      transform 0.28s cubic-bezier(0.32, 0.72, 0, 1);
   }
-  .cd-checkout-success-image {
-    width: 80px;
-    height: 80px;
-    object-fit: contain;
-    display: block;
-    user-select: none;
-    -webkit-user-drag: none;
-  }
-  .cd-checkout-success-caption {
-    margin: 0;
-    font-family: var(--pl-title-lg-bold-font);
-    font-size: var(--pl-title-lg-bold-size);
-    font-weight: var(--pl-title-lg-bold-weight);
-    line-height: var(--pl-title-lg-bold-lineheight);
-    color: var(--pl-text-primary);
-    text-align: center;
+  @media (prefers-reduced-motion: reduce) {
+    .cd-checkout-sheet.is-open .cd-checkout-header,
+    .cd-checkout-sheet.is-open .cd-checkout-pane-stack,
+    .cd-checkout-sheet.is-success .cd-checkout-header,
+    .cd-checkout-sheet.is-success .cd-checkout-pane-stack,
+    .cd-checkout-success-modal,
+    .cd-checkout-success-modal .pl-success-modal__header,
+    .cd-checkout-success-modal .pl-success-modal__content,
+    .cd-checkout-success-modal .pl-success-modal__footer,
+    .cd-checkout-success-modal .pl-success-modal__check {
+      transition: none !important;
+      transform: none !important;
+    }
   }
   /* Section headings (Payment, Cancellation Policy) + content blocks. */
   .cd-checkout-section {
@@ -3308,20 +3382,6 @@
       background-color 0.22s ease,
       color 0.22s ease;
   }
-  /* Success-state CTA: gray neutral background, dark text, with the
-     calendar icon revealed left of the "Add" label. Right edge pulls
-     in to the midpoint so the Share button sits beside it. */
-  /* Success flips the CTA to PLButton Neutral by re-pointing the
-     component's own custom properties. */
-  .cd-checkout-sheet.is-success .cd-checkout-cta {
-    --btn-bg: var(--pl-button-neutral-bg-default);
-    --btn-fg: var(--pl-button-neutral-fg-default);
-    right: calc(50% + 6px);
-  }
-  .cd-checkout-sheet.is-success .cd-checkout-cta:active {
-    --btn-bg: var(--pl-button-neutral-bg-pressed);
-    transform: scale(0.96);
-  }
   /* Reserved morph: when closing from the success state, the sheet's CTA
      morphs to the black Cancel state that the booking bar underneath
      shows, so the final frame of the close matches the bar's CTA exactly
@@ -3364,6 +3424,12 @@
     gap: 24px;
     padding: 16px 20px 24px;
     box-sizing: border-box;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .cd-checkout-options-scroll::-webkit-scrollbar {
+    display: none;
   }
   .cd-checkout-sheet.is-options-open .cd-checkout-options-scroll {
     /* Reserve space for the fixed Done CTA (48px) + bottom inset (24px)
@@ -3416,44 +3482,6 @@
   .cd-checkout-cta:focus,
   .cd-checkout-cta:focus-visible {
     outline: none;
-  }
-  /* Share button: hidden by default, fades in on success state. Mirrors
-     the Add CTA's typography + pill shape so the row reads as a paired set. */
-  .cd-checkout-share {
-    position: absolute;
-    left: calc(50% + 6px);
-    right: 20px;
-    bottom: 32px;
-    /* Paired with the success-state Add CTA, so it takes the same Neutral
-       skin rather than Neutral Solid's white. */
-    --btn-bg: var(--pl-button-neutral-bg-default);
-    --btn-fg: var(--pl-button-neutral-fg-default);
-    outline: none;
-    display: flex;
-    opacity: 0;
-    pointer-events: none;
-    transition:
-      opacity 0.25s ease,
-      transform 0.12s cubic-bezier(.25,.46,.45,.94),
-      background-color 0.22s ease;
-  }
-  .cd-checkout-sheet.is-success .cd-checkout-share {
-    opacity: 1;
-    pointer-events: auto;
-  }
-  .cd-checkout-share:active {
-    --btn-bg: var(--pl-button-neutral-bg-pressed);
-    transform: scale(0.96);
-  }
-  .cd-checkout-share:focus,
-  .cd-checkout-share:focus-visible {
-    outline: none;
-  }
-  .cd-share-icon {
-    width: 24px;
-    height: 24px;
-    flex-shrink: 0;
-    pointer-events: none;
   }
   /* Loading state: hide the label and reveal a centered iOS-style spinner.
      The button keeps its position/size so only the inner content changes. */

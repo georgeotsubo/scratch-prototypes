@@ -13,13 +13,12 @@
      prototype.css so local rules can still override a component. -->
 <link rel="stylesheet" href="../design-system/tokens.css">
 <link rel="stylesheet" href="../design-system/typography.css">
-<link rel="stylesheet" href="../design-system/components.css?v=20260816payment2">
+<link rel="stylesheet" href="../design-system/components.css?v=20260817promo">
 <!-- Injects the icon sprite, so `<svg class="pl-icon"><use href="#pl-back">` works.
      Deferred is wrong here: prototype.js builds icon markup as strings at load. -->
 <script src="../design-system/icons.js?v=20260816chevrons"></script>
-<link rel="stylesheet" href="prototype.css?v=20260815c">
+<link rel="stylesheet" href="prototype.css?v=20260817scroll">
 <script src="https://cdn.jsdelivr.net/npm/motion@11.18.2/dist/motion.js"></script>
-<script src="https://unpkg.com/@dotlottie/player-component@2.7.12/dist/dotlottie-player.js"></script>
 <script src="config.js"></script>
 </head>
 <body>
@@ -839,7 +838,6 @@
         <button type="button" class="pl-checkout-card__promo" id="cd-checkout-promo">
           <span class="pl-checkout-card__promo-icon" aria-hidden="true"><svg class="pl-icon"><use href="#pl-tag"></use></svg></span>
           <span class="pl-checkout-card__promo-text">Explore packs and memberships</span>
-          <span class="pl-checkout-card__promo-chevron" aria-hidden="true"><svg class="pl-icon"><use href="#pl-right-chevron"></use></svg></span>
         </button>
       </div>
       <div class="cd-checkout-section cd-checkout-mode-checkout">
@@ -935,16 +933,57 @@
         <button type="button" class="pl-btn pl-btn--md pl-btn--primary pl-btn--pill cd-checkout-options-done" id="cd-checkout-options-done" hidden>Done</button>
       </div>
     </div>
-    <!-- Confirmation success state: 176×176 phone video (autoplay, muted)
-         above the "You're all set!" caption. Fades + scales in once
-         .is-success lands on the sheet. -->
-    <div class="cd-checkout-success" id="cd-checkout-success" aria-hidden="true">
-      <dotlottie-player class="cd-checkout-success-image" id="cd-checkout-success-video" src="../images/checkmark.lottie" style="width:80px;height:80px;"></dotlottie-player>
-      <p class="cd-checkout-success-caption">You&rsquo;re all set!</p>
+    <!-- Booking confirmed — design-system .pl-success-modal (12745:182045). -->
+    <div class="pl-success-modal cd-checkout-success-modal" id="cd-checkout-success" aria-hidden="true">
+      <header class="pl-success-modal__header">
+        <div class="pl-success-modal__toolbar">
+          <span class="pl-success-modal__leading" aria-hidden="true"></span>
+          <h2 class="pl-success-modal__nav-title pl-body-medium-semibold">Booking confirmed</h2>
+          <button type="button" class="pl-icon-btn pl-icon-btn--md pl-icon-btn--raised pl-success-modal__close" id="cd-checkout-success-close" aria-label="Close">
+            <svg class="pl-icon" aria-hidden="true"><use href="#pl-close"></use></svg>
+          </button>
+        </div>
+      </header>
+      <div class="pl-success-modal__body">
+        <div class="pl-success-modal__content">
+          <div class="pl-success-modal__hero">
+            <img class="pl-success-modal__check" src="../design-system/assets/check_success.svg" alt="" width="40" height="40">
+            <div class="pl-success-modal__headline">
+              <p class="pl-success-modal__headline-title pl-section-header">You&rsquo;re booked!</p>
+              <p class="pl-success-modal__subtitle pl-button-label-small-medium" id="cd-success-class-title">Reformer Vitality</p>
+            </div>
+          </div>
+          <div class="pl-success-modal__details-wrap">
+            <div class="pl-success-modal__details">
+              <div class="pl-success-modal__detail-row">
+                <span class="pl-success-modal__detail-icon" aria-hidden="true"><svg class="pl-icon"><use href="#pl-calendar-small"></use></svg></span>
+                <span class="pl-success-modal__detail-text pl-body-small-regular" id="cd-success-time">Tue, Mar 1 · 2:00 PM</span>
+              </div>
+              <div class="pl-success-modal__detail-row">
+                <span class="pl-success-modal__detail-icon" aria-hidden="true"><svg class="pl-icon"><use href="#pl-person-small"></use></svg></span>
+                <span class="pl-success-modal__detail-text pl-body-small-regular" id="cd-success-instructor">Regina N.</span>
+              </div>
+              <div class="pl-success-modal__detail-row">
+                <span class="pl-success-modal__detail-icon" aria-hidden="true"><svg class="pl-icon"><use href="#pl-location-pin-small"></use></svg></span>
+                <span class="pl-success-modal__detail-text pl-body-small-regular" id="cd-success-venue">KIN Kollective - Nomad</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <footer class="pl-success-modal__footer">
+        <div class="pl-success-modal__actions">
+          <button type="button" class="pl-btn pl-btn--md pl-btn--neutral pl-btn--pill" id="cd-checkout-success-add">
+            <span class="pl-btn__icon" aria-hidden="true"><svg class="pl-icon"><use href="#pl-calendar-small"></use></svg></span>
+            Add
+          </button>
+          <button type="button" class="pl-btn pl-btn--md pl-btn--neutral pl-btn--pill" id="cd-checkout-share" aria-label="Share">
+            <span class="pl-btn__icon" aria-hidden="true"><svg class="pl-icon"><use href="#pl-share"></use></svg></span>
+            Share
+          </button>
+        </div>
+      </footer>
     </div>
-    <!-- Share button: only revealed in success state, sits in the right
-         half of the row alongside the shrunk "Add" CTA. -->
-    <button class="pl-btn pl-btn--md pl-btn--neutral-solid pl-btn--pill cd-checkout-share" id="cd-checkout-share" type="button" aria-label="Share"><svg class="cd-share-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M4 13V17C4 18.1046 4.89543 19 6 19H18C19.1046 19 20 18.1046 20 17V13" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M12 6L12 14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M8 8L11.6464 4.35355C11.8417 4.15829 12.1583 4.15829 12.3536 4.35355L16 8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><span class="cd-share-label">Share</span></button>
     <!-- Compact summary that mirrors the booking bar's left content. Hidden
          while the sheet is open; fades in during the close so the sheet's
          end-of-morph state visually matches the booking bar instead of
@@ -1005,6 +1044,6 @@
   </div>
 </div>
 
-<script src="prototype.js?v=20260815a"></script>
+<script src="prototype.js?v=20260817success3"></script>
 </body>
 </html>

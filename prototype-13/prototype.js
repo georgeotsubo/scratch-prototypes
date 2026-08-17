@@ -2880,6 +2880,7 @@
     if (!pin) return;
     window.__currentVenuePin = pin;
     window.__currentVenueIndex = index;
+    window.__currentVenueHasIntroOffer = hasVenueIntroOffer(pin);
     // Re-render the Schedule tab so prices reflect this venue's intro-offer flag
     if (window.__renderVdSchedule) window.__renderVdSchedule();
     // Render the Overview's "Available today" list from the same generated
@@ -4762,11 +4763,11 @@
     var cdCheckoutCtaLabel = cdCheckoutCta && cdCheckoutCta.querySelector('.cd-cta-label');
     var cdCheckoutOpen = false;
     // Tapping "Book and Pay" (sheet open) shows a spinner for 2s, then
-    // transitions to the success state: body fades out, success video
-    // plays in the center, CTA label swaps to "You're all set". No real
-    // booking call — pure prototype timing.
+    // transitions to the design-system success modal. No real booking call.
     var cdCheckoutSuccessTimer = null;
-    var cdCheckoutSuccessVideo = document.getElementById('cd-checkout-success-video');
+    var cdCheckoutSuccessEl = document.getElementById('cd-checkout-success');
+    var cdCheckoutSuccessCloseBtn = document.getElementById('cd-checkout-success-close');
+    var cdCheckoutSuccessAddBtn = document.getElementById('cd-checkout-success-add');
     var cdCancelConfirmTimer = null;
     var cdCancelToastTimer = null;
     var cdCancelToastEl = document.getElementById('cd-cancel-toast');
@@ -4801,8 +4802,15 @@
       return 'Expires ' + month + ' ' + d.getDate() + ', ' + d.getFullYear();
     }
 
+    function cdRefreshVenueIntroOfferFlag() {
+      window.__currentVenueHasIntroOffer = !!(window.__hasVenueIntroOffer
+        && window.__currentVenuePin
+        && window.__hasVenueIntroOffer(window.__currentVenuePin));
+    }
+
     function cdCurrentVenueHasIntroOffer() {
-      return typeof hasVenueIntroOffer === 'function' && hasVenueIntroOffer(window.__currentVenuePin);
+      cdRefreshVenueIntroOfferFlag();
+      return !!window.__currentVenueHasIntroOffer;
     }
 
     function cdBuildCheckoutOptionsCatalog(venueName) {
@@ -4923,6 +4931,21 @@
       if (refundEl) refundEl.textContent = priceText;
     }
 
+    function cdPopulateSuccessModal() {
+      var classTitleEl = document.getElementById('cd-checkout-class-title');
+      var timeEl = document.getElementById('cd-checkout-time');
+      var instructorEl = document.getElementById('cd-checkout-instructor');
+      var venueEl = document.getElementById('cd-checkout-venue');
+      var successClassEl = document.getElementById('cd-success-class-title');
+      var successTimeEl = document.getElementById('cd-success-time');
+      var successInstructorEl = document.getElementById('cd-success-instructor');
+      var successVenueEl = document.getElementById('cd-success-venue');
+      if (successClassEl && classTitleEl) successClassEl.textContent = classTitleEl.textContent;
+      if (successTimeEl && timeEl) successTimeEl.textContent = timeEl.textContent;
+      if (successInstructorEl && instructorEl) successInstructorEl.textContent = instructorEl.textContent;
+      if (successVenueEl && venueEl) successVenueEl.textContent = venueEl.textContent;
+    }
+
     function cdRemeasureCheckoutHeight() {
       if (!cdCheckoutOpen || !cdCheckoutSheet) return;
       cdCheckoutSheet.style.transition = 'none';
@@ -4934,6 +4957,33 @@
       cdCheckoutSheet.style.height = Math.min(naturalH, maxH) + 'px';
       void cdCheckoutSheet.offsetHeight;
       cdCheckoutSheet.style.transition = '';
+    }
+
+    function cdAnimateCheckoutHeight(startHOverride) {
+      if (!cdCheckoutOpen || !cdCheckoutSheet) return;
+      var startH = startHOverride != null
+        ? startHOverride
+        : cdCheckoutSheet.getBoundingClientRect().height;
+      var viewportH = cdCheckoutSheet.parentElement.getBoundingClientRect().height
+        || window.innerHeight;
+      var maxH = viewportH - 60;
+
+      cdCheckoutSheet.style.height = startH + 'px';
+      cdCheckoutSheet.style.height = 'auto';
+      var targetH = Math.min(cdCheckoutSheet.getBoundingClientRect().height, maxH);
+      cdCheckoutSheet.style.height = startH + 'px';
+      void cdCheckoutSheet.offsetHeight;
+      cdCheckoutSheet.style.height = targetH + 'px';
+    }
+
+    function cdEnterCheckoutSuccess() {
+      cdPopulateSuccessModal();
+      cdCheckoutCta.classList.remove('is-loading');
+      var startH = cdCheckoutSheet.getBoundingClientRect().height;
+      cdCheckoutSheet.style.height = startH + 'px';
+      cdCheckoutSheet.classList.add('is-success');
+      if (cdCheckoutSuccessEl) cdCheckoutSuccessEl.setAttribute('aria-hidden', 'false');
+      cdAnimateCheckoutHeight(startH);
     }
 
     function cdSetOptionsTab(section) {
@@ -5103,12 +5153,6 @@
     if (cdCheckoutCta) {
       cdCheckoutCta.addEventListener('click', function() {
         if (!cdCheckoutOpen) return;
-        // Success-state tap: the Add button is intentionally non-actionable
-        // (visual affordance only — no calendar integration in the prototype).
-        // Tappable for press feedback, but doesn't dismiss the modal.
-        if (cdCheckoutSheet.classList.contains('is-success')) {
-          return;
-        }
         // Cancel-mode tap ("Confirm and cancel"): show the iOS spinner
         // for 2s, then clear the reservation, close the sheet, and pop a
         // confirmation toast that self-dismisses in 2s.
@@ -5128,28 +5172,7 @@
         if (cdCheckoutSuccessTimer) clearTimeout(cdCheckoutSuccessTimer);
         cdCheckoutSuccessTimer = setTimeout(function() {
           if (!cdCheckoutOpen) return;
-          // CTA flips to "Add to calendar" with a calendar leading icon
-          // (CSS reveals .cd-cta-icon-calendar via .is-success on the sheet).
-          if (cdCheckoutCtaLabel) cdCheckoutCtaLabel.textContent = 'Add';
-          // Swap the sheet title to confirm the booking succeeded. The
-          // close handler restores it to "Review and confirm" so the
-          // next open starts clean.
-          var successTitleEl = document.getElementById('cd-checkout-title');
-          if (successTitleEl) successTitleEl.textContent = 'Reservation confirmed';
-          cdCheckoutCta.classList.remove('is-loading');
-          cdCheckoutSheet.classList.add('is-success');
-          // Hug the success content: header + 80px lottie + 20px gap +
-          // caption ≈ 174px content area. Sheet height = 174 + 84 (top
-          // offset of .cd-checkout-success) + 96 (bottom offset) = 354.
-          // The sheet already has `transition: height 0.44s ...` so this
-          // animates alongside the body fade.
-          cdCheckoutSheet.style.height = '354px';
-          // Restart the confirmation lottie each time we enter success state.
-          // dotlottie-player exposes seek() + play() directly on the element.
-          if (cdCheckoutSuccessVideo) {
-            try { cdCheckoutSuccessVideo.seek(0); } catch (e) {}
-            try { cdCheckoutSuccessVideo.play(); } catch (e) {}
-          }
+          cdEnterCheckoutSuccess();
         }, 2000);
       });
     }
@@ -5359,8 +5382,7 @@
       }
       var titleResetEl = document.getElementById('cd-checkout-title');
       if (titleResetEl) titleResetEl.textContent = 'Review and confirm';
-      // Dismissing while in the success state (X, scrim, or "You're
-      // all set" CTA) all mean the reservation is committed — capture
+      // Dismissing while in the success state (close, scrim, etc.) commits
       // the reservation so any close path produces the same outcome.
       // Capture happens BEFORE the CTA label/style is set below so the
       // sheet's CTA can morph directly to the final "Cancel" black state
@@ -5377,6 +5399,7 @@
         if (window.__applyReservedHighlights) window.__applyReservedHighlights();
       }
       cdCheckoutSheet.classList.remove('is-success');
+      if (cdCheckoutSuccessEl) cdCheckoutSuccessEl.setAttribute('aria-hidden', 'true');
       // Morph the sheet's CTA to whatever state the booking bar will show
       // once revealed — black "Cancel" if a reservation now exists for the
       // viewed slot, red "Book" otherwise. The sheet sits at z 36 over the
@@ -5402,12 +5425,6 @@
       if (cdCancelConfirmTimer) {
         clearTimeout(cdCancelConfirmTimer);
         cdCancelConfirmTimer = null;
-      }
-      if (cdCheckoutSuccessVideo) {
-        try {
-          cdCheckoutSuccessVideo.pause();
-          cdCheckoutSuccessVideo.currentTime = 0;
-        } catch (e) {}
       }
       // Wait for the full height transitionend (440ms) before hiding the
       // sheet. The mini-summary fades in mid-close so the user sees a bar-
@@ -5446,6 +5463,12 @@
       openCheckout();
     });
     if (cdCheckoutCloseBtn) cdCheckoutCloseBtn.addEventListener('click', closeCheckout);
+    if (cdCheckoutSuccessCloseBtn) cdCheckoutSuccessCloseBtn.addEventListener('click', closeCheckout);
+    if (cdCheckoutSuccessAddBtn) {
+      cdCheckoutSuccessAddBtn.addEventListener('click', function() {
+        /* Visual affordance only — no calendar integration in the prototype. */
+      });
+    }
     if (cdCheckoutScrim) cdCheckoutScrim.addEventListener('click', closeCheckout);
     // If class detail closes while checkout is open, dismiss checkout too.
     window.__closeCheckoutIfOpen = function() {

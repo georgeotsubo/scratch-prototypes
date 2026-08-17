@@ -461,6 +461,10 @@
   align-items: center;
   gap: var(--pl-space-xs);
   box-sizing: border-box;
+  min-height: calc(
+    var(--pl-label-md-medium-lineheight)
+    + 2 * (var(--pl-input-padding-y) - var(--pl-border-semantic-200))
+  );
   padding: calc(var(--pl-input-padding-y) - var(--pl-border-semantic-200))
            calc(var(--pl-input-padding-x) - var(--pl-border-semantic-200));
   background: var(--pl-surface-subtle);
@@ -490,6 +494,11 @@
 .pl-field__box:focus-within .pl-field__input { font-weight: var(--pl-label-md-semibold-weight); }
 .pl-field__box:focus-within { border-color: var(--pl-border-focus); }
 
+/* Static focused variant for the design-system state matrix (798:1534 / 800:38). */
+.pl-field.is-focused .pl-field__box { border-color: var(--pl-border-focus); }
+.pl-field.is-focused .pl-field__input { font-weight: var(--pl-label-md-semibold-weight); }
+
+.pl-field__clear,
 .pl-field__icon {
   display: inline-flex;
   align-items: center;
@@ -504,9 +513,12 @@
   padding: 0;
   cursor: pointer;
 }
-.pl-field__icon > svg { width: 100%; height: 100%; display: block; fill: currentColor; }
+.pl-field__clear > .pl-icon,
+.pl-field__icon > svg,
+.pl-field__icon > .pl-icon { width: 100%; height: 100%; display: block; fill: currentColor; }
 
 /* Password field is 56 tall because the visibility toggle is 24px. */
+.pl-field--password .pl-field__box { min-height: var(--pl-size-componentsize-56); }
 .pl-field--password .pl-field__icon {
   width: var(--pl-size-componentsize-24);
   height: var(--pl-size-componentsize-24);
@@ -1501,9 +1513,9 @@ button.pl-venue-card { cursor: pointer; -webkit-tap-highlight-color: transparent
 /* --- Checkout card — .pl-checkout-card (2511:10595 · 2510:10502) ------------
 
    Booking checkout summary: class details, selected payment line, and an
-   optional green promo row. Not a .pl-card — display-only shell with the same
-   surface, radius and border. The promo row uses #pl-tag and #pl-right-chevron
-   at 16px (iOS_tag / iOS_right_chevron in Figma).
+   optional green promo row (12880:342437). Not a .pl-card — display-only shell
+   with the same surface, radius and border. The promo row uses #pl-tag at 16px
+   (tag.fill in Figma) — no trailing chevron.
 
    Drop-in (2511:10595): product + qty/price row. Pack (2510:10502): product
    uses label/sm/medium; swap __qty for __details (remaining count + expiry)
@@ -1637,33 +1649,37 @@ button.pl-venue-card { cursor: pointer; -webkit-tap-highlight-color: transparent
 .pl-checkout-card__promo {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: var(--pl-space-xs);
   box-sizing: border-box;
   width: 100%;
   margin: 0;
-  padding: var(--pl-space-sm);
+  padding:
+    var(--pl-space-sm)
+    var(--pl-space-xl)
+    var(--pl-space-sm)
+    var(--pl-space-sm);
   border: 0;
-  border-radius: var(--pl-radius-semantic-md);
+  border-radius: var(--pl-radius-component-button-regular);
   background: var(--pl-surface-variant-green);
   color: var(--pl-text-status-green);
   font: inherit;
-  text-align: left;
+  text-align: center;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
 }
+.pl-checkout-card__promo:active { opacity: 0.85; }
 
-.pl-checkout-card__promo-icon,
-.pl-checkout-card__promo-chevron {
+.pl-checkout-card__promo-icon {
   flex: none;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   width: var(--pl-symbol-size-md);
   height: var(--pl-symbol-size-md);
-  color: inherit;
+  color: var(--pl-text-price-discount);
 }
-.pl-checkout-card__promo-icon > .pl-icon,
-.pl-checkout-card__promo-chevron > .pl-icon {
+.pl-checkout-card__promo-icon > .pl-icon {
   width: 100%;
   height: 100%;
   display: block;
@@ -1677,7 +1693,7 @@ button.pl-venue-card { cursor: pointer; -webkit-tap-highlight-color: transparent
   font-size: var(--pl-label-sm-semibold-size);
   line-height: var(--pl-label-sm-semibold-lineheight);
   font-weight: var(--pl-label-sm-semibold-weight);
-  color: inherit;
+  color: var(--pl-text-status-green);
 }
 
 /* --- Payment section — .pl-payment-section (2511:11765 · 2511:11842) ------
@@ -1839,6 +1855,204 @@ button.pl-venue-card { cursor: pointer; -webkit-tap-highlight-color: transparent
 }
 .pl-payment-section.is-expanded .pl-payment-section__total-chevron {
   transform: rotate(180deg);
+}
+
+/* --- Success modal — .pl-success-modal (12745:182045) ----------------------
+
+   Booking-confirmed bottom sheet: toolbar with close, success hero, booking
+   detail card, and Add / Share actions. Checkmark is assets/check_success.svg
+   (exact export). Row icons are #pl-calendar-small, #pl-person-small, and
+   #pl-location-pin-small from the sprite; footer buttons use
+   #pl-calendar-small and #pl-share. Close is .pl-icon-btn--raised +
+   #pl-close. */
+
+.pl-success-modal {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  box-sizing: border-box;
+  width: 100%;
+  background: var(--pl-surface-default);
+  border-radius:
+    var(--pl-radius-component-modal-sheet)
+    var(--pl-radius-component-modal-sheet)
+    0
+    0;
+  color: var(--pl-text-primary);
+  font-family: var(--pl-type-font-primary);
+  overflow: hidden;
+}
+
+.pl-success-modal__header {
+  box-sizing: border-box;
+  padding:
+    var(--pl-space-md)
+    var(--pl-space-lg)
+    10px;
+}
+
+.pl-success-modal__toolbar {
+  display: grid;
+  grid-template-columns: 44px 1fr 44px;
+  align-items: center;
+  min-height: 44px;
+  width: 100%;
+}
+
+.pl-success-modal__leading {
+  grid-column: 1;
+  grid-row: 1;
+  width: 44px;
+  height: 44px;
+}
+
+.pl-success-modal__nav-title {
+  grid-column: 1 / -1;
+  grid-row: 1;
+  justify-self: center;
+  margin: 0;
+  max-width: calc(100% - 88px);
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pl-success-modal__close {
+  grid-column: 3;
+  grid-row: 1;
+  justify-self: end;
+}
+
+.pl-success-modal__body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  box-sizing: border-box;
+  width: 100%;
+  padding:
+    var(--pl-space-xs)
+    var(--pl-space-lg)
+    var(--pl-space-lg);
+}
+
+.pl-success-modal__content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--pl-space-xxxl);
+  box-sizing: border-box;
+  width: 100%;
+  padding: var(--pl-space-xl) 0;
+}
+
+.pl-success-modal__hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--pl-space-md);
+}
+
+.pl-success-modal__check {
+  flex: none;
+  display: block;
+  width: 40px;
+  height: 40px;
+}
+
+.pl-success-modal__headline {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--pl-space-xxs);
+  text-align: center;
+}
+
+.pl-success-modal__headline-title {
+  margin: 0;
+  color: var(--pl-text-primary);
+}
+
+.pl-success-modal__subtitle {
+  margin: 0;
+  color: var(--pl-text-secondary);
+}
+
+.pl-success-modal__details-wrap {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 0 var(--pl-space-md);
+}
+
+.pl-success-modal__details {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pl-space-sm);
+  box-sizing: border-box;
+  width: 100%;
+  padding:
+    var(--pl-space-md)
+    calc(var(--pl-space-md) - var(--pl-border-semantic-100));
+  background: var(--pl-surface-default);
+  border: var(--pl-border-semantic-100) solid var(--pl-border-default);
+  border-radius: var(--pl-radius-semantic-lg);
+}
+
+.pl-success-modal__detail-row {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--pl-space-xs);
+  width: 100%;
+  min-width: 0;
+  color: var(--pl-text-primary);
+}
+
+.pl-success-modal__detail-row + .pl-success-modal__detail-row {
+  padding-top: calc(var(--pl-space-sm) - var(--pl-border-semantic-100));
+  border-top: var(--pl-border-semantic-100) solid var(--pl-border-default);
+}
+
+.pl-success-modal__detail-icon {
+  flex: none;
+  display: inline-flex;
+  align-items: flex-start;
+  justify-content: center;
+  width: 20px;
+  color: var(--pl-icon-default);
+}
+
+.pl-success-modal__detail-icon > .pl-icon {
+  width: var(--pl-symbol-size-md);
+  height: var(--pl-symbol-size-md);
+}
+
+.pl-success-modal__detail-text {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pl-success-modal__footer {
+  box-sizing: border-box;
+  width: 100%;
+  padding:
+    var(--pl-space-sm)
+    var(--pl-space-lg)
+    var(--pl-space-xl);
+}
+
+.pl-success-modal__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--pl-space-sm);
+  width: 100%;
+}
+
+.pl-success-modal__actions .pl-btn {
+  flex: 1 1 0;
+  min-width: 0;
 }
 
 /* ===========================================================================

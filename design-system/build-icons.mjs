@@ -36,6 +36,7 @@ const GROUPS = [
                        'directions', 'phone', 'globe', 'tag', 'map-pin']],
   ['Booking', ['calendar-small', 'calendar-large', 'stack']],
   ['Rating', ['star-fill', 'star-half', 'star-outline']],
+  ['Auth & form', ['apple-logo', 'eye', 'eye-slash', 'small-info']],
   ['Tab bar', ['tab-home', 'tab-search', 'tab-bookings', 'tab-profile']],
 ];
 
