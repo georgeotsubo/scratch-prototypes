@@ -4771,6 +4771,10 @@
     var cdCancelConfirmTimer = null;
     var cdCancelToastTimer = null;
     var cdCancelToastEl = document.getElementById('cd-cancel-toast');
+    var cdCancelConfirmEl = document.getElementById('cd-cancel-confirm');
+    var cdCancelConfirmCloseBtn = document.getElementById('cd-cancel-confirm-close');
+    var cdCancelConfirmDoneBtn = document.getElementById('cd-cancel-confirm-done');
+    var cdCancelConfirmFindBtn = document.getElementById('cd-cancel-confirm-find');
 
     // Payment section expand/collapse: tapping Total reveals Subtotal +
     // Taxes and rotates the chevron. CSS handles the transition via
@@ -4795,11 +4799,49 @@
     var cdCheckoutPendingId = null;
     var cdCheckoutOptionsCatalog = [];
 
-    function cdFormatPackExpiry(monthsFromNow) {
+    function cdFormatExpiryDate(monthsFromNow) {
       var d = new Date();
       d.setMonth(d.getMonth() + monthsFromNow);
       var month = d.toLocaleDateString('en-US', { month: 'short' });
-      return 'Expires ' + month + ' ' + d.getDate() + ', ' + d.getFullYear();
+      return month + ' ' + d.getDate() + ', ' + d.getFullYear();
+    }
+
+    function cdFormatPackExpiry(monthsFromNow) {
+      return 'Expires ' + cdFormatExpiryDate(monthsFromNow);
+    }
+
+    function cdReservationIsPack(r) {
+      return !!(r && r.optionType === 'pack');
+    }
+
+    function cdFormatReservationVenue(r) {
+      if (!r) return '';
+      if (r.locality && r.venueName) return r.venueName + ' - ' + r.locality;
+      return r.venueName || '';
+    }
+
+    function cdSnapshotPurchase() {
+      var opt = cdGetCheckoutOptionById(cdCheckoutSelectedId);
+      var pin = window.__currentVenuePin;
+      var titleEl = document.getElementById('cd-title');
+      var instructorEl = document.getElementById('cd-booking-instructor');
+      var venueEl = document.getElementById('cd-venue-text');
+      var timeEl = document.getElementById('cd-checkout-time');
+      return {
+        venueKey: pin ? ((pin.name || '') + '|' + (pin.lat || '') + '|' + (pin.lng || '')) : '',
+        classTitle: titleEl ? titleEl.textContent : '',
+        slotTime: cdLastSlot ? cdLastSlot.time : '',
+        absIdx: cdSelectedAbsIdx,
+        instructor: instructorEl ? instructorEl.textContent : '',
+        venueName: venueEl ? venueEl.textContent : ((pin && pin.name) || ''),
+        locality: (pin && pin.locality) || '',
+        checkoutTime: timeEl ? timeEl.textContent : '',
+        optionId: opt ? opt.id : cdDefaultCheckoutOptionId(),
+        optionType: opt ? opt.type : 'dropin',
+        optionTitle: opt ? opt.title : '',
+        classes: opt && opt.classes ? opt.classes : null,
+        expiryMonths: opt && opt.expiryMonths ? opt.expiryMonths : 12
+      };
     }
 
     function cdRefreshVenueIntroOfferFlag() {
@@ -4946,6 +4988,56 @@
       if (successVenueEl && venueEl) successVenueEl.textContent = venueEl.textContent;
     }
 
+    function populateCancelModal() {
+      var r = window.__reservation;
+      var isPack = cdReservationIsPack(r);
+      var modal = document.getElementById('cd-cancel-modal');
+      if (modal) modal.classList.toggle('pl-cancel-modal--pack', isPack);
+      var expiryMonths = (r && r.expiryMonths) || 12;
+      var expiryDate = cdFormatExpiryDate(expiryMonths);
+      var policyEl = document.getElementById('cd-cancel-policy-text');
+      if (policyEl) {
+        policyEl.textContent = isPack
+          ? 'After canceling, you\'ll get a visit returned to your pack, good until ' + expiryDate + '.'
+          : 'After canceling, you\'ll get this visit returned to your balance to rebook, good until ' + expiryDate;
+      }
+      var titleEl = document.getElementById('cd-cancel-class-title');
+      var timeEl = document.getElementById('cd-cancel-time');
+      var instructorEl = document.getElementById('cd-cancel-instructor');
+      var venueEl = document.getElementById('cd-cancel-venue');
+      if (titleEl) titleEl.textContent = r ? r.classTitle : '';
+      if (timeEl) timeEl.textContent = r ? (r.checkoutTime || r.slotTime || '') : '';
+      if (instructorEl) instructorEl.textContent = r ? (r.instructor || '') : '';
+      if (venueEl) {
+        venueEl.textContent = r && r.locality && r.venueName
+          ? r.venueName + ' · ' + r.locality
+          : (r ? (r.venueName || '') : '');
+      }
+    }
+
+    function populateCancelConfirm(r) {
+      var isPack = cdReservationIsPack(r);
+      if (cdCancelConfirmEl) {
+        cdCancelConfirmEl.classList.toggle('pl-cancel-confirm-modal--pack', isPack);
+      }
+      var messageEl = document.getElementById('cd-cancel-confirm-message');
+      if (messageEl) {
+        messageEl.textContent = isPack
+          ? 'Your visit is back in your pack'
+          : '1 visit was returned to your balance';
+      }
+      if (!isPack || !r) return;
+      var classes = r.classes || 10;
+      var badgeEl = document.getElementById('cd-cancel-confirm-pack-badge');
+      var titleEl = document.getElementById('cd-cancel-confirm-pack-title');
+      var expiryEl = document.getElementById('cd-cancel-confirm-pack-expiry');
+      var venueEl = document.getElementById('cd-cancel-confirm-pack-venue');
+      if (badgeEl) badgeEl.textContent = classes + ' of ' + classes + ' visits left';
+      if (titleEl) titleEl.textContent = r.optionTitle || '';
+      if (expiryEl) expiryEl.textContent = cdFormatPackExpiry(r.expiryMonths || 12);
+      if (venueEl) venueEl.textContent = cdFormatReservationVenue(r);
+    }
+
     function cdRemeasureCheckoutHeight() {
       if (!cdCheckoutOpen || !cdCheckoutSheet) return;
       cdCheckoutSheet.style.transition = 'none';
@@ -4984,6 +5076,16 @@
       cdCheckoutSheet.classList.add('is-success');
       if (cdCheckoutSuccessEl) cdCheckoutSuccessEl.setAttribute('aria-hidden', 'false');
       cdAnimateCheckoutHeight(startH);
+    }
+
+    function cdEnterCancelConfirm() {
+      cdCheckoutCta.classList.remove('is-loading');
+      var startH = cdCheckoutSheet.getBoundingClientRect().height;
+      // Keep the cancel-modal height. The confirm UI is an absolute overlay
+      // and must not reflow the sheet or the policy/class card jumps up.
+      cdCheckoutSheet.style.height = startH + 'px';
+      cdCheckoutSheet.classList.add('is-cancel-confirmed');
+      if (cdCancelConfirmEl) cdCancelConfirmEl.setAttribute('aria-hidden', 'false');
     }
 
     function cdSetOptionsTab(section) {
@@ -5153,18 +5255,21 @@
     if (cdCheckoutCta) {
       cdCheckoutCta.addEventListener('click', function() {
         if (!cdCheckoutOpen) return;
-        // Cancel-mode tap ("Confirm and cancel"): show the iOS spinner
-        // for 2s, then clear the reservation, close the sheet, and pop a
-        // confirmation toast that self-dismisses in 2s.
+        // Cancel-mode tap ("Confirm cancellation"): show the iOS spinner
+        // for 2s, then clear the reservation and crossfade to the
+        // pack / drop-in cancel-confirm modal.
         if (cdCheckoutSheet.classList.contains('is-cancel-mode')) {
           cdCheckoutCta.classList.add('is-loading');
           if (cdCancelConfirmTimer) clearTimeout(cdCancelConfirmTimer);
           cdCancelConfirmTimer = setTimeout(function() {
+            var canceled = window.__reservation;
+            populateCancelConfirm(canceled);
             window.__reservation = null;
             if (window.__applyReservedHighlights) window.__applyReservedHighlights();
             if (window.__syncBookingBarCta) window.__syncBookingBarCta();
-            closeCheckout();
-            showCancelToast();
+            cdCancelConfirmTimer = null;
+            if (!cdCheckoutOpen) return;
+            cdEnterCancelConfirm();
           }, 2000);
           return;
         }
@@ -5194,13 +5299,12 @@
       var monthShort = date.toLocaleDateString('en-US', { month: 'short' });
       var dateStr = dayShort + ', ' + monthShort + ' ' + date.getDate();
       var checkoutTime = dateStr + ' · ' + slotTime;
-      var time = checkoutTime + ' ET';
       var titleEl = document.getElementById('cd-title');
       var classTitle = titleEl ? titleEl.textContent : '';
       var venueText = document.getElementById('cd-venue-text');
       var venueStr = venueText ? venueText.textContent : '';
-      // Set both the checkout-mode card copy and the cancel-mode copy so
-      // users see the class context in either flow.
+      // Checkout-mode card copy. Cancel-mode copy is filled from the
+      // reservation in populateCancelModal.
       document.getElementById('cd-checkout-class-title').textContent = classTitle;
       document.getElementById('cd-checkout-time').textContent = checkoutTime;
       document.getElementById('cd-checkout-instructor').textContent = instructor;
@@ -5208,14 +5312,6 @@
       cdCheckoutOptionsCatalog = cdBuildCheckoutOptionsCatalog(venueStr);
       cdCheckoutSelectedId = cdEnsureValidCheckoutOptionId(cdCheckoutSelectedId);
       cdApplyCheckoutOptionToCard();
-      var cancelTitleEl = document.getElementById('cd-cancel-class-title');
-      var cancelTimeEl = document.getElementById('cd-cancel-time');
-      var cancelInstructorEl = document.getElementById('cd-cancel-instructor');
-      var cancelVenueEl = document.getElementById('cd-cancel-venue');
-      if (cancelTitleEl) cancelTitleEl.textContent = classTitle;
-      if (cancelTimeEl) cancelTimeEl.textContent = time;
-      if (cancelInstructorEl) cancelInstructorEl.textContent = instructor;
-      if (cancelVenueEl) cancelVenueEl.textContent = venueStr;
       // "Cancel by <date> at <time> ET" — exactly 12 hours before class
       // start. Computed from the same date/slotTime we populated above so
       // it always stays in sync with the booking.
@@ -5263,11 +5359,18 @@
         clearTimeout(cdCheckoutHideTimer);
         cdCheckoutHideTimer = null;
       }
-      cdCheckoutSheet.classList.remove('is-collapsing');
+      cdCheckoutSheet.classList.remove('is-collapsing', 'is-success', 'is-cancel-confirmed');
+      if (cdCheckoutSuccessEl) cdCheckoutSuccessEl.setAttribute('aria-hidden', 'true');
+      if (cdCancelConfirmEl) cdCancelConfirmEl.setAttribute('aria-hidden', 'true');
       // Reset CTA state from any prior close — the previous closeCheckout
       // may have left the sheet's CTA in the black Cancel state to morph
-      // cleanly into the bar; the next open must start from base red Book.
-      cdCheckoutCta.classList.remove('is-reserved');
+      // cleanly into the bar. Checkout opens as red Book; cancel mode
+      // keeps the inverse pill so it matches Confirm cancellation.
+      if (!cdCheckoutSheet.classList.contains('is-cancel-mode')) {
+        cdCheckoutCta.classList.remove('is-reserved');
+      } else {
+        cdCheckoutCta.classList.add('is-reserved');
+      }
       // Strip any lingering sheet-overlay flag (e.g. from an interrupted
       // close) before re-applying it below.
       cdBookingBar.classList.remove('is-sheet-overlay');
@@ -5307,7 +5410,7 @@
       // reads better than a 200ms-late text swap mid-expansion.
       if (cdCheckoutCtaLabel) {
         cdCheckoutCtaLabel.textContent = cdCheckoutSheet.classList.contains('is-cancel-mode')
-          ? 'Confirm and cancel'
+          ? 'Confirm cancellation'
           : 'Buy and reserve';
       }
       // Add is-open to trigger the coordinated CSS transitions.
@@ -5315,20 +5418,21 @@
       cdCheckoutSheet.style.height = targetH + 'px';
     }
 
-    // Open the same sheet but in cancel-reservation mode — different
-    // title, different body content (refund summary + caption), different
-    // CTA copy. Shares the entire morph + close machinery with openCheckout.
+    // Open the same sheet but in cancel-reservation mode — pack vs
+    // drop-in body from the design-system cancel modal, driven by the
+    // option stored on the reservation. Shares morph + close with openCheckout.
     function openCancelCheckout() {
       if (cdCheckoutOpen) return;
       cdCheckoutSheet.classList.add('is-cancel-mode');
+      populateCancelModal();
       var titleEl = document.getElementById('cd-checkout-title');
-      if (titleEl) titleEl.textContent = 'Cancel reservation?';
+      if (titleEl) titleEl.textContent = 'Cancel reservation';
       // Set the CTA label immediately so the morph from the bar's "Cancel"
       // pill into the full-width modal CTA reads as a single continuous
       // transition. Without this, the 200ms label-swap delay in
-      // openCheckout (intended for the "Book" → "Book and Pay" case)
+      // openCheckout (intended for the "Book" → "Buy and reserve" case)
       // leaves "Cancel" visible until the pill is nearly full width.
-      if (cdCheckoutCtaLabel) cdCheckoutCtaLabel.textContent = 'Confirm and cancel';
+      if (cdCheckoutCtaLabel) cdCheckoutCtaLabel.textContent = 'Confirm cancellation';
       openCheckout();
     }
 
@@ -5372,6 +5476,7 @@
       cdCheckoutSheet.classList.remove('is-options-open', 'is-options-pending');
       if (cdCheckoutOptionsPanel) cdCheckoutOptionsPanel.setAttribute('aria-hidden', 'true');
       if (cdCheckoutOptionsDone) cdCheckoutOptionsDone.hidden = true;
+      var purchased = cdSnapshotPurchase();
       cdCheckoutSelectedId = null;
       cdCheckoutPendingId = null;
       // Collapse the total breakdown so re-opening starts in the collapsed
@@ -5387,19 +5492,15 @@
       // Capture happens BEFORE the CTA label/style is set below so the
       // sheet's CTA can morph directly to the final "Cancel" black state
       // (matching the bar underneath) instead of flashing red Book.
+      // The purchased option (drop-in vs pack, and which pack) is stored
+      // so a later Cancel opens the matching cancel / confirm modals.
       if (cdCheckoutSheet.classList.contains('is-success')) {
-        var resPin = window.__currentVenuePin;
-        var resTitleEl = document.getElementById('cd-title');
-        window.__reservation = {
-          venueKey: resPin ? ((resPin.name || '') + '|' + (resPin.lat || '') + '|' + (resPin.lng || '')) : '',
-          classTitle: resTitleEl ? resTitleEl.textContent : '',
-          slotTime: cdLastSlot ? cdLastSlot.time : '',
-          absIdx: cdSelectedAbsIdx
-        };
+        window.__reservation = purchased;
         if (window.__applyReservedHighlights) window.__applyReservedHighlights();
       }
-      cdCheckoutSheet.classList.remove('is-success');
+      cdCheckoutSheet.classList.remove('is-success', 'is-cancel-confirmed');
       if (cdCheckoutSuccessEl) cdCheckoutSuccessEl.setAttribute('aria-hidden', 'true');
+      if (cdCancelConfirmEl) cdCancelConfirmEl.setAttribute('aria-hidden', 'true');
       // Morph the sheet's CTA to whatever state the booking bar will show
       // once revealed — black "Cancel" if a reservation now exists for the
       // viewed slot, red "Book" otherwise. The sheet sits at z 36 over the
@@ -5455,7 +5556,7 @@
       // If the user is currently viewing the reserved slot, the CTA is
       // showing "Cancel" — open the cancel-reservation sheet so the user
       // can confirm. The actual reservation-clear happens when they tap
-      // "Confirm and cancel" inside the sheet.
+      // "Confirm cancellation" inside the sheet.
       if (currentSlotMatchesReservation()) {
         openCancelCheckout();
         return;
@@ -5464,6 +5565,14 @@
     });
     if (cdCheckoutCloseBtn) cdCheckoutCloseBtn.addEventListener('click', closeCheckout);
     if (cdCheckoutSuccessCloseBtn) cdCheckoutSuccessCloseBtn.addEventListener('click', closeCheckout);
+    if (cdCancelConfirmCloseBtn) cdCancelConfirmCloseBtn.addEventListener('click', closeCheckout);
+    if (cdCancelConfirmDoneBtn) cdCancelConfirmDoneBtn.addEventListener('click', closeCheckout);
+    if (cdCancelConfirmFindBtn) {
+      cdCancelConfirmFindBtn.addEventListener('click', function() {
+        closeClassDetail();
+        if (window.__switchVenueDetailTab) window.__switchVenueDetailTab('schedule');
+      });
+    }
     if (cdCheckoutSuccessAddBtn) {
       cdCheckoutSuccessAddBtn.addEventListener('click', function() {
         /* Visual affordance only — no calendar integration in the prototype. */
