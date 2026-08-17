@@ -9,7 +9,7 @@
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="tokens.css">
 <link rel="stylesheet" href="typography.css">
-<link rel="stylesheet" href="components.css?v=20260816payment2">
+<link rel="stylesheet" href="components.css?v=20260817promo">
 <style>
   * { box-sizing: border-box; }
   html { scroll-behavior: smooth; }
@@ -167,6 +167,11 @@
     background: var(--pl-surface-default);
     text-align: center;
   }
+  .icon-cell + h3,
+  #icon-groups h3 {
+    margin: var(--pl-space-4) 0 var(--pl-space-2);
+  }
+  #icon-groups h3:first-child { margin-top: 0; }
   .icon-cell code { background: none; padding: 0; font-size: 11px; line-height: 1.3;
                     color: var(--pl-text-secondary); overflow-wrap: anywhere; }
 
@@ -180,6 +185,25 @@
   .stage { background: var(--pl-bg-subtle); padding: var(--pl-space-4);
            border-radius: var(--pl-radius-semantic-lg); display: flex; flex-direction: column; gap: var(--pl-space-3); }
   .fields { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: var(--pl-space-4); }
+  .form-set {
+    display: flex;
+    flex-direction: column;
+    gap: var(--pl-space-4);
+    max-width: 280px;
+    padding: var(--pl-space-6);
+    border: 1px dashed var(--pl-border-subtle);
+    border-radius: var(--pl-radius-semantic-lg);
+    background: var(--pl-surface-default);
+  }
+  .form-set__title {
+    margin: 0;
+    font-size: var(--pl-caption-lg-size);
+    font-weight: 600;
+    color: var(--pl-text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  .form-set .pl-field { width: 100%; max-width: 202px; }
   .pass { color: var(--pl-text-status-success); font-weight: 600; }
   .fail { color: var(--pl-text-status-danger); font-weight: 700; }
   .hidden { display: none !important; }
@@ -301,22 +325,89 @@
       </div>
     </section>
 
-    <section id="c-field">
-      <h2>Text &amp; password field <span class="count">.pl-field · 798:1537 / 800:31</span></h2>
+    <section id="c-form">
+      <h2>Form <span class="count">page &quot;Form&quot; · 798:1537 / 800:31</span></h2>
+      <p class="lede">Text and password inputs from the Form page. Each component set has five
+        states — <code>Placeholder</code>, <code>Disabled</code>, <code>Focused</code>,
+        <code>Filled</code>, and <code>Error</code>. Focus uses a 2px inset stroke via
+        <code>:focus-within</code> (and <code>.is-focused</code> for static demos).
+        Password fields use <code>#pl-eye-slash</code> / <code>#pl-eye</code> at 24px.</p>
+
       <div class="fields">
-        <div><h3>Placeholder</h3>
-          <label class="pl-field"><span class="pl-field__box" id="field"><input class="pl-field__input" placeholder="Value"></span></label></div>
-        <div><h3>Filled</h3>
-          <label class="pl-field"><span class="pl-field__box"><input class="pl-field__input" value="hello@playlist.com"></span></label></div>
-        <div><h3>Error</h3>
-          <div class="pl-field is-error"><span class="pl-field__box"><input class="pl-field__input" value="hello@playlist"></span>
-            <span class="pl-field__error">Enter a valid email address</span></div></div>
-        <div><h3>Disabled</h3>
-          <div class="pl-field is-disabled"><span class="pl-field__box"><input class="pl-field__input" placeholder="Value" disabled></span></div></div>
-        <div><h3>Password</h3>
-          <label class="pl-field pl-field--password"><span class="pl-field__box" id="pw">
-            <input class="pl-field__input" type="password" value="hunter2000">
-            <button class="pl-field__icon" type="button" aria-label="Show password">👁</button></span></label></div>
+        <div class="form-set">
+          <h3 class="form-set__title">Text field · 798:1537</h3>
+          <label class="pl-field">
+            <span class="pl-field__box" id="field">
+              <input class="pl-field__input" placeholder="Value" aria-label="Value">
+            </span>
+          </label>
+          <div class="pl-field is-disabled">
+            <span class="pl-field__box">
+              <input class="pl-field__input" placeholder="Value" disabled aria-label="Value disabled">
+            </span>
+          </div>
+          <label class="pl-field is-focused">
+            <span class="pl-field__box">
+              <input class="pl-field__input" value="Value" aria-label="Value focused">
+            </span>
+          </label>
+          <label class="pl-field">
+            <span class="pl-field__box">
+              <input class="pl-field__input" value="Value" aria-label="Value filled">
+            </span>
+          </label>
+          <div class="pl-field is-error">
+            <span class="pl-field__box">
+              <input class="pl-field__input" value="Value" aria-label="Value error">
+            </span>
+            <span class="pl-field__error">Error</span>
+          </div>
+        </div>
+
+        <div class="form-set">
+          <h3 class="form-set__title">Password field · 800:31</h3>
+          <label class="pl-field pl-field--password">
+            <span class="pl-field__box" id="pw">
+              <input class="pl-field__input" type="password" placeholder="Password" aria-label="Password">
+              <button type="button" class="pl-field__icon js-password-toggle" aria-label="Show password">
+                <svg class="pl-icon" aria-hidden="true"><use href="#pl-eye-slash"></use></svg>
+              </button>
+            </span>
+          </label>
+          <div class="pl-field pl-field--password is-disabled">
+            <span class="pl-field__box">
+              <input class="pl-field__input" type="password" placeholder="Password" disabled aria-label="Password disabled">
+              <span class="pl-field__icon" aria-hidden="true">
+                <svg class="pl-icon"><use href="#pl-eye-slash"></use></svg>
+              </span>
+            </span>
+          </div>
+          <label class="pl-field pl-field--password is-focused">
+            <span class="pl-field__box">
+              <input class="pl-field__input js-password-input" type="password" value="Password" aria-label="Password focused">
+              <button type="button" class="pl-field__icon js-password-toggle" aria-label="Show password">
+                <svg class="pl-icon" aria-hidden="true"><use href="#pl-eye-slash"></use></svg>
+              </button>
+            </span>
+          </label>
+          <label class="pl-field pl-field--password">
+            <span class="pl-field__box">
+              <input class="pl-field__input js-password-input" type="password" value="Password" aria-label="Password filled">
+              <button type="button" class="pl-field__icon js-password-toggle" aria-label="Show password">
+                <svg class="pl-icon" aria-hidden="true"><use href="#pl-eye-slash"></use></svg>
+              </button>
+            </span>
+          </label>
+          <div class="pl-field pl-field--password is-error">
+            <span class="pl-field__box">
+              <input class="pl-field__input js-password-input" type="password" value="Password" aria-label="Password error">
+              <button type="button" class="pl-field__icon js-password-toggle" aria-label="Show password">
+                <svg class="pl-icon" aria-hidden="true"><use href="#pl-eye-slash"></use></svg>
+              </button>
+            </span>
+            <span class="pl-field__error">Error</span>
+          </div>
+        </div>
       </div>
     </section>
 
@@ -668,8 +759,8 @@ Valid for all classes.</span>
       <p class="lede">Booking checkout summary — class details, selected payment line, and an
         optional promo row. Drop-in is product + qty/price; Pack swaps in remaining-count
         and expiry lines with <code>__product--pack</code>, <code>__details</code>, and
-        <code>__row--pack</code>. Icons are <code>#pl-tag</code> and
-        <code>#pl-right-chevron</code> from the sprite.</p>
+        <code>__row--pack</code>. Promo row is <code>12880:342437</code> — centered
+        tag + label, no chevron; icon is <code>#pl-tag</code> at 16px.</p>
       <div class="stage" style="max-width:353px">
         <div class="pl-checkout-card" id="checkout-card">
           <div class="pl-checkout-card__class">
@@ -688,7 +779,6 @@ Valid for all classes.</span>
           <button type="button" class="pl-checkout-card__promo">
             <span class="pl-checkout-card__promo-icon" aria-hidden="true"><svg class="pl-icon"><use href="#pl-tag"></use></svg></span>
             <span class="pl-checkout-card__promo-text">Explore packs and memberships</span>
-            <span class="pl-checkout-card__promo-chevron" aria-hidden="true"><svg class="pl-icon"><use href="#pl-right-chevron"></use></svg></span>
           </button>
         </div>
         <div class="pl-checkout-card" id="checkout-card-pack">
@@ -711,7 +801,6 @@ Valid for all classes.</span>
           <button type="button" class="pl-checkout-card__promo">
             <span class="pl-checkout-card__promo-icon" aria-hidden="true"><svg class="pl-icon"><use href="#pl-tag"></use></svg></span>
             <span class="pl-checkout-card__promo-text">Explore packs and memberships</span>
-            <span class="pl-checkout-card__promo-chevron" aria-hidden="true"><svg class="pl-icon"><use href="#pl-right-chevron"></use></svg></span>
           </button>
         </div>
       </div>
@@ -785,6 +874,68 @@ Valid for all classes.</span>
       </div>
     </section>
 
+    <section id="c-successmodal">
+      <h2>Success modal <span class="count">.pl-success-modal · 12745:182045</span></h2>
+      <p class="lede">Booking-confirmed bottom sheet after checkout. Checkmark is
+        <code>assets/check_success.svg</code> (exact export). Detail-row icons are
+        <code>#pl-calendar-small</code>, <code>#pl-person-small</code>, and
+        <code>#pl-location-pin-small</code>; footer actions use
+        <code>#pl-calendar-small</code> and <code>#pl-share</code>. Close is
+        <code>.pl-icon-btn--raised</code> with <code>#pl-close</code>.</p>
+      <div class="stage" style="max-width:353px">
+        <div class="pl-success-modal" id="success-modal" role="dialog" aria-labelledby="success-modal-nav-title">
+          <header class="pl-success-modal__header">
+            <div class="pl-success-modal__toolbar" id="success-modal-toolbar">
+              <span class="pl-success-modal__leading" aria-hidden="true"></span>
+              <h2 class="pl-success-modal__nav-title pl-body-medium-semibold" id="success-modal-nav-title">Booking confirmed</h2>
+              <button type="button" class="pl-icon-btn pl-icon-btn--md pl-icon-btn--raised pl-success-modal__close" aria-label="Close">
+                <svg class="pl-icon" aria-hidden="true"><use href="#pl-close"></use></svg>
+              </button>
+            </div>
+          </header>
+          <div class="pl-success-modal__body">
+            <div class="pl-success-modal__content">
+              <div class="pl-success-modal__hero">
+                <img class="pl-success-modal__check" src="assets/check_success.svg" alt="" width="40" height="40">
+                <div class="pl-success-modal__headline">
+                  <p class="pl-success-modal__headline-title pl-section-header">You&rsquo;re booked!</p>
+                  <p class="pl-success-modal__subtitle pl-button-label-small-medium">Reformer Vitality</p>
+                </div>
+              </div>
+              <div class="pl-success-modal__details-wrap">
+                <div class="pl-success-modal__details">
+                  <div class="pl-success-modal__detail-row">
+                    <span class="pl-success-modal__detail-icon" aria-hidden="true"><svg class="pl-icon"><use href="#pl-calendar-small"></use></svg></span>
+                    <span class="pl-success-modal__detail-text pl-body-small-regular">Tue, Mar 1 · 2:00 PM</span>
+                  </div>
+                  <div class="pl-success-modal__detail-row">
+                    <span class="pl-success-modal__detail-icon" aria-hidden="true"><svg class="pl-icon"><use href="#pl-person-small"></use></svg></span>
+                    <span class="pl-success-modal__detail-text pl-body-small-regular">Regina N.</span>
+                  </div>
+                  <div class="pl-success-modal__detail-row">
+                    <span class="pl-success-modal__detail-icon" aria-hidden="true"><svg class="pl-icon"><use href="#pl-location-pin-small"></use></svg></span>
+                    <span class="pl-success-modal__detail-text pl-body-small-regular">KIN Kollective - Nomad</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <footer class="pl-success-modal__footer">
+            <div class="pl-success-modal__actions">
+              <button type="button" class="pl-btn pl-btn--md pl-btn--neutral pl-btn--pill">
+                <span class="pl-btn__icon" aria-hidden="true"><svg class="pl-icon"><use href="#pl-calendar-small"></use></svg></span>
+                Add
+              </button>
+              <button type="button" class="pl-btn pl-btn--md pl-btn--neutral pl-btn--pill">
+                <span class="pl-btn__icon" aria-hidden="true"><svg class="pl-icon"><use href="#pl-share"></use></svg></span>
+                Share
+              </button>
+            </div>
+          </footer>
+        </div>
+      </div>
+    </section>
+
     <section id="c-tabnav">
       <h2>Tab navigation <span class="count">.pl-tab-nav · 1192:843</span></h2>
       <p class="lede">Underline tabs for switching sections within a screen — separate
@@ -831,8 +982,9 @@ Valid for all classes.</span>
         <code>currentColor</code>, so they take the colour of whatever they sit in. The three
         stars and <code>map-pin</code> are vector paths that are two-tone by design, painting
         fixed colours (<code>icon/rating</code> / <code>icon/disabled</code> / <code>icon/red</code>
-        + white) directly instead of <code>currentColor</code>. Each id is <code>#pl-</code> + the
-        name below.</p>
+        + white) directly instead of <code>currentColor</code>. Each sprite id is <code>#pl-</code> +
+        the name below. Multi-colour marks (e.g. Google) live in <code>assets/</code> and are
+        referenced with <code>&lt;img&gt;</code>.</p>
       <div id="icon-groups"></div>
 
       <h3>In component slots</h3>
@@ -865,7 +1017,7 @@ Valid for all classes.</span>
   </main>
 </div>
 
-<script src="icons.js?v=20260816chevrons"></script>
+<script src="icons.js?v=20260817icons"></script>
 <script src="tokens.js"></script>
 <script src="typography.js"></script>
 <script>
@@ -1045,14 +1197,40 @@ Valid for all classes.</span>
   document.getElementById('foundations').innerHTML = out.join('');
 
   // ---------- Icons -------------------------------------------------------
+  var PL_ASSET_ICONS = [
+    { name: 'google-icon', src: 'assets/google_icon.png', width: 24, height: 24 },
+    { name: 'cp-logo', src: 'assets/CP_logo.svg', width: 24, height: 24 },
+    { name: 'playlist-logo', src: 'assets/playlist-logo.svg', width: 120, height: 16 },
+  ];
+
+  function renderIconCell(name) {
+    return '<div class="icon-cell"><svg class="pl-icon pl-icon--lg" aria-hidden="true">' +
+      '<use href="#pl-' + name + '"></use></svg><code>' + esc(name) + '</code></div>';
+  }
+
+  function renderAssetIconCell(asset) {
+    return '<div class="icon-cell"><img src="' + esc(asset.src) + '" alt="" width="' +
+      asset.width + '" height="' + asset.height + '"><code>' + esc(asset.name) + '</code></div>';
+  }
+
+  var iconGroups = window.PL_ICONS || [];
   var iconNames = [];
-  (window.PL_ICONS || []).forEach(function (g) { iconNames = iconNames.concat(g.names); });
-  var iconCount = iconNames.length;
-  document.getElementById('icon-groups').innerHTML = '<div class="icons">' +
-    iconNames.map(function (n) {
-      return '<div class="icon-cell"><svg class="pl-icon pl-icon--lg" aria-hidden="true">' +
-        '<use href="#pl-' + n + '"></use></svg><code>' + esc(n) + '</code></div>';
-    }).join('') + '</div>';
+  iconGroups.forEach(function (g) { iconNames = iconNames.concat(g.names); });
+  var iconCount = iconNames.length + PL_ASSET_ICONS.length;
+
+  var groupsHtml = iconGroups.map(function (g) {
+    return '<h3>' + esc(g.name) + '</h3><div class="icons">' +
+      g.names.map(renderIconCell).join('') + '</div>';
+  }).join('');
+
+  if (PL_ASSET_ICONS.length) {
+    groupsHtml += '<h3>Exact assets</h3><p class="lede">Raster or multi-colour marks in ' +
+      '<code>assets/</code> — use <code>&lt;img src=&quot;assets/google_icon.png&quot;&gt;</code>, ' +
+      'not the sprite.</p><div class="icons">' +
+      PL_ASSET_ICONS.map(renderAssetIconCell).join('') + '</div>';
+  }
+
+  document.getElementById('icon-groups').innerHTML = groupsHtml;
   var ic = document.querySelector('#c-icons h2 .count');
   if (ic) ic.textContent = iconCount + ' · .pl-icon · Figma page "iOS icons"';
 
@@ -1095,6 +1273,7 @@ Valid for all classes.</span>
     ['Checkout card pack height @353px', 'checkout-card-pack', 'offsetHeight', 262],
     ['Payment section collapsed @353px', 'payment-section', 'offsetHeight', 108],
     ['Payment section expanded @353px', 'payment-section-expanded', 'offsetHeight', 152],
+    ['Success modal toolbar', 'success-modal-toolbar', 'offsetHeight', 44],
     ['Tab navigation height', 'tabnav', 'offsetHeight', 41],
     ['Tab bar height', 'tabbar', 'offsetHeight', 62], ['Tab min height', 'tab1', 'offsetHeight', 54],
     ['Link underline', 'btn-link', 'style:text-decoration-line', 'underline'],
@@ -1126,10 +1305,10 @@ Valid for all classes.</span>
   var GROUPS = [
     ['Foundations', ['f-primitives', 'f-semantic', 'f-textstyles', 'f-typetokens',
                      'f-spacing', 'f-componentspacing', 'f-radius', 'f-elevation', 'f-size']],
-    ['Components', ['c-button', 'c-iconbutton', 'c-chip', 'c-field', 'c-searchbar', 'c-classcard',
+    ['Components', ['c-button', 'c-iconbutton', 'c-chip', 'c-form', 'c-searchbar', 'c-classcard',
                     'c-schedulecard', 'c-pack', 'c-reviewcard', 'c-ratingssummary', 'c-ratingdistribution',
                     'c-mapcard', 'c-venuecard', 'c-banner', 'c-promo-banner', 'c-checkoutcard',
-                    'c-paymentsection', 'c-tabnav', 'c-tabbar', 'c-icons']],
+                    'c-paymentsection', 'c-successmodal', 'c-tabnav', 'c-tabbar', 'c-icons']],
     ['Reference', ['parity']]
   ];
   document.getElementById('nav').innerHTML = GROUPS.map(function (g) {
@@ -1243,6 +1422,21 @@ Valid for all classes.</span>
       paymentToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
     });
   }
+
+  // ---------- Form fields — password visibility ---------------------------
+  document.querySelectorAll('.js-password-toggle').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var box = btn.closest('.pl-field__box');
+      if (!box) return;
+      var input = box.querySelector('.js-password-input, .pl-field__input');
+      if (!input) return;
+      var show = input.type === 'password';
+      input.type = show ? 'text' : 'password';
+      var use = btn.querySelector('use');
+      if (use) use.setAttribute('href', show ? '#pl-eye' : '#pl-eye-slash');
+      btn.setAttribute('aria-label', show ? 'Hide password' : 'Show password');
+    });
+  });
 
   // ---------- Theme -------------------------------------------------------
   var btn = document.getElementById('theme');
