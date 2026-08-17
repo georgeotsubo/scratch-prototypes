@@ -4773,14 +4773,240 @@
     var cdCancelToastTimer = null;
     var cdCancelToastEl = document.getElementById('cd-cancel-toast');
 
-    // Total section expand/collapse: tapping the row reveals the Subtotal +
-    // Taxes breakdown and flips the chevron. CSS handles the height +
-    // opacity transition via .is-expanded on the section element.
-    var cdCheckoutTotalSection = document.getElementById('cd-checkout-total-section');
-    if (cdCheckoutTotalSection) {
-      cdCheckoutTotalSection.addEventListener('click', function() {
-        cdCheckoutTotalSection.classList.toggle('is-expanded');
+    // Payment section expand/collapse: tapping Total reveals Subtotal +
+    // Taxes and rotates the chevron. CSS handles the transition via
+    // .is-expanded on .pl-payment-section.
+    var cdCheckoutPaymentSection = document.getElementById('cd-checkout-payment-section');
+    var cdCheckoutTotalToggle = document.getElementById('cd-checkout-total-toggle');
+    if (cdCheckoutPaymentSection && cdCheckoutTotalToggle) {
+      cdCheckoutTotalToggle.addEventListener('click', function() {
+        var open = cdCheckoutPaymentSection.classList.toggle('is-expanded');
+        cdCheckoutTotalToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
       });
+    }
+
+    // === Checkout option picker (Drop-ins / Packs) ===
+    var cdCheckoutOptionsPanel = document.getElementById('cd-checkout-options');
+    var cdCheckoutPromoBtn = document.getElementById('cd-checkout-promo');
+    var cdCheckoutOptionsBack = document.getElementById('cd-checkout-options-back');
+    var cdCheckoutOptionsDone = document.getElementById('cd-checkout-options-done');
+    var cdCheckoutOptionsScroll = document.getElementById('cd-checkout-options-scroll');
+    var cdCheckoutOptionsTabs = document.getElementById('cd-checkout-options-tabs');
+    var cdCheckoutSelectedId = null;
+    var cdCheckoutPendingId = null;
+    var cdCheckoutOptionsCatalog = [];
+
+    function cdFormatPackExpiry(monthsFromNow) {
+      var d = new Date();
+      d.setMonth(d.getMonth() + monthsFromNow);
+      var month = d.toLocaleDateString('en-US', { month: 'short' });
+      return 'Expires ' + month + ' ' + d.getDate() + ', ' + d.getFullYear();
+    }
+
+    function cdBuildCheckoutOptionsCatalog(venueName) {
+      var venue = venueName || 'ID Hot Yoga - Chelsea';
+      var trialPriceEl = document.querySelector('.cd-booking-price-final');
+      var plainPriceEl = document.querySelector('.cd-booking-price-plain');
+      var trialPrice = trialPriceEl ? trialPriceEl.textContent.trim() : '$20.00';
+      var dropinPrice = plainPriceEl ? plainPriceEl.textContent.trim() : '$40.00';
+      return [
+        { id: 'trial', section: 'dropins', type: 'dropin', title: 'New Member Trial Class', qty: '1 class', price: trialPrice },
+        { id: 'dropin', section: 'dropins', type: 'dropin', title: 'Drop-in Class (inc. Mat + Towel)', qty: '1 class', price: dropinPrice },
+        { id: 'pack5', section: 'packs', type: 'pack', badge: '$40 / class', title: '5 class card (mat + towel included)', qty: '5 classes', price: '$200.00', classes: 5, expiryMonths: 6,
+          footerLines: ['Expires 6 months after first use.', 'Eligible at ' + venue + '.', 'Valid for all classes.'] },
+        { id: 'pack10', section: 'packs', type: 'pack', badge: '$35 / class', title: '10 class card (mat + towel included)', qty: '10 classes', price: '$350.00', classes: 10, expiryMonths: 12,
+          footerLines: ['Expires 12 months after first use.', 'Eligible at ' + venue + '.', 'Valid for all classes.'] },
+        { id: 'pack20', section: 'packs', type: 'pack', badge: '$27.25 / class', title: '20 class card (mat + towel included)', qty: '20 classes', price: '$545.00', classes: 20, expiryMonths: 12,
+          footerLines: ['Expires 12 months after first use.', 'Eligible at ' + venue + '.', 'Valid for all classes.'] }
+      ];
+    }
+
+    function cdGetCheckoutOptionById(id) {
+      for (var i = 0; i < cdCheckoutOptionsCatalog.length; i++) {
+        if (cdCheckoutOptionsCatalog[i].id === id) return cdCheckoutOptionsCatalog[i];
+      }
+      return null;
+    }
+
+    function cdDefaultCheckoutOptionId() {
+      return document.querySelector('.cd-booking-price-final') ? 'trial' : 'dropin';
+    }
+
+    function cdRenderOptionCard(opt) {
+      var selected = opt.id === cdCheckoutPendingId;
+      var cls = 'pl-card pl-pack' + (selected ? ' is-selected' : '');
+      if (opt.type === 'pack') {
+        var footerHtml = (opt.footerLines || []).map(function(line) {
+          return '<li>' + line + '</li>';
+        }).join('');
+        return '<button type="button" class="' + cls + '" data-option-id="' + opt.id + '">'
+          + '<span class="pl-pack__body">'
+          + '<span class="pl-pack__badge">' + opt.badge + '</span>'
+          + '<span class="pl-pack__title">' + opt.title + '</span>'
+          + '<span class="pl-pack__row"><span class="pl-pack__qty">' + opt.qty + '</span>'
+          + '<span class="pl-pack__price">' + opt.price + '</span></span></span>'
+          + '<span class="pl-pack__footer"><ul class="cd-pack-footer-list">' + footerHtml + '</ul></span>'
+          + '</button>';
+      }
+      return '<button type="button" class="' + cls + '" data-option-id="' + opt.id + '">'
+        + '<span class="pl-pack__body">'
+        + '<span class="pl-pack__title">' + opt.title + '</span>'
+        + '<span class="pl-pack__row"><span class="pl-pack__qty">' + opt.qty + '</span>'
+        + '<span class="pl-pack__price">' + opt.price + '</span></span></span>'
+        + '</button>';
+    }
+
+    function cdRenderCheckoutOptionsLists() {
+      var dropinsEl = document.getElementById('cd-options-dropins-list');
+      var packsEl = document.getElementById('cd-options-packs-list');
+      if (!dropinsEl || !packsEl) return;
+      var dropHtml = '';
+      var packHtml = '';
+      cdCheckoutOptionsCatalog.forEach(function(opt) {
+        if (opt.section === 'dropins') dropHtml += cdRenderOptionCard(opt);
+        else if (opt.section === 'packs') packHtml += cdRenderOptionCard(opt);
+      });
+      dropinsEl.innerHTML = dropHtml;
+      packsEl.innerHTML = packHtml;
+    }
+
+    function cdSyncOptionsDoneVisibility() {
+      var changed = cdCheckoutPendingId !== cdCheckoutSelectedId;
+      if (cdCheckoutOptionsDone) cdCheckoutOptionsDone.hidden = !changed;
+      if (cdCheckoutSheet) {
+        cdCheckoutSheet.classList.toggle('is-options-pending', changed);
+      }
+    }
+
+    function cdApplyCheckoutOptionToCard() {
+      var opt = cdGetCheckoutOptionById(cdCheckoutSelectedId);
+      var paymentBlock = document.getElementById('cd-checkout-payment-block');
+      if (!opt || !paymentBlock) return;
+      var priceText = opt.price;
+      var linePriceEl = document.getElementById('cd-checkout-line-price');
+      var totalEl = document.getElementById('cd-checkout-total');
+      var subtotalEl = document.getElementById('cd-checkout-subtotal');
+      var refundEl = document.getElementById('cd-cancel-refund-amount');
+      if (opt.type === 'pack') {
+        var remaining = Math.max(0, opt.classes - 1);
+        var expiryStr = cdFormatPackExpiry(opt.expiryMonths || 12);
+        paymentBlock.innerHTML = ''
+          + '<div class="pl-checkout-card__product pl-checkout-card__product--pack" id="cd-checkout-product">' + opt.title + '</div>'
+          + '<div class="pl-checkout-card__row pl-checkout-card__row--pack" id="cd-checkout-payment-row">'
+          + '<div class="pl-checkout-card__details">'
+          + '<div class="pl-checkout-card__detail" id="cd-checkout-qty">' + remaining + ' of ' + opt.classes + ' left after booking</div>'
+          + '<div class="pl-checkout-card__detail">' + expiryStr + '</div>'
+          + '</div>'
+          + '<span class="pl-checkout-card__price pl-checkout-card__price--pack" id="cd-checkout-line-price">' + priceText + '</span>'
+          + '</div>';
+      } else {
+        paymentBlock.innerHTML = ''
+          + '<div class="pl-checkout-card__product" id="cd-checkout-product">' + opt.title + '</div>'
+          + '<div class="pl-checkout-card__row" id="cd-checkout-payment-row">'
+          + '<span class="pl-checkout-card__qty" id="cd-checkout-qty">' + opt.qty + '</span>'
+          + '<span class="pl-checkout-card__price" id="cd-checkout-line-price">' + priceText + '</span>'
+          + '</div>';
+      }
+      if (totalEl) totalEl.textContent = priceText;
+      if (subtotalEl) subtotalEl.textContent = priceText;
+      if (refundEl) refundEl.textContent = priceText;
+    }
+
+    function cdRemeasureCheckoutHeight() {
+      if (!cdCheckoutOpen || !cdCheckoutSheet) return;
+      cdCheckoutSheet.style.transition = 'none';
+      cdCheckoutSheet.style.height = 'auto';
+      var viewportH = cdCheckoutSheet.parentElement.getBoundingClientRect().height
+        || window.innerHeight;
+      var maxH = viewportH - 60;
+      var naturalH = cdCheckoutSheet.getBoundingClientRect().height;
+      cdCheckoutSheet.style.height = Math.min(naturalH, maxH) + 'px';
+      void cdCheckoutSheet.offsetHeight;
+      cdCheckoutSheet.style.transition = '';
+    }
+
+    function cdSetOptionsTab(section) {
+      if (!cdCheckoutOptionsTabs) return;
+      cdCheckoutOptionsTabs.querySelectorAll('.pl-tab-nav__item').forEach(function(tab) {
+        var on = tab.dataset.section === section;
+        tab.classList.toggle('is-selected', on);
+        tab.setAttribute('aria-selected', on ? 'true' : 'false');
+      });
+    }
+
+    function cdScrollToOptionsSection(section) {
+      var target = document.getElementById('cd-options-section-' + section);
+      if (target && cdCheckoutOptionsScroll) {
+        cdCheckoutOptionsScroll.scrollTo({ top: target.offsetTop - 8, behavior: 'smooth' });
+      }
+      cdSetOptionsTab(section);
+    }
+
+    function cdOpenCheckoutOptions() {
+      if (!cdCheckoutOpen || cdCheckoutSheet.classList.contains('is-cancel-mode')) return;
+      var venueText = document.getElementById('cd-venue-text');
+      cdCheckoutOptionsCatalog = cdBuildCheckoutOptionsCatalog(venueText ? venueText.textContent : '');
+      if (!cdCheckoutSelectedId) cdCheckoutSelectedId = cdDefaultCheckoutOptionId();
+      cdCheckoutPendingId = cdCheckoutSelectedId;
+      cdRenderCheckoutOptionsLists();
+      cdSyncOptionsDoneVisibility();
+      cdCheckoutSheet.classList.add('is-options-open');
+      if (cdCheckoutOptionsPanel) {
+        cdCheckoutOptionsPanel.setAttribute('aria-hidden', 'false');
+      }
+      cdSetOptionsTab('dropins');
+      if (cdCheckoutOptionsScroll) cdCheckoutOptionsScroll.scrollTop = 0;
+    }
+
+    function cdCloseCheckoutOptions(apply) {
+      if (!cdCheckoutSheet.classList.contains('is-options-open')) return;
+      if (apply) {
+        cdCheckoutSelectedId = cdCheckoutPendingId;
+        cdApplyCheckoutOptionToCard();
+      } else {
+        cdCheckoutPendingId = cdCheckoutSelectedId;
+      }
+      cdCheckoutSheet.classList.remove('is-options-open', 'is-options-pending');
+      if (cdCheckoutOptionsPanel) cdCheckoutOptionsPanel.setAttribute('aria-hidden', 'true');
+      if (cdCheckoutOptionsDone) cdCheckoutOptionsDone.hidden = true;
+    }
+
+    function cdSelectCheckoutOption(id) {
+      cdCheckoutPendingId = id;
+      cdRenderCheckoutOptionsLists();
+      cdSyncOptionsDoneVisibility();
+    }
+
+    if (cdCheckoutPromoBtn) {
+      cdCheckoutPromoBtn.addEventListener('click', cdOpenCheckoutOptions);
+    }
+    if (cdCheckoutOptionsBack) {
+      cdCheckoutOptionsBack.addEventListener('click', function() { cdCloseCheckoutOptions(false); });
+    }
+    if (cdCheckoutOptionsDone) {
+      cdCheckoutOptionsDone.addEventListener('click', function() { cdCloseCheckoutOptions(true); });
+    }
+    if (cdCheckoutOptionsTabs) {
+      cdCheckoutOptionsTabs.addEventListener('click', function(e) {
+        var tab = e.target.closest('.pl-tab-nav__item');
+        if (!tab || !tab.dataset.section) return;
+        cdScrollToOptionsSection(tab.dataset.section);
+      });
+    }
+    if (cdCheckoutOptionsScroll) {
+      cdCheckoutOptionsScroll.addEventListener('click', function(e) {
+        var card = e.target.closest('[data-option-id]');
+        if (!card) return;
+        cdSelectCheckoutOption(card.dataset.optionId);
+      });
+      // Keep the sticky tab indicator in sync while scrolling long lists.
+      cdCheckoutOptionsScroll.addEventListener('scroll', function() {
+        var packsSection = document.getElementById('cd-options-section-packs');
+        if (!packsSection) return;
+        var scrollTop = cdCheckoutOptionsScroll.scrollTop;
+        var packsTop = packsSection.offsetTop - 24;
+        cdSetOptionsTab(scrollTop >= packsTop ? 'packs' : 'dropins');
+      }, { passive: true });
     }
     function showCancelToast() {
       if (!cdCancelToastEl) return;
@@ -4933,7 +5159,8 @@
       var dayShort = date.toLocaleDateString('en-US', { weekday: 'short' });
       var monthShort = date.toLocaleDateString('en-US', { month: 'short' });
       var dateStr = dayShort + ', ' + monthShort + ' ' + date.getDate();
-      var time = dateStr + ' · ' + slotTime + ' ET';
+      var checkoutTime = dateStr + ' · ' + slotTime;
+      var time = checkoutTime + ' ET';
       var titleEl = document.getElementById('cd-title');
       var classTitle = titleEl ? titleEl.textContent : '';
       var venueText = document.getElementById('cd-venue-text');
@@ -4941,9 +5168,12 @@
       // Set both the checkout-mode card copy and the cancel-mode copy so
       // users see the class context in either flow.
       document.getElementById('cd-checkout-class-title').textContent = classTitle;
-      document.getElementById('cd-checkout-time').textContent = time;
+      document.getElementById('cd-checkout-time').textContent = checkoutTime;
       document.getElementById('cd-checkout-instructor').textContent = instructor;
       document.getElementById('cd-checkout-venue').textContent = venueStr;
+      cdCheckoutOptionsCatalog = cdBuildCheckoutOptionsCatalog(venueStr);
+      if (!cdCheckoutSelectedId) cdCheckoutSelectedId = cdDefaultCheckoutOptionId();
+      cdApplyCheckoutOptionToCard();
       var cancelTitleEl = document.getElementById('cd-cancel-class-title');
       var cancelTimeEl = document.getElementById('cd-cancel-time');
       var cancelInstructorEl = document.getElementById('cd-cancel-instructor');
@@ -4952,9 +5182,9 @@
       if (cancelTimeEl) cancelTimeEl.textContent = time;
       if (cancelInstructorEl) cancelInstructorEl.textContent = instructor;
       if (cancelVenueEl) cancelVenueEl.textContent = venueStr;
-      // "Free cancellation until <date> at <time> ET" — exactly 12 hours
-      // before the class start. Computed from the same date/slotTime we
-      // populated above so it always stays in sync with the booking.
+      // "Cancel by <date> at <time> ET" — exactly 12 hours before class
+      // start. Computed from the same date/slotTime we populated above so
+      // it always stays in sync with the booking.
       var cancelCutoffEl = document.getElementById('cd-checkout-cancel-cutoff');
       if (cancelCutoffEl) {
         var slotMatch = slotTime && slotTime.match(/(\d+):(\d+)\s*(AM|PM)/i);
@@ -4973,20 +5203,9 @@
           var cPeriod = cH >= 12 ? 'PM' : 'AM';
           cH = (cH % 12) || 12;
           var cMin = String(cutoff.getMinutes()).padStart(2, '0');
-          cancelCutoffEl.textContent = 'Free cancellation until ' + cDay + ', ' + cMonth + ' ' + cutoff.getDate() + ' at ' + cH + ':' + cMin + ' ' + cPeriod + ' ET.';
+          cancelCutoffEl.textContent = 'Cancel by ' + cDay + ', ' + cMonth + ' ' + cutoff.getDate() + ' at ' + cH + ':' + cMin + ' ' + cPeriod + ' ET';
         }
       }
-      // Price: prefer the intro-offer final price, else the plain price.
-      var priceFinalEl = document.querySelector('.cd-booking-price-final, .cd-booking-price-plain');
-      var priceText = priceFinalEl ? priceFinalEl.textContent.trim() : '$30.00';
-      // Total + the collapsible Subtotal mirror it (Taxes stays hardcoded
-      // at $0.00 in the markup — there's no tax model in the prototype).
-      document.getElementById('cd-checkout-total').textContent = priceText;
-      var subtotalEl = document.getElementById('cd-checkout-subtotal');
-      if (subtotalEl) subtotalEl.textContent = priceText;
-      // Cancel-mode mirror: refund amount uses the same price.
-      var refundEl = document.getElementById('cd-cancel-refund-amount');
-      if (refundEl) refundEl.textContent = priceText;
     }
 
     // Pure CSS-driven morph: every animated property (height, left, right,
@@ -5055,7 +5274,7 @@
       if (cdCheckoutCtaLabel) {
         cdCheckoutCtaLabel.textContent = cdCheckoutSheet.classList.contains('is-cancel-mode')
           ? 'Confirm and cancel'
-          : 'Book and pay';
+          : 'Buy and reserve';
       }
       // Add is-open to trigger the coordinated CSS transitions.
       cdCheckoutSheet.classList.add('is-open');
@@ -5116,9 +5335,17 @@
       cdCheckoutCta.classList.remove('is-loading');
       // Reset the cancel-mode UI so the next open starts in checkout mode.
       cdCheckoutSheet.classList.remove('is-cancel-mode');
+      cdCheckoutSheet.classList.remove('is-options-open', 'is-options-pending');
+      if (cdCheckoutOptionsPanel) cdCheckoutOptionsPanel.setAttribute('aria-hidden', 'true');
+      if (cdCheckoutOptionsDone) cdCheckoutOptionsDone.hidden = true;
+      cdCheckoutSelectedId = null;
+      cdCheckoutPendingId = null;
       // Collapse the total breakdown so re-opening starts in the collapsed
       // state (chevron pointing down, Subtotal/Taxes hidden).
-      if (cdCheckoutTotalSection) cdCheckoutTotalSection.classList.remove('is-expanded');
+      if (cdCheckoutPaymentSection) {
+        cdCheckoutPaymentSection.classList.remove('is-expanded');
+        if (cdCheckoutTotalToggle) cdCheckoutTotalToggle.setAttribute('aria-expanded', 'false');
+      }
       var titleResetEl = document.getElementById('cd-checkout-title');
       if (titleResetEl) titleResetEl.textContent = 'Review and confirm';
       // Dismissing while in the success state (X, scrim, or "You're

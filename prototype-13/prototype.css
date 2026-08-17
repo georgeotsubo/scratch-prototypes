@@ -2911,47 +2911,134 @@
     left: 0;
     right: 0;
     bottom: 0;
+    /* Horizontal padding lives on header/body/footer children so the
+       footer dock can span the full sheet width edge-to-edge. */
+    padding: 16px 0 0;
     border-radius: var(--pl-radius-semantic-xl) var(--pl-radius-semantic-xl) 0 0;
     background: var(--pl-surface-default);
     box-shadow: 0 -2px 16px rgb(var(--pl-shadow-rgb) / 0.12);
   }
-  /* Header and body fade in/out with the geometry morph. The CTA is NOT
-     in this group — it morphs between Next-shape (closed) and Book-shape
-     (open) so it can hand off cleanly to the booking bar's Next button. */
+  /* Header, body, and footer fade in/out with the geometry morph. The CTA
+     is NOT in this group — it morphs between Next-shape (closed) and the
+     full-width modal CTA (open). */
   .cd-checkout-sheet .cd-checkout-header,
-  .cd-checkout-sheet .cd-checkout-body {
+  .cd-checkout-sheet .cd-checkout-pane-stack {
     opacity: 0;
     transition: opacity 0.22s ease;
   }
   .cd-checkout-sheet.is-open .cd-checkout-header,
-  .cd-checkout-sheet.is-open .cd-checkout-body {
+  .cd-checkout-sheet.is-open .cd-checkout-pane-stack {
     opacity: 1;
     transition: opacity 0.22s ease 0.18s;
   }
   .cd-checkout-header {
     position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
     width: 100%;
     height: 44px;
     flex-shrink: 0;
+    padding: 0 20px;
+    box-sizing: border-box;
+  }
+  /* Left slot: back arrow fades in when the options pane is active. */
+  .cd-checkout-nav-left {
+    position: relative;
+    width: 44px;
+    height: 44px;
+    flex-shrink: 0;
+  }
+  .cd-checkout-options-back {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s ease;
+  }
+  .cd-checkout-sheet.is-options-open .cd-checkout-options-back {
+    opacity: 1;
+    pointer-events: auto;
+  }
+  .cd-checkout-title-wrap {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: calc(100% - 128px);
+    height: 44px;
+    pointer-events: none;
   }
   .cd-checkout-title {
     position: absolute;
     left: 0;
+    right: 0;
     top: 50%;
     transform: translateY(-50%);
     margin: 0;
-    font-family: var(--pl-heading-h3-font);
-    font-size: var(--pl-heading-h3-size);
-    font-weight: var(--pl-heading-h3-weight);
-    line-height: var(--pl-heading-h3-lineheight);
+    font-family: var(--pl-body-md-semibold-font);
+    font-size: var(--pl-body-md-semibold-size);
+    font-weight: var(--pl-body-md-semibold-weight);
+    line-height: var(--pl-body-md-semibold-lineheight);
     color: var(--pl-text-primary);
     white-space: nowrap;
+    text-align: center;
+    opacity: 1;
+    transition: opacity 0.25s ease;
   }
-  /* PLIconButton Raised / Medium. */
+  .cd-checkout-title--options {
+    opacity: 0;
+  }
+  .cd-checkout-sheet.is-options-open .cd-checkout-title:not(.cd-checkout-title--options) {
+    opacity: 0;
+  }
+  .cd-checkout-sheet.is-options-open .cd-checkout-title--options {
+    opacity: 1;
+  }
   .cd-checkout-close {
+    flex-shrink: 0;
+  }
+  /* Pane stack — iOS push: main drifts left, options slides in from right.
+     Main pane stays in flow so open-height measurement includes body content;
+     options pane is an absolute overlay within the stack. */
+  .cd-checkout-pane-stack {
+    position: relative;
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+  .cd-checkout-pane--main {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: hidden;
+    background: var(--pl-surface-default);
+    will-change: transform;
+    transition: transform 0.5s cubic-bezier(0.32, 0.72, 0, 1);
+    transform: translateX(0);
+  }
+  .cd-checkout-pane--options {
     position: absolute;
-    right: 0;
-    top: 0;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    overflow: hidden;
+    background: var(--pl-surface-default);
+    will-change: transform;
+    transition: transform 0.5s cubic-bezier(0.32, 0.72, 0, 1);
+    transform: translateX(100%);
+    pointer-events: none;
+  }
+  .cd-checkout-sheet.is-options-open .cd-checkout-pane--main {
+    transform: translateX(-25%);
+  }
+  .cd-checkout-sheet.is-options-open .cd-checkout-pane--options {
+    transform: translateX(0);
+    pointer-events: auto;
   }
   .cd-checkout-body {
     display: flex;
@@ -2960,15 +3047,23 @@
     flex: 1 1 auto;
     overflow: hidden;
     min-height: 0;
-    /* Reserves space below body content so the absolutely-positioned CTA
-       (bottom:32 + height 48 = 80 from sheet bottom) doesn't overlap it.
-       Lives on body — not on the sheet — so the sheet itself can shrink to
-       the bar's ~96px height during close without padding-bottom forcing
-       the rendered box taller than style.height. */
-    padding-bottom: 72px;
+    padding-bottom: 0;
     transition: opacity 0.18s ease;
   }
-  .cd-checkout-sheet.is-success .cd-checkout-body {
+  .cd-checkout-sheet.is-open .cd-checkout-body {
+    overflow-y: auto;
+    box-sizing: border-box;
+    padding-left: 20px;
+    padding-right: 20px;
+    /* Reserve space for the footer dock + CTA below the scroll area. */
+    padding-bottom: 16px;
+  }
+  .cd-checkout-sheet.is-open.is-cancel-mode .cd-checkout-body {
+    /* Cancel mode has no footer dock — reserve space for the CTA only. */
+    padding-bottom: 72px;
+  }
+  .cd-checkout-sheet.is-success .cd-checkout-pane--main .cd-checkout-body,
+  .cd-checkout-sheet.is-success .cd-checkout-pane--main .cd-checkout-footer {
     opacity: 0;
     pointer-events: none;
   }
@@ -3018,171 +3113,79 @@
     color: var(--pl-text-primary);
     text-align: center;
   }
-  /* Bordered card wrapping class info + payment + total in checkout mode.
-     Matches the Figma "Content Container" — 1px border, 16px radius,
-     12px/16px padding. The three children are separated by 1px dividers
-     (applied as border-bottom on all but the last child). */
-  .cd-checkout-card {
+  /* Section headings (Payment, Cancellation Policy) + content blocks. */
+  .cd-checkout-section {
     display: flex;
     flex-direction: column;
-    gap: 16px;
-    border: 1px solid var(--pl-border-default);
-    border-radius: var(--pl-radius-semantic-lg);
-    padding: 16px;
-  }
-  .cd-checkout-card > .cd-checkout-info,
-  .cd-checkout-card > .cd-checkout-payment {
-    padding-bottom: 20px;
-    border-bottom: 1px solid var(--pl-border-default);
-  }
-  .cd-checkout-info,
-  .cd-cancel-info {
-    display: flex;
-    flex-direction: column;
-  }
-  .cd-checkout-class-title {
-    font-family: var(--pl-title-md-bold-font);
-    font-size: var(--pl-title-md-bold-size);
-    font-weight: var(--pl-title-md-bold-weight);
-    line-height: var(--pl-title-md-bold-lineheight);
-    color: var(--pl-text-primary);
-  }
-  .cd-checkout-meta,
-  .cd-checkout-time,
-  .cd-checkout-instructor,
-  .cd-checkout-venue {
-    font-family: var(--pl-body-md-regular-font);
-    font-size: var(--pl-body-md-regular-size);
-    font-weight: var(--pl-body-md-regular-weight);
-    line-height: var(--pl-body-md-regular-lineheight);
-    color: var(--pl-text-primary);
-  }
-  /* Cancel-mode overrides — the cancel-reservation modal uses a slightly
-     larger class title and a semibold time row (per Figma cancel design,
-     node 6074:15094). Booking modal stays unchanged. */
-  .cd-cancel-info .cd-checkout-class-title {
-    font-size: var(--pl-title-lg-medium-size);
-    line-height: var(--pl-title-lg-medium-lineheight);
-  }
-  .cd-cancel-info .cd-checkout-time {
-    font-size: var(--pl-label-lg-semibold-size);
-    font-weight: var(--pl-label-lg-semibold-weight);
-    line-height: var(--pl-label-lg-semibold-lineheight);
-  }
-  /* Total + collapsible price breakdown.
-     - Default: only the Total row is visible; the .cd-checkout-breakdown
-       has 0 height and is hidden.
-     - .is-expanded: breakdown reveals (Subtotal + Taxes rows above Total)
-       with a height + opacity transition and the chevron flips 180°. */
-  .cd-checkout-total-section {
-    display: flex;
-    flex-direction: column;
-    width: 100%;
-    cursor: pointer;
-    -webkit-tap-highlight-color: transparent;
-  }
-  .cd-checkout-breakdown {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    max-height: 0;
-    padding-bottom: 0;
-    opacity: 0;
-    overflow: hidden;
-    transition:
-      max-height 0.3s cubic-bezier(.25,.46,.45,.94),
-      padding-bottom 0.3s cubic-bezier(.25,.46,.45,.94),
-      opacity 0.2s ease;
-  }
-  .cd-checkout-total-section.is-expanded .cd-checkout-breakdown {
-    /* Generous ceiling to allow growth; actual height is content-driven. */
-    max-height: 120px;
-    padding-bottom: 4px;
-    opacity: 1;
-  }
-  .cd-checkout-breakdown-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    width: 100%;
-    /* Padding-right pushes the amount left so its right edge aligns with
-       the Total row's amount text (not its chevron column). 14px = chevron
-       width 10px + 4px gap between amount and chevron. */
-    padding-right: 14px;
-    font-family: var(--pl-body-md-regular-font);
-    font-size: var(--pl-body-md-regular-size);
-    font-weight: var(--pl-body-md-regular-weight);
-    line-height: var(--pl-body-md-regular-lineheight);
-    color: var(--pl-text-secondary);
-  }
-  .cd-checkout-total-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
+    gap: 12px;
     width: 100%;
   }
-  .cd-checkout-total-label {
-    font-family: var(--pl-label-md-semibold-font);
-    font-size: var(--pl-label-md-semibold-size);
-    font-weight: var(--pl-label-md-semibold-weight);
-    line-height: var(--pl-label-md-semibold-lineheight);
-    color: var(--pl-text-primary);
-  }
-  .cd-checkout-total-amount {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    font-family: var(--pl-label-md-semibold-font);
-    font-size: var(--pl-label-md-semibold-size);
-    font-weight: var(--pl-label-md-semibold-weight);
-    line-height: var(--pl-label-md-semibold-lineheight);
-    color: var(--pl-text-primary);
-  }
-  .cd-checkout-total-chevron {
-    display: block;
-    flex-shrink: 0;
-    transition: transform 0.3s cubic-bezier(.25,.46,.45,.94);
-  }
-  .cd-checkout-total-section.is-expanded .cd-checkout-total-chevron {
-    transform: rotate(180deg);
-  }
-  /* Cancellation policy — the DS Banner, grey variant (2363:121). Fill,
-     radius, padding, icon slot and message type all come from `.pl-banner`;
-     only the bullet list inside `__text` is local. */
-  .cd-checkout-cancellation-cutoff {
+  .cd-checkout-section-title {
     margin: 0;
   }
-  .cd-checkout-cancellation-list {
-    margin: 4px 0 0;
-    padding-left: 18px;
-    list-style: disc;
+  .cd-checkout-cancellation-block {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    width: 100%;
   }
-  .cd-checkout-cancellation-list li + li {
-    margin-top: 4px;
+  .cd-checkout-cancellation-cutoff,
+  .cd-checkout-cancellation-body {
+    margin: 0;
   }
-  .cd-checkout-cancellation-list li strong {
-    font-weight: var(--pl-type-weight-bold);
-  }
-  /* Figma hides the Banner title on both variants; this instance opts in, at
-     the same 13px step as the message so the block reads as one paragraph. */
-  .cd-checkout-cancellation .pl-banner__title {
-    font-family: var(--pl-body-sm-semibold-font);
-    font-size: var(--pl-body-sm-semibold-size);
-    font-weight: var(--pl-body-sm-semibold-weight);
-    line-height: var(--pl-body-sm-semibold-lineheight);
+  /* Footer dock — legal copy above the morphing CTA, full sheet width. */
+  .cd-checkout-footer {
+    flex-shrink: 0;
+    box-sizing: border-box;
+    width: 100%;
+    padding: 12px 20px 88px;
+    background: var(--pl-surface-default);
+    box-shadow: 0 12px 16px rgb(var(--pl-shadow-rgb) / 0.2);
+    transition: opacity 0.18s ease;
   }
   .cd-checkout-terms {
-    font-family: var(--pl-body-sm-regular-font);
-    font-size: var(--pl-body-sm-regular-size);
-    font-weight: var(--pl-body-sm-regular-weight);
-    line-height: var(--pl-body-sm-regular-lineheight);
+    margin: 0;
+    font-family: var(--pl-caption-lg-medium-font);
+    font-size: var(--pl-caption-lg-medium-size);
+    font-weight: var(--pl-caption-lg-medium-weight);
+    line-height: var(--pl-caption-lg-medium-lineheight);
     color: var(--pl-text-primary);
   }
   .cd-checkout-link {
     color: var(--pl-text-link);
+    font-family: var(--pl-caption-lg-bold-font);
+    font-size: var(--pl-caption-lg-bold-size);
+    font-weight: var(--pl-caption-lg-bold-weight);
+    line-height: var(--pl-caption-lg-bold-lineheight);
     text-decoration: underline;
   }
   .cd-checkout-link:active { opacity: 0.6; }
+  .cd-cancel-info {
+    display: flex;
+    flex-direction: column;
+  }
+  .cd-cancel-info .cd-checkout-class-title {
+    font-family: var(--pl-title-lg-medium-font);
+    font-size: var(--pl-title-lg-medium-size);
+    font-weight: var(--pl-title-lg-medium-weight);
+    line-height: var(--pl-title-lg-medium-lineheight);
+    color: var(--pl-text-primary);
+  }
+  .cd-cancel-info .cd-checkout-time {
+    font-family: var(--pl-label-lg-semibold-font);
+    font-size: var(--pl-label-lg-semibold-size);
+    font-weight: var(--pl-label-lg-semibold-weight);
+    line-height: var(--pl-label-lg-semibold-lineheight);
+    color: var(--pl-text-primary);
+  }
+  .cd-cancel-info .cd-checkout-instructor,
+  .cd-cancel-info .cd-checkout-venue {
+    font-family: var(--pl-body-md-regular-font);
+    font-size: var(--pl-body-md-regular-size);
+    font-weight: var(--pl-body-md-regular-weight);
+    line-height: var(--pl-body-md-regular-lineheight);
+    color: var(--pl-text-primary);
+  }
   /* Cancel-reservation mode: same sheet chrome, different body content.
      Mode-specific subsections opt-in to display with .cd-checkout-mode-*. */
   .cd-checkout-sheet:not(.is-cancel-mode) .cd-checkout-mode-cancel {
@@ -3275,54 +3278,11 @@
     width: 100%;
     height: 100%;
   }
-  .cd-checkout-payment {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 16px;
-  }
-  .cd-checkout-payment-left {
-    display: inline-flex;
-    align-items: center;
-    gap: 16px;
-    min-width: 0;
-  }
-  .cd-checkout-payment-label {
-    font-family: var(--pl-label-md-semibold-font);
-    font-size: var(--pl-label-md-semibold-size);
-    font-weight: var(--pl-label-md-semibold-weight);
-    line-height: var(--pl-label-md-semibold-lineheight);
-    color: var(--pl-text-primary);
-  }
   .cd-checkout-payment-card {
     display: inline-flex;
     align-items: center;
     gap: 8px;
-    font-family: var(--pl-body-sm-regular-font);
-    font-size: var(--pl-body-sm-regular-size);
-    font-weight: var(--pl-body-sm-regular-weight);
-    line-height: var(--pl-body-sm-regular-lineheight);
-    color: var(--pl-text-primary);
-  }
-  .cd-checkout-card-mark {
-    display: inline-flex;
-    width: 29px;
-    height: 20px;
-    flex-shrink: 0;
-  }
-  .cd-checkout-card-mark svg { display: block; }
-  .cd-checkout-card-last4 {
-    font-family: var(--pl-body-sm-regular-font);
-    font-size: var(--pl-body-sm-regular-size);
-    font-weight: var(--pl-body-sm-regular-weight);
-    line-height: var(--pl-body-sm-regular-lineheight);
-    color: var(--pl-text-primary);
-    letter-spacing: 0.5px;
-  }
-  /* "Change" — PLButton Link accent / Small. */
-  .cd-checkout-applepay-mark svg {
-    width: 100%;
-    height: 100%;
+    min-width: 0;
   }
   .cd-checkout-cta {
     /* Anchored to bottom-right at the booking bar's Next coordinates
@@ -3338,7 +3298,7 @@
     /* Flex so the calendar icon in success mode can sit 8px left of the
        label without disturbing the existing absolute spinner overlay. */
     display: flex;
-    /* Long checkout label ("Book and Pay") must never wrap into a
+    /* Long checkout label ("Buy and reserve") must never wrap into a
        second line during the morph. */
     overflow: hidden;
     transition:
@@ -3387,6 +3347,68 @@
   }
   .cd-checkout-sheet.is-open .cd-checkout-cta {
     left: 20px;
+    bottom: 24px;
+  }
+  /* Option picker pane — tabs + scrollable lists + Done CTA. */
+  .cd-checkout-options-tabs {
+    flex-shrink: 0;
+    padding: 0 20px;
+    background: var(--pl-surface-default);
+  }
+  .cd-checkout-options-scroll {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    padding: 16px 20px 24px;
+    box-sizing: border-box;
+  }
+  .cd-checkout-sheet.is-options-open .cd-checkout-options-scroll {
+    /* Reserve space for the fixed Done CTA (48px) + bottom inset (24px)
+       + breathing room so the last pack card footer clears the button. */
+    padding-bottom: 120px;
+  }
+  .cd-options-section {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: 100%;
+  }
+  .cd-options-section-title {
+    margin: 0;
+  }
+  .cd-options-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: 100%;
+  }
+  .cd-options-list .pl-pack {
+    width: 100%;
+    text-align: left;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .cd-pack-footer-list {
+    margin: 0;
+    padding-left: 18px;
+    list-style: disc;
+  }
+  .cd-pack-footer-list li + li {
+    margin-top: 0;
+  }
+  .cd-checkout-options-done {
+    position: absolute;
+    left: 20px;
+    right: 20px;
+    bottom: 24px;
+    z-index: 5;
+    outline: none;
+  }
+  .cd-checkout-options-done:active {
+    transform: scale(0.96);
   }
   .cd-checkout-cta:active {
     transform: scale(0.96);
