@@ -55,29 +55,53 @@
   }
 
   // ===== Home screen → app launch =====
-  // Tapping the Playlist icon expands a red tile out of it, fades the
-  // springboard away, then dissolves the tile onto the welcome screen (which
-  // is already sitting underneath).
+  // Tapping the Playlist icon expands a white tile out of it, fades the
+  // springboard away, and reveals the centered mark. After a short hold the
+  // tile dissolves onto the welcome photo.
   const homeScreen = document.getElementById('screen-home');
   const launchTile = document.getElementById('launch-tile');
   const statusBar = document.getElementById('global-status-bar');
+  const appFrame = document.getElementById('app');
   const LAUNCH_MS = 430;
+  const SPLASH_HOLD_MS = 550;
+  const SPLASH_FADE_MS = 280;
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  function revealWelcome() {
+    launchTile.classList.add('done');
+    appFrame.classList.add('welcome-photo');
+    setTimeout(() => {
+      launchTile.classList.remove('running', 'expanding', 'show-mark', 'done');
+      homeScreen.classList.add('settled');
+    }, reduceMotion ? 0 : SPLASH_FADE_MS);
+  }
 
   document.getElementById('btn-launch-playlist').addEventListener('click', () => {
     if (homeScreen.classList.contains('launching')) return;
+
+    if (reduceMotion) {
+      homeScreen.classList.add('launching', 'covered', 'settled');
+      statusBar.classList.remove('hidden');
+      revealWelcome();
+      return;
+    }
+
+    // Two frames: first paint the fill at icon size, then expand. A single
+    // rAF can still apply both classes before paint, which snaps the transform.
     launchTile.classList.add('running');
-    homeScreen.classList.add('launching');
+    void launchTile.offsetWidth;
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        launchTile.classList.add('expanding');
+        homeScreen.classList.add('launching');
+      });
+    });
 
     setTimeout(() => {
+      homeScreen.classList.add('covered');
+      launchTile.classList.add('show-mark');
       statusBar.classList.remove('hidden');
-      launchTile.classList.add('done');
-      setTimeout(() => {
-        // Drop both GPU layers once nothing is animating. `.launching` has to
-        // stay (it's what keeps the springboard hidden), so the will-change is
-        // released via a second class rather than by removing it.
-        launchTile.classList.remove('running', 'done');
-        homeScreen.classList.add('settled');
-      }, 260);
+      setTimeout(revealWelcome, SPLASH_HOLD_MS);
     }, LAUNCH_MS);
   });
 
@@ -100,7 +124,6 @@
   function updateCpState() {
     const ok = EMAIL_RE.test(cpEmail.value.trim()) && cpPassword.value.length > 0;
     cpSignin.disabled = !ok;
-    cpSignin.classList.toggle('btn-disabled', !ok);
   }
   cpEmail.addEventListener('input', updateCpState);
   cpPassword.addEventListener('input', updateCpState);
@@ -108,6 +131,70 @@
   cpSignin.addEventListener('click', () => {
     if (cpSignin.disabled) return;
     console.log('[signup] ClassPass sign in submitted');
+  });
+
+  // Sign in with Apple — iOS system sheet over a dimmed overlay.
+  const siwa = document.getElementById('siwa');
+  const siwaClose = document.getElementById('siwa-close');
+  function openSiwa() {
+    siwa.classList.add('is-open');
+    siwa.setAttribute('aria-hidden', 'false');
+    siwaClose.focus({ preventScroll: true });
+  }
+  function closeSiwa(opts) {
+    if (!siwa.classList.contains('is-open')) return;
+    siwa.classList.remove('is-open');
+    siwa.setAttribute('aria-hidden', 'true');
+    if (!opts || opts.restoreFocus !== false) {
+      document.getElementById('btn-signin-apple').focus({ preventScroll: true });
+    }
+  }
+  document.getElementById('btn-signin-apple').addEventListener('click', (e) => {
+    e.preventDefault();
+    openSiwa();
+  });
+  siwaClose.addEventListener('click', closeSiwa);
+  document.getElementById('siwa-scrim').addEventListener('click', closeSiwa);
+  document.getElementById('siwa-signin').addEventListener('click', () => {
+    console.log('[signup] Sign in with Apple submitted');
+    enterApp();
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closeSiwa();
+  });
+
+  // ===== Logged-in tab bar =====
+  const appTabs = document.getElementById('app-tabs');
+  const tabBar = document.getElementById('app-tab-bar');
+  const TAB_IDS = ['home', 'search', 'bookings', 'profile'];
+
+  function setTab(id) {
+    if (TAB_IDS.indexOf(id) < 0) return;
+    TAB_IDS.forEach((tab) => {
+      const pane = document.getElementById('pane-' + tab);
+      const btn = tabBar.querySelector('[data-tab="' + tab + '"]');
+      const on = tab === id;
+      if (pane) pane.classList.toggle('is-active', on);
+      if (btn) {
+        btn.classList.toggle('is-selected', on);
+        btn.setAttribute('aria-selected', on ? 'true' : 'false');
+      }
+    });
+  }
+
+  function enterApp() {
+    appTabs.classList.add('is-open');
+    appTabs.setAttribute('aria-hidden', 'false');
+    appFrame.classList.add('in-app');
+    appFrame.classList.remove('welcome-photo');
+    setTab('home');
+    closeSiwa({ restoreFocus: false });
+  }
+
+  tabBar.addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-tab]');
+    if (!btn || !tabBar.contains(btn)) return;
+    setTab(btn.getAttribute('data-tab'));
   });
 
   // "Forgot password?" (on both the ClassPass sign-in and login screens)
@@ -119,7 +206,7 @@
   });
 
   // Password visibility toggles (shared across screens).
-  // Crossed eye (eye-off) = hidden; open eye = revealed.
+  // Crossed eye (eye-off / #pl-eye-slash) = hidden; open eye = revealed.
   document.querySelectorAll('.visibility-toggle[data-target]').forEach(btn => {
     const input = document.getElementById(btn.dataset.target);
     if (!input) return;
@@ -129,6 +216,19 @@
       input.type = show ? 'text' : 'password';
       btn.setAttribute('aria-label', show ? 'Hide password' : 'Show password');
       if (img) img.src = show ? 'figma-screens/eye.svg' : 'figma-screens/eye-off.svg';
+    });
+  });
+
+  document.querySelectorAll('.js-password-toggle').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const box = btn.closest('.pl-field__box');
+      const input = box && box.querySelector('.pl-field__input');
+      const use = btn.querySelector('use');
+      if (!input) return;
+      const show = input.type === 'password';
+      input.type = show ? 'text' : 'password';
+      btn.setAttribute('aria-label', show ? 'Hide password' : 'Show password');
+      if (use) use.setAttribute('href', show ? '#pl-eye' : '#pl-eye-slash');
     });
   });
 
