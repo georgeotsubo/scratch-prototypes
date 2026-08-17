@@ -13,11 +13,11 @@
      prototype.css so local rules can still override a component. -->
 <link rel="stylesheet" href="../design-system/tokens.css">
 <link rel="stylesheet" href="../design-system/typography.css">
-<link rel="stylesheet" href="../design-system/components.css?v=20260817promo">
+<link rel="stylesheet" href="../design-system/components.css?v=20260817successicons">
 <!-- Injects the icon sprite, so `<svg class="pl-icon"><use href="#pl-back">` works.
      Deferred is wrong here: prototype.js builds icon markup as strings at load. -->
-<script src="../design-system/icons.js?v=20260816chevrons"></script>
-<link rel="stylesheet" href="prototype.css?v=20260817scroll">
+<script src="../design-system/icons.js?v=20260817sharesmall"></script>
+<link rel="stylesheet" href="prototype.css?v=20260817cancelfade2">
 <script src="https://cdn.jsdelivr.net/npm/motion@11.18.2/dist/motion.js"></script>
 <script src="config.js"></script>
 </head>
@@ -878,32 +878,27 @@
           <p class="cd-checkout-cancellation-body pl-text-caption-lg-medium">Cancel at least 12 hours before class start to get the visit returned to your pack balance.</p>
         </div>
       </div>
-      <!-- Cancel mode: shows class info without the bordered card so users
-           still see what they're cancelling. JS populates these in parallel
-           with the checkout-mode copy. -->
-      <div class="cd-cancel-info cd-checkout-mode-cancel">
-        <div class="cd-checkout-class-title" id="cd-cancel-class-title">Slow Burn Hot Mat Pilates</div>
-        <div class="cd-checkout-time" id="cd-cancel-time">Tue, Mar 3 &middot; 1:00 PM</div>
-        <div class="cd-checkout-instructor" id="cd-cancel-instructor">Carolyn</div>
-        <div class="cd-checkout-venue" id="cd-cancel-venue">ID Hot Yoga &middot; Lower East Side</div>
-      </div>
-      <div class="cd-cancel-block cd-checkout-mode-cancel">
-        <div class="cd-cancel-line cd-cancel-line--amount">
-          <span class="cd-cancel-label">Refund amount</span>
-          <span class="cd-cancel-amount" id="cd-cancel-refund-amount">$25.00</span>
+      <!-- Cancel mode: design-system .pl-cancel-modal body (12909:345909
+           drop-in · 12909:346047 pack). Sheet chrome + morphing CTA stay
+           so Cancel → Confirm cancellation reads as one transition. -->
+      <div class="pl-cancel-modal cd-cancel-modal cd-checkout-mode-cancel" id="cd-cancel-modal">
+        <div class="pl-cancel-modal__policy">
+          <p class="pl-cancel-modal__policy-title pl-text-title-md-medium">Cancellation Policy</p>
+          <p class="pl-cancel-modal__policy-text pl-text-caption-lg-medium" id="cd-cancel-policy-text">After canceling, you&rsquo;ll get this visit returned to your balance to rebook, good until Mar 17, 2027</p>
         </div>
-        <div class="cd-cancel-line">
-          <span class="cd-cancel-label">Refund to</span>
-          <span class="cd-checkout-payment-card">
-            <img class="pl-payment-section__brand" src="../design-system/assets/Visa.svg" alt="" width="29" height="20" aria-hidden="true">
-            <span class="pl-payment-section__number">•••• 4242</span>
-          </span>
+        <div class="pl-cancel-modal__details">
+          <p class="pl-cancel-modal__class-title pl-text-title-md-medium" id="cd-cancel-class-title">Slow Burn Hot Mat Pilates</p>
+          <p class="pl-cancel-modal__class-meta pl-body-small-regular" id="cd-cancel-time">Tue, Mar 3 &middot; 1:00 PM</p>
+          <p class="pl-cancel-modal__class-meta pl-body-small-regular" id="cd-cancel-instructor">Carolyn</p>
+          <p class="pl-cancel-modal__class-meta pl-body-small-regular" id="cd-cancel-venue">ID Hot Yoga &middot; Lower East Side</p>
         </div>
       </div>
-      <p class="cd-cancel-caption cd-checkout-mode-cancel">We&rsquo;ll send the refund to your original payment method. Refunds typically appear in 5&ndash;10 business days.</p>
     </div>
     <div class="cd-checkout-footer cd-checkout-mode-checkout">
       <p class="cd-checkout-terms">By tapping &ldquo;Buy and reserve,&rdquo; you agree to the <a href="#" class="cd-checkout-link">Terms of Use</a>, Cancellation Policy above, and acknowledge the <a href="#" class="cd-checkout-link">Privacy Policy</a>.</p>
+    </div>
+    <div class="cd-checkout-footer cd-checkout-mode-cancel">
+      <p class="pl-cancel-modal__legal">By tapping &ldquo;Confirm cancellation,&rdquo; you agree to the <a href="#" class="cd-checkout-link">Terms of Use</a>, Cancellation Policy above, and acknowledge the <a href="#" class="cd-checkout-link">Privacy Policy</a>.</p>
     </div>
     <button class="pl-btn pl-btn--md pl-btn--primary pl-btn--pill cd-checkout-cta" id="cd-checkout-cta"><img class="cd-cta-icon-calendar" src="figma-screens/calendar-icon.svg" alt="" aria-hidden="true" draggable="false"><span class="cd-cta-label">Buy and reserve</span><span class="cd-cta-spinner" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></button>
       </div>
@@ -974,14 +969,52 @@
       <footer class="pl-success-modal__footer">
         <div class="pl-success-modal__actions">
           <button type="button" class="pl-btn pl-btn--md pl-btn--neutral pl-btn--pill" id="cd-checkout-success-add">
-            <span class="pl-btn__icon" aria-hidden="true"><svg class="pl-icon"><use href="#pl-calendar-small"></use></svg></span>
+            <span class="pl-btn__icon" aria-hidden="true"><svg class="pl-icon"><use href="#pl-calendar-add"></use></svg></span>
             Add
           </button>
           <button type="button" class="pl-btn pl-btn--md pl-btn--neutral pl-btn--pill" id="cd-checkout-share" aria-label="Share">
-            <span class="pl-btn__icon" aria-hidden="true"><svg class="pl-icon"><use href="#pl-share"></use></svg></span>
+            <span class="pl-btn__icon" aria-hidden="true"><svg class="pl-icon"><use href="#pl-share-small"></use></svg></span>
             Share
           </button>
         </div>
+      </footer>
+    </div>
+    <!-- Cancel confirmed — design-system .pl-cancel-confirm-modal
+         (12909:346164 drop-in · 12909:346314 pack). Pack vs drop-in is
+         toggled in JS from the reservation's purchased option. -->
+    <div class="pl-cancel-confirm-modal cd-checkout-cancel-confirm" id="cd-cancel-confirm" aria-hidden="true">
+      <header class="pl-cancel-confirm-modal__header">
+        <div class="pl-cancel-confirm-modal__toolbar">
+          <span class="pl-cancel-confirm-modal__leading" aria-hidden="true"></span>
+          <h2 class="pl-cancel-confirm-modal__nav-title pl-body-medium-semibold">Cancel reservation</h2>
+          <button type="button" class="pl-icon-btn pl-icon-btn--md pl-icon-btn--raised pl-cancel-confirm-modal__close" id="cd-cancel-confirm-close" aria-label="Close">
+            <svg class="pl-icon" aria-hidden="true"><use href="#pl-close"></use></svg>
+          </button>
+        </div>
+      </header>
+      <div class="pl-cancel-confirm-modal__body">
+        <div class="pl-cancel-confirm-modal__hero">
+          <img class="pl-cancel-confirm-modal__check" src="../design-system/assets/check_success.svg" alt="" width="40" height="40">
+          <p class="pl-cancel-confirm-modal__headline pl-text-heading-h3">Reservation canceled</p>
+          <p class="pl-cancel-confirm-modal__message pl-text-body-md-medium" id="cd-cancel-confirm-message">1 visit was returned to your balance</p>
+        </div>
+        <button type="button" class="pl-btn pl-btn--sm pl-btn--neutral pl-btn--pill pl-cancel-confirm-modal__find" id="cd-cancel-confirm-find">
+          <span class="pl-btn__icon" aria-hidden="true"><svg class="pl-icon"><use href="#pl-calendar-small"></use></svg></span>
+          Find a class
+        </button>
+        <div class="pl-cancel-confirm-modal__pack" id="cd-cancel-confirm-pack">
+          <div class="pl-cancel-confirm-modal__pack-badge">
+            <p class="pl-cancel-confirm-modal__pack-badge-text pl-text-body-md-medium" id="cd-cancel-confirm-pack-badge">10 of 10 visits left</p>
+          </div>
+          <div class="pl-cancel-confirm-modal__pack-copy">
+            <p class="pl-cancel-confirm-modal__pack-title pl-text-title-lg-medium" id="cd-cancel-confirm-pack-title">10 class card (mat + towel included)</p>
+            <p class="pl-cancel-confirm-modal__pack-meta pl-text-body-md-regular" id="cd-cancel-confirm-pack-expiry">Expires Mar 9, 2027</p>
+            <p class="pl-cancel-confirm-modal__pack-venue pl-text-body-md-medium" id="cd-cancel-confirm-pack-venue">KIN Kollective - Nomad</p>
+          </div>
+        </div>
+      </div>
+      <footer class="pl-cancel-confirm-modal__footer">
+        <button type="button" class="pl-btn pl-btn--md pl-btn--inverse pl-btn--pill pl-cancel-confirm-modal__done" id="cd-cancel-confirm-done">Done</button>
       </footer>
     </div>
     <!-- Compact summary that mirrors the booking bar's left content. Hidden
@@ -1044,6 +1077,6 @@
   </div>
 </div>
 
-<script src="prototype.js?v=20260817success3"></script>
+<script src="prototype.js?v=20260817cancelfade2"></script>
 </body>
 </html>

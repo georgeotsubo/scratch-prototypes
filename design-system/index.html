@@ -9,7 +9,7 @@
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="tokens.css">
 <link rel="stylesheet" href="typography.css">
-<link rel="stylesheet" href="components.css?v=20260817promo">
+<link rel="stylesheet" href="components.css?v=20260817calendarscale">
 <style>
   * { box-sizing: border-box; }
   html { scroll-behavior: smooth; }
@@ -204,6 +204,15 @@
     letter-spacing: 0.04em;
   }
   .form-set .pl-field { width: 100%; max-width: 202px; }
+  .cancel-modal-demos {
+    display: flex;
+    flex-direction: column;
+    gap: var(--pl-space-6);
+    max-width: 393px;
+  }
+  .cancel-modal-demos h3 {
+    margin: 0 0 var(--pl-space-3);
+  }
   .pass { color: var(--pl-text-status-success); font-weight: 600; }
   .fail { color: var(--pl-text-status-danger); font-weight: 700; }
   .hidden { display: none !important; }
@@ -879,8 +888,8 @@ Valid for all classes.</span>
       <p class="lede">Booking-confirmed bottom sheet after checkout. Checkmark is
         <code>assets/check_success.svg</code> (exact export). Detail-row icons are
         <code>#pl-calendar-small</code>, <code>#pl-person-small</code>, and
-        <code>#pl-location-pin-small</code>; footer actions use
-        <code>#pl-calendar-small</code> and <code>#pl-share</code>. Close is
+        <code>#pl-location-pin-small</code>; Add uses <code>#pl-calendar-add</code> and
+        Share uses <code>#pl-share-small</code>. Close is
         <code>.pl-icon-btn--raised</code> with <code>#pl-close</code>.</p>
       <div class="stage" style="max-width:353px">
         <div class="pl-success-modal" id="success-modal" role="dialog" aria-labelledby="success-modal-nav-title">
@@ -923,15 +932,168 @@ Valid for all classes.</span>
           <footer class="pl-success-modal__footer">
             <div class="pl-success-modal__actions">
               <button type="button" class="pl-btn pl-btn--md pl-btn--neutral pl-btn--pill">
-                <span class="pl-btn__icon" aria-hidden="true"><svg class="pl-icon"><use href="#pl-calendar-small"></use></svg></span>
+                <span class="pl-btn__icon" aria-hidden="true"><svg class="pl-icon"><use href="#pl-calendar-add"></use></svg></span>
                 Add
               </button>
               <button type="button" class="pl-btn pl-btn--md pl-btn--neutral pl-btn--pill">
-                <span class="pl-btn__icon" aria-hidden="true"><svg class="pl-icon"><use href="#pl-share"></use></svg></span>
+                <span class="pl-btn__icon" aria-hidden="true"><svg class="pl-icon"><use href="#pl-share-small"></use></svg></span>
                 Share
               </button>
             </div>
           </footer>
+        </div>
+      </div>
+    </section>
+
+    <section id="c-cancelmodal">
+      <h2>Cancel modal <span class="count">.pl-cancel-modal · 12909:345909 / 12909:346047</span></h2>
+      <p class="lede">Cancel-reservation sheet from Playlist App MVP. Two variants differ only in
+        the policy inset copy and fill — drop-in uses <code>surface/inset</code>;
+        pack uses <code>surface/subtle</code>. Toolbar close is
+        <code>.pl-icon-btn--raised</code> with <code>#pl-close</code>; CTA is
+        <code>.pl-btn--inverse</code>.</p>
+      <div class="cancel-modal-demos">
+        <div>
+          <h3>Drop-in · 12909:345909</h3>
+          <div class="stage" style="max-width:393px">
+            <div class="pl-cancel-modal" role="dialog" aria-labelledby="cancel-modal-dropin-title">
+              <header class="pl-cancel-modal__header">
+                <div class="pl-cancel-modal__toolbar">
+                  <span class="pl-cancel-modal__leading" aria-hidden="true"></span>
+                  <h2 class="pl-cancel-modal__nav-title pl-body-medium-semibold" id="cancel-modal-dropin-title">Cancel reservation</h2>
+                  <button type="button" class="pl-icon-btn pl-icon-btn--md pl-icon-btn--raised pl-cancel-modal__close" aria-label="Close">
+                    <svg class="pl-icon" aria-hidden="true"><use href="#pl-close"></use></svg>
+                  </button>
+                </div>
+              </header>
+              <div class="pl-cancel-modal__body">
+                <div class="pl-cancel-modal__policy">
+                  <p class="pl-cancel-modal__policy-title pl-text-title-md-medium">Cancellation Policy</p>
+                  <p class="pl-cancel-modal__policy-text pl-text-caption-lg-medium">After canceling, you&rsquo;ll get this visit returned to your balance to rebook, good until [expiration date]</p>
+                </div>
+                <div class="pl-cancel-modal__details">
+                  <p class="pl-cancel-modal__class-title pl-text-title-md-medium">Reformer Vitality</p>
+                  <p class="pl-cancel-modal__class-meta pl-body-small-regular">Tue, Mar 20 &middot; 12:00 PM</p>
+                  <p class="pl-cancel-modal__class-meta pl-body-small-regular">Sue Dickey M.</p>
+                  <p class="pl-cancel-modal__class-meta pl-body-small-regular">KIN Kollective &middot; Nomad</p>
+                </div>
+              </div>
+              <footer class="pl-cancel-modal__footer">
+                <p class="pl-cancel-modal__legal">By tapping &ldquo;Confirm cancellation,&rdquo; you agree to the <a href="#">Terms of Use</a>, Cancellation Policy above, and acknowledge the <a href="#">Privacy Policy</a>.</p>
+                <button type="button" class="pl-btn pl-btn--md pl-btn--inverse pl-btn--pill pl-cancel-modal__confirm">Confirm cancellation</button>
+              </footer>
+            </div>
+          </div>
+        </div>
+        <div>
+          <h3>Class pack · 12909:346047</h3>
+          <div class="stage" style="max-width:393px">
+            <div class="pl-cancel-modal pl-cancel-modal--pack" role="dialog" aria-labelledby="cancel-modal-pack-title">
+              <header class="pl-cancel-modal__header">
+                <div class="pl-cancel-modal__toolbar">
+                  <span class="pl-cancel-modal__leading" aria-hidden="true"></span>
+                  <h2 class="pl-cancel-modal__nav-title pl-body-medium-semibold" id="cancel-modal-pack-title">Cancel reservation</h2>
+                  <button type="button" class="pl-icon-btn pl-icon-btn--md pl-icon-btn--raised pl-cancel-modal__close" aria-label="Close">
+                    <svg class="pl-icon" aria-hidden="true"><use href="#pl-close"></use></svg>
+                  </button>
+                </div>
+              </header>
+              <div class="pl-cancel-modal__body">
+                <div class="pl-cancel-modal__policy">
+                  <p class="pl-cancel-modal__policy-title pl-text-title-md-medium">Cancellation Policy</p>
+                  <p class="pl-cancel-modal__policy-text pl-text-caption-lg-medium">After canceling, you&rsquo;ll get a visit returned to your pack, good until [pack expiration date].</p>
+                </div>
+                <div class="pl-cancel-modal__details">
+                  <p class="pl-cancel-modal__class-title pl-text-title-md-medium">Reformer Vitality</p>
+                  <p class="pl-cancel-modal__class-meta pl-body-small-regular">Tue, Mar 20 &middot; 12:00 PM</p>
+                  <p class="pl-cancel-modal__class-meta pl-body-small-regular">Sue Dickey M.</p>
+                  <p class="pl-cancel-modal__class-meta pl-body-small-regular">KIN Kollective &middot; Nomad</p>
+                </div>
+              </div>
+              <footer class="pl-cancel-modal__footer">
+                <p class="pl-cancel-modal__legal">By tapping &ldquo;Confirm cancellation,&rdquo; you agree to the <a href="#">Terms of Use</a>, Cancellation Policy above, and acknowledge the <a href="#">Privacy Policy</a>.</p>
+                <button type="button" class="pl-btn pl-btn--md pl-btn--inverse pl-btn--pill pl-cancel-modal__confirm">Confirm cancellation</button>
+              </footer>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="c-cancelconfirm">
+      <h2>Cancel confirm modal <span class="count">.pl-cancel-confirm-modal · 12909:346164 / 12909:346314</span></h2>
+      <p class="lede">Post-cancellation success sheet from Playlist App MVP. Checkmark is
+        <code>assets/check_success.svg</code> (same export as booking success). Drop-in
+        (<code>12909:346164</code>) returns a visit to balance and offers a neutral
+        <strong>Find a class</strong> pill with <code>#pl-calendar-small</code>. Pack
+        (<code>12909:346314</code>) shows a pack summary card with visits-left badge.
+        Both end with an inverse <strong>Done</strong> CTA.</p>
+      <div class="cancel-modal-demos">
+        <div>
+          <h3>Drop-in · 12909:346164</h3>
+          <div class="stage" style="max-width:393px">
+            <div class="pl-cancel-confirm-modal" role="dialog" aria-labelledby="cancel-confirm-dropin-title">
+              <header class="pl-cancel-confirm-modal__header">
+                <div class="pl-cancel-confirm-modal__toolbar">
+                  <span class="pl-cancel-confirm-modal__leading" aria-hidden="true"></span>
+                  <h2 class="pl-cancel-confirm-modal__nav-title pl-body-medium-semibold" id="cancel-confirm-dropin-title">Cancel reservation</h2>
+                  <button type="button" class="pl-icon-btn pl-icon-btn--md pl-icon-btn--raised pl-cancel-confirm-modal__close" aria-label="Close">
+                    <svg class="pl-icon" aria-hidden="true"><use href="#pl-close"></use></svg>
+                  </button>
+                </div>
+              </header>
+              <div class="pl-cancel-confirm-modal__body">
+                <div class="pl-cancel-confirm-modal__hero">
+                  <img class="pl-cancel-confirm-modal__check" src="assets/check_success.svg" alt="" width="40" height="40">
+                  <p class="pl-cancel-confirm-modal__headline pl-text-heading-h3">Reservation canceled</p>
+                  <p class="pl-cancel-confirm-modal__message pl-text-body-md-medium">1 visit was returned to your balance</p>
+                </div>
+                <button type="button" class="pl-btn pl-btn--sm pl-btn--neutral pl-btn--pill pl-cancel-confirm-modal__find">
+                  <span class="pl-btn__icon" aria-hidden="true"><svg class="pl-icon"><use href="#pl-calendar-small"></use></svg></span>
+                  Find a class
+                </button>
+              </div>
+              <footer class="pl-cancel-confirm-modal__footer">
+                <button type="button" class="pl-btn pl-btn--md pl-btn--inverse pl-btn--pill pl-cancel-confirm-modal__done">Done</button>
+              </footer>
+            </div>
+          </div>
+        </div>
+        <div>
+          <h3>Class pack · 12909:346314</h3>
+          <div class="stage" style="max-width:393px">
+            <div class="pl-cancel-confirm-modal pl-cancel-confirm-modal--pack" role="dialog" aria-labelledby="cancel-confirm-pack-title">
+              <header class="pl-cancel-confirm-modal__header">
+                <div class="pl-cancel-confirm-modal__toolbar">
+                  <span class="pl-cancel-confirm-modal__leading" aria-hidden="true"></span>
+                  <h2 class="pl-cancel-confirm-modal__nav-title pl-body-medium-semibold" id="cancel-confirm-pack-title">Cancel reservation</h2>
+                  <button type="button" class="pl-icon-btn pl-icon-btn--md pl-icon-btn--raised pl-cancel-confirm-modal__close" aria-label="Close">
+                    <svg class="pl-icon" aria-hidden="true"><use href="#pl-close"></use></svg>
+                  </button>
+                </div>
+              </header>
+              <div class="pl-cancel-confirm-modal__body">
+                <div class="pl-cancel-confirm-modal__hero">
+                  <img class="pl-cancel-confirm-modal__check" src="assets/check_success.svg" alt="" width="40" height="40">
+                  <p class="pl-cancel-confirm-modal__headline pl-text-heading-h3">Reservation canceled</p>
+                  <p class="pl-cancel-confirm-modal__message pl-text-body-md-medium">Your visit is back in your pack</p>
+                </div>
+                <div class="pl-cancel-confirm-modal__pack">
+                  <div class="pl-cancel-confirm-modal__pack-badge">
+                    <p class="pl-cancel-confirm-modal__pack-badge-text pl-text-body-md-medium">9 of 10 visits left</p>
+                  </div>
+                  <div class="pl-cancel-confirm-modal__pack-copy">
+                    <p class="pl-cancel-confirm-modal__pack-title pl-text-title-lg-medium">10 class card (mat + towel)</p>
+                    <p class="pl-cancel-confirm-modal__pack-meta pl-text-body-md-regular">Expires Mar 9, 2027</p>
+                    <p class="pl-cancel-confirm-modal__pack-venue pl-text-body-md-medium">KIN Kollective - Nomad</p>
+                  </div>
+                </div>
+              </div>
+              <footer class="pl-cancel-confirm-modal__footer">
+                <button type="button" class="pl-btn pl-btn--md pl-btn--inverse pl-btn--pill pl-cancel-confirm-modal__done">Done</button>
+              </footer>
+            </div>
+          </div>
         </div>
       </div>
     </section>
@@ -989,6 +1151,8 @@ Valid for all classes.</span>
 
       <h3>In component slots</h3>
       <div class="row">
+        <button class="pl-btn pl-btn--md pl-btn--neutral pl-btn--pill">
+          <span class="pl-btn__icon"><svg class="pl-icon"><use href="#pl-calendar-add"></use></svg></span>Add</button>
         <button class="pl-btn pl-btn--md pl-btn--primary">
           <span class="pl-btn__icon"><svg class="pl-icon"><use href="#pl-calendar-small"></use></svg></span>Book</button>
         <button class="pl-icon-btn pl-icon-btn--md pl-icon-btn--neutral" aria-label="Close">
@@ -1017,7 +1181,7 @@ Valid for all classes.</span>
   </main>
 </div>
 
-<script src="icons.js?v=20260817icons"></script>
+<script src="icons.js?v=20260817sharesmall"></script>
 <script src="tokens.js"></script>
 <script src="typography.js"></script>
 <script>
@@ -1308,7 +1472,7 @@ Valid for all classes.</span>
     ['Components', ['c-button', 'c-iconbutton', 'c-chip', 'c-form', 'c-searchbar', 'c-classcard',
                     'c-schedulecard', 'c-pack', 'c-reviewcard', 'c-ratingssummary', 'c-ratingdistribution',
                     'c-mapcard', 'c-venuecard', 'c-banner', 'c-promo-banner', 'c-checkoutcard',
-                    'c-paymentsection', 'c-successmodal', 'c-tabnav', 'c-tabbar', 'c-icons']],
+                    'c-paymentsection', 'c-successmodal', 'c-cancelmodal', 'c-cancelconfirm', 'c-tabnav', 'c-tabbar', 'c-icons']],
     ['Reference', ['parity']]
   ];
   document.getElementById('nav').innerHTML = GROUPS.map(function (g) {

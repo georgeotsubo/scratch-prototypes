@@ -15,6 +15,8 @@
      Ratings summary 1321:5446   Rating distribution 1323:5708
      Banner        2363:121    Tab bar       1495:394    (pages "Card", "Banner", "Tab bar")
      Checkout card 2511:10595  Payment section 2511:11765 · 2511:11842
+     Cancel modal   12909:345909 (drop-in) · 12909:346047 (pack)
+     Cancel confirm 12909:346164 (drop-in) · 12909:346314 (pack)
 
    Every value below traces to a bound variable in Figma. Where Figma had no
    variable, or the binding was broken, it's called out in a comment and in
@@ -107,7 +109,10 @@
   font-size: var(--btn-icon);
   line-height: 1;
 }
-.pl-btn__icon > svg { width: 100%; height: 100%; display: block; fill: currentColor; }
+.pl-btn__icon > svg,
+.pl-btn__icon > img { width: 100%; height: 100%; display: block; }
+.pl-btn__icon > svg { fill: currentColor; }
+.pl-btn__icon > img { object-fit: contain; }
 
 /* --- Variants -------------------------------------------------------------- */
 
@@ -1862,9 +1867,8 @@ button.pl-venue-card { cursor: pointer; -webkit-tap-highlight-color: transparent
    Booking-confirmed bottom sheet: toolbar with close, success hero, booking
    detail card, and Add / Share actions. Checkmark is assets/check_success.svg
    (exact export). Row icons are #pl-calendar-small, #pl-person-small, and
-   #pl-location-pin-small from the sprite; footer buttons use
-   #pl-calendar-small and #pl-share. Close is .pl-icon-btn--raised +
-   #pl-close. */
+   #pl-location-pin-small from the sprite; footer buttons use #pl-calendar-add
+   and #pl-share-small. Close is #pl-close. */
 
 .pl-success-modal {
   display: flex;
@@ -2022,8 +2026,8 @@ button.pl-venue-card { cursor: pointer; -webkit-tap-highlight-color: transparent
 }
 
 .pl-success-modal__detail-icon > .pl-icon {
-  width: var(--pl-symbol-size-md);
-  height: var(--pl-symbol-size-md);
+  width: var(--pl-icon-md);
+  height: var(--pl-icon-md);
 }
 
 .pl-success-modal__detail-text {
@@ -2053,6 +2057,349 @@ button.pl-venue-card { cursor: pointer; -webkit-tap-highlight-color: transparent
 .pl-success-modal__actions .pl-btn {
   flex: 1 1 0;
   min-width: 0;
+  --btn-icon: var(--pl-icon-md);
+}
+
+/* --- Cancel modal — .pl-cancel-modal (12909:345909 · 12909:346047) ---------
+
+   Cancel-reservation bottom sheet. Toolbar + close match .pl-success-modal.
+   Policy inset uses surface/inset for drop-in (12909:345909) and
+   surface/subtle for pack (12909:346047). Class summary reuses checkout-card
+   title/meta typography. Footer legal + inverse Confirm CTA. */
+
+.pl-cancel-modal {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 393px;
+  background: var(--pl-surface-default);
+  border-radius:
+    var(--pl-radius-component-modal-sheet)
+    var(--pl-radius-component-modal-sheet)
+    0
+    0;
+  color: var(--pl-text-primary);
+  font-family: var(--pl-type-font-primary);
+  overflow: hidden;
+}
+
+.pl-cancel-modal__header {
+  box-sizing: border-box;
+  padding:
+    var(--pl-space-md)
+    var(--pl-space-lg)
+    10px;
+}
+
+.pl-cancel-modal__toolbar {
+  display: grid;
+  grid-template-columns: 44px 1fr 44px;
+  align-items: center;
+  min-height: 44px;
+  width: 100%;
+}
+
+.pl-cancel-modal__leading {
+  grid-column: 1;
+  grid-row: 1;
+  width: 44px;
+  height: 44px;
+}
+
+.pl-cancel-modal__nav-title {
+  grid-column: 1 / -1;
+  grid-row: 1;
+  justify-self: center;
+  margin: 0;
+  max-width: calc(100% - 88px);
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pl-cancel-modal__close {
+  grid-column: 3;
+  grid-row: 1;
+  justify-self: end;
+}
+
+.pl-cancel-modal__body {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--pl-space-md);
+  box-sizing: border-box;
+  width: 100%;
+  padding:
+    var(--pl-space-xs)
+    var(--pl-space-lg)
+    0;
+}
+
+.pl-cancel-modal__policy {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pl-space-xxs);
+  box-sizing: border-box;
+  width: 100%;
+  padding:
+    var(--pl-space-sm)
+    var(--pl-space-md)
+    var(--pl-space-sm)
+    var(--pl-space-sm);
+  background: var(--pl-surface-inset);
+  border-radius: var(--pl-radius-component-button-regular);
+}
+
+.pl-cancel-modal--pack .pl-cancel-modal__policy {
+  background: var(--pl-surface-subtle);
+}
+
+.pl-cancel-modal__policy-title {
+  margin: 0;
+  color: var(--pl-text-primary);
+}
+
+.pl-cancel-modal__policy-text {
+  margin: 0;
+  color: var(--pl-text-primary);
+}
+
+.pl-cancel-modal__details {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  box-sizing: border-box;
+  width: 100%;
+  padding: var(--pl-space-md);
+  background: var(--pl-surface-default);
+  border: var(--pl-border-semantic-100) solid var(--pl-border-default);
+  border-radius: var(--pl-radius-component-card-default);
+}
+
+.pl-cancel-modal__class-title {
+  margin: 0;
+  color: var(--pl-text-primary);
+}
+
+.pl-cancel-modal__class-meta {
+  margin: 0;
+  color: var(--pl-text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  width: 100%;
+}
+
+.pl-cancel-modal__footer {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--pl-space-md);
+  box-sizing: border-box;
+  width: 100%;
+  padding:
+    var(--pl-space-sm)
+    var(--pl-space-lg)
+    var(--pl-space-xl);
+}
+
+.pl-cancel-modal__legal {
+  margin: 0;
+  min-height: var(--pl-size-componentsize-48);
+  display: block;
+  font-family: var(--pl-caption-lg-font);
+  font-size: var(--pl-caption-lg-size);
+  line-height: var(--pl-caption-lg-lineheight);
+  font-weight: var(--pl-caption-lg-weight);
+  color: var(--pl-text-primary);
+}
+
+.pl-cancel-modal__legal a {
+  color: var(--pl-text-link);
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-position: from-font;
+}
+
+.pl-cancel-modal__confirm {
+  width: 100%;
+}
+
+/* --- Cancel confirm modal — .pl-cancel-confirm-modal -----------------------
+   (12909:346164 drop-in · 12909:346314 pack)
+
+   Post-cancellation success sheet. Reuses check_success.svg (same 40×40 export
+   as booking success). Drop-in adds a neutral Find a class pill; pack adds a
+   bordered pack summary card with visits-left badge. */
+
+.pl-cancel-confirm-modal {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 393px;
+  background: var(--pl-surface-default);
+  border-radius:
+    var(--pl-radius-component-modal-sheet)
+    var(--pl-radius-component-modal-sheet)
+    0
+    0;
+  color: var(--pl-text-primary);
+  font-family: var(--pl-type-font-primary);
+  overflow: hidden;
+}
+
+.pl-cancel-confirm-modal__header {
+  box-sizing: border-box;
+  padding:
+    var(--pl-space-md)
+    var(--pl-space-lg)
+    10px;
+}
+
+.pl-cancel-confirm-modal__toolbar {
+  display: grid;
+  grid-template-columns: 44px 1fr 44px;
+  align-items: center;
+  min-height: 44px;
+  width: 100%;
+}
+
+.pl-cancel-confirm-modal__leading {
+  grid-column: 1;
+  grid-row: 1;
+  width: 44px;
+  height: 44px;
+}
+
+.pl-cancel-confirm-modal__nav-title {
+  grid-column: 1 / -1;
+  grid-row: 1;
+  justify-self: center;
+  margin: 0;
+  max-width: calc(100% - 88px);
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pl-cancel-confirm-modal__close {
+  grid-column: 3;
+  grid-row: 1;
+  justify-self: end;
+}
+
+.pl-cancel-confirm-modal__body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--pl-space-xl);
+  box-sizing: border-box;
+  width: 100%;
+  padding:
+    var(--pl-space-xs)
+    var(--pl-space-lg)
+    0;
+}
+
+.pl-cancel-confirm-modal__hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--pl-space-xs);
+  width: 100%;
+  text-align: center;
+}
+
+.pl-cancel-confirm-modal__check {
+  flex: none;
+  display: block;
+  width: 40px;
+  height: 40px;
+}
+
+.pl-cancel-confirm-modal__headline {
+  margin: 0;
+  color: var(--pl-text-primary);
+}
+
+.pl-cancel-confirm-modal__message {
+  margin: 0;
+  color: var(--pl-text-status-success);
+}
+
+.pl-cancel-confirm-modal__find {
+  flex: none;
+}
+
+.pl-cancel-confirm-modal__pack {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--pl-space-sm);
+  box-sizing: border-box;
+  width: 100%;
+  padding: var(--pl-space-md);
+  background: var(--pl-surface-default);
+  border: var(--pl-border-semantic-100) solid var(--pl-border-default);
+  border-radius: var(--pl-radius-semantic-lg);
+}
+
+.pl-cancel-confirm-modal__pack-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  align-self: flex-start;
+  padding: var(--pl-space-xs) var(--pl-space-sm);
+  background: var(--pl-surface-subtle);
+  border-radius: var(--pl-radius-semantic-xxl);
+}
+
+.pl-cancel-confirm-modal__pack-badge-text {
+  margin: 0;
+  color: var(--pl-text-primary);
+}
+
+.pl-cancel-confirm-modal__pack-copy {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--pl-space-xxs);
+  width: 100%;
+}
+
+.pl-cancel-confirm-modal__pack-title {
+  margin: 0;
+  color: var(--pl-text-primary);
+}
+
+.pl-cancel-confirm-modal__pack-meta {
+  margin: 0;
+  color: var(--pl-text-secondary);
+}
+
+.pl-cancel-confirm-modal__pack-venue {
+  margin: 0;
+  color: var(--pl-text-secondary);
+}
+
+.pl-cancel-confirm-modal__footer {
+  box-sizing: border-box;
+  width: 100%;
+  padding:
+    var(--pl-space-sm)
+    var(--pl-space-lg)
+    var(--pl-space-xl);
+}
+
+.pl-cancel-confirm-modal__done {
+  width: 100%;
 }
 
 /* ===========================================================================

@@ -416,8 +416,60 @@ collapsed state (2511:11765).
 **`.pl-success-modal`** (`12745:182045`) — booking-confirmed bottom sheet shown
 after checkout succeeds. Checkmark is `assets/check_success.svg` (exact export —
 do not redraw). Detail rows use `#pl-calendar-small`, `#pl-person-small`, and
-`#pl-location-pin-small`; footer actions use `#pl-calendar-small` and
-`#pl-share`. Close is `.pl-icon-btn--raised` with `#pl-close`.
+`#pl-location-pin-small`; footer actions use `#pl-calendar-add` and
+`#pl-share-small`. Close is `.pl-icon-btn--raised` with `#pl-close`.
+
+**`.pl-cancel-modal`** (`12909:345909` drop-in · `12909:346047` pack) — cancel-reservation
+bottom sheet. Policy inset uses `surface/inset` for drop-in and `surface/subtle` for pack
+(add `.pl-cancel-modal--pack`). Close is `.pl-icon-btn--raised` with `#pl-close`; CTA is
+`.pl-btn--inverse`.
+
+```html
+<div class="pl-cancel-modal pl-cancel-modal--pack" role="dialog" aria-labelledby="cancel-title">
+  <header class="pl-cancel-modal__header">
+    <div class="pl-cancel-modal__toolbar">
+      <span class="pl-cancel-modal__leading" aria-hidden="true"></span>
+      <h2 class="pl-cancel-modal__nav-title pl-body-medium-semibold" id="cancel-title">Cancel reservation</h2>
+      <button type="button" class="pl-icon-btn pl-icon-btn--md pl-icon-btn--raised pl-cancel-modal__close" aria-label="Close">
+        <svg class="pl-icon" aria-hidden="true"><use href="#pl-close"></use></svg>
+      </button>
+    </div>
+  </header>
+  <div class="pl-cancel-modal__body">
+    <div class="pl-cancel-modal__policy">
+      <p class="pl-cancel-modal__policy-title pl-text-title-md-medium">Cancellation Policy</p>
+      <p class="pl-cancel-modal__policy-text pl-text-caption-lg-medium">…</p>
+    </div>
+    <div class="pl-cancel-modal__details">…class summary…</div>
+  </div>
+  <footer class="pl-cancel-modal__footer">
+    <p class="pl-cancel-modal__legal">By tapping &ldquo;Confirm cancellation,&rdquo; …</p>
+    <button type="button" class="pl-btn pl-btn--md pl-btn--inverse pl-btn--pill pl-cancel-modal__confirm">Confirm cancellation</button>
+  </footer>
+</div>
+```
+
+**`.pl-cancel-confirm-modal`** (`12909:346164` drop-in · `12909:346314` pack) — post-cancellation
+success sheet. Checkmark is `assets/check_success.svg`. Drop-in shows a success message,
+optional neutral **Find a class** pill (`#pl-calendar-small`), and inverse **Done**. Pack
+adds `.pl-cancel-confirm-modal__pack` with visits-left badge instead of Find a class.
+
+```html
+<div class="pl-cancel-confirm-modal pl-cancel-confirm-modal--pack" role="dialog" aria-labelledby="cancel-confirm-title">
+  <header class="pl-cancel-confirm-modal__header">…toolbar…</header>
+  <div class="pl-cancel-confirm-modal__body">
+    <div class="pl-cancel-confirm-modal__hero">
+      <img class="pl-cancel-confirm-modal__check" src="assets/check_success.svg" alt="" width="40" height="40">
+      <p class="pl-cancel-confirm-modal__headline pl-text-heading-h3">Reservation canceled</p>
+      <p class="pl-cancel-confirm-modal__message pl-text-body-md-medium">Your visit is back in your pack</p>
+    </div>
+    <div class="pl-cancel-confirm-modal__pack">…</div>
+  </div>
+  <footer class="pl-cancel-confirm-modal__footer">
+    <button type="button" class="pl-btn pl-btn--md pl-btn--inverse pl-btn--pill pl-cancel-confirm-modal__done">Done</button>
+  </footer>
+</div>
+```
 
 ```html
 <div class="pl-success-modal" role="dialog" aria-labelledby="booking-confirmed-title">
@@ -606,9 +658,9 @@ weighted heavier, so `#pl-calendar-small` (20px frame) reads bolder than
 
 | Group | Ids |
 | --- | --- |
-| Navigation | `#pl-back` `#pl-close` `#pl-chevron-down` `#pl-chevron-down-small` `#pl-chevron-up-small` `#pl-right-chevron` `#pl-search` `#pl-share` |
+| Navigation | `#pl-back` `#pl-close` `#pl-chevron-down` `#pl-chevron-down-small` `#pl-chevron-up-small` `#pl-right-chevron` `#pl-search` `#pl-share` `#pl-share-small` |
 | Contact & place | `#pl-location-pin` `#pl-location-pin-small` `#pl-person-small` `#pl-directions` `#pl-phone` `#pl-globe` `#pl-tag` `#pl-map-pin` |
-| Booking | `#pl-calendar-small` `#pl-calendar-large` `#pl-stack` |
+| Booking | `#pl-calendar-small` `#pl-calendar-add` `#pl-calendar-large` `#pl-stack` |
 | Rating | `#pl-star-fill` `#pl-star-half` `#pl-star-outline` |
 | Auth & form | `#pl-apple-logo` `#pl-eye` `#pl-eye-slash` `#pl-small-info` |
 | Tab bar | `#pl-tab-home` `#pl-tab-search` `#pl-tab-bookings` `#pl-tab-profile` (25px) |

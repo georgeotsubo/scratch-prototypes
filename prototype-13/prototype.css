@@ -3062,11 +3062,16 @@
     /* Reserve space for the footer dock + CTA below the scroll area. */
     padding-bottom: 16px;
   }
-  .cd-checkout-sheet.is-open.is-cancel-mode .cd-checkout-body {
-    /* Cancel mode has no footer dock — reserve space for the CTA only. */
-    padding-bottom: 72px;
+  /* Nested DS cancel modal: sheet already provides chrome, so drop the
+     standalone-sheet max-width / radius / fill. */
+  .cd-checkout-sheet .cd-cancel-modal {
+    max-width: none;
+    background: transparent;
+    border-radius: 0;
+    overflow: visible;
+    gap: 16px;
   }
-  /* Success — crossfade checkout chrome into design-system .pl-success-modal. */
+  /* Success / cancel-confirm — crossfade checkout chrome into the overlay. */
   .cd-checkout-sheet.is-open .cd-checkout-cta {
     transition:
       left 0.44s cubic-bezier(.32,.72,0,1),
@@ -3106,7 +3111,22 @@
     z-index: 5;
     visibility: hidden;
   }
-  .cd-checkout-success-modal {
+  /* Cancel confirm: leave the cancel sheet in place and fade a full-size
+     overlay on top. Pulling chrome out of flow (the booking-success
+     pattern) is what made the policy + class card jump upward. */
+  .cd-checkout-sheet.is-cancel-confirmed .cd-checkout-header,
+  .cd-checkout-sheet.is-cancel-confirmed .cd-checkout-pane-stack,
+  .cd-checkout-sheet.is-cancel-confirmed .cd-checkout-cta {
+    opacity: 0;
+    pointer-events: none;
+    transform: none;
+    transition: opacity 0.28s ease;
+  }
+  .cd-checkout-sheet.is-cancel-confirmed .cd-checkout-cta {
+    visibility: hidden;
+  }
+  .cd-checkout-success-modal,
+  .cd-checkout-cancel-confirm {
     position: absolute;
     left: 0;
     right: 0;
@@ -3114,6 +3134,8 @@
     display: flex;
     flex-direction: column;
     flex: none;
+    width: 100%;
+    max-width: none;
     opacity: 0;
     visibility: hidden;
     pointer-events: none;
@@ -3138,9 +3160,35 @@
       transform 0.44s cubic-bezier(0.32, 0.72, 0, 1) 0.1s,
       visibility 0s linear 0s;
   }
+  /* Cancel confirm: fade only — no slide-up from the cancel sheet. */
+  .cd-checkout-cancel-confirm {
+    top: 0;
+    bottom: 0;
+    transform: none;
+    transition:
+      opacity 0.28s ease,
+      visibility 0s linear 0.28s;
+  }
+  .cd-checkout-sheet.is-cancel-confirmed .cd-checkout-cancel-confirm {
+    position: absolute;
+    inset: 0;
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    transform: none;
+    transition:
+      opacity 0.28s ease,
+      visibility 0s linear 0s;
+  }
   .cd-checkout-success-modal .pl-success-modal__header {
     opacity: 0;
     transition: opacity 0.28s ease 0.08s;
+  }
+  .cd-checkout-cancel-confirm .pl-cancel-confirm-modal__header,
+  .cd-checkout-cancel-confirm .pl-cancel-confirm-modal__body,
+  .cd-checkout-cancel-confirm .pl-cancel-confirm-modal__footer {
+    opacity: 1;
+    transform: none;
   }
   .cd-checkout-success-modal .pl-success-modal__content,
   .cd-checkout-success-modal .pl-success-modal__footer {
@@ -3166,23 +3214,49 @@
   .cd-checkout-sheet.is-success .cd-checkout-success-modal .pl-success-modal__check {
     transform: scale(1);
   }
-  .cd-checkout-sheet.is-collapsing .cd-checkout-success-modal {
+  .cd-checkout-sheet.is-collapsing .cd-checkout-success-modal,
+  .cd-checkout-sheet.is-collapsing .cd-checkout-cancel-confirm {
     opacity: 0;
     pointer-events: none;
     transition:
       opacity 0.22s ease,
       transform 0.28s cubic-bezier(0.32, 0.72, 0, 1);
   }
+  .cd-checkout-sheet.is-collapsing .cd-checkout-cancel-confirm {
+    transform: none;
+    transition: opacity 0.22s ease;
+  }
+  .pl-cancel-confirm-modal--pack .pl-cancel-confirm-modal__find {
+    display: none;
+  }
+  .pl-cancel-confirm-modal:not(.pl-cancel-confirm-modal--pack) .pl-cancel-confirm-modal__pack {
+    display: none;
+  }
+  /* Confirm overlay fills the locked cancel-modal height. Body grows so
+     Done stays docked; drop-in copy is vertically centered in the gap. */
+  .cd-checkout-sheet.is-cancel-confirmed .cd-checkout-cancel-confirm .pl-cancel-confirm-modal__body {
+    flex: 1 1 auto;
+  }
+  .cd-checkout-sheet.is-cancel-confirmed .cd-checkout-cancel-confirm:not(.pl-cancel-confirm-modal--pack) .pl-cancel-confirm-modal__body {
+    justify-content: center;
+  }
   @media (prefers-reduced-motion: reduce) {
     .cd-checkout-sheet.is-open .cd-checkout-header,
     .cd-checkout-sheet.is-open .cd-checkout-pane-stack,
     .cd-checkout-sheet.is-success .cd-checkout-header,
     .cd-checkout-sheet.is-success .cd-checkout-pane-stack,
+    .cd-checkout-sheet.is-cancel-confirmed .cd-checkout-header,
+    .cd-checkout-sheet.is-cancel-confirmed .cd-checkout-pane-stack,
     .cd-checkout-success-modal,
+    .cd-checkout-cancel-confirm,
     .cd-checkout-success-modal .pl-success-modal__header,
     .cd-checkout-success-modal .pl-success-modal__content,
     .cd-checkout-success-modal .pl-success-modal__footer,
-    .cd-checkout-success-modal .pl-success-modal__check {
+    .cd-checkout-success-modal .pl-success-modal__check,
+    .cd-checkout-cancel-confirm .pl-cancel-confirm-modal__header,
+    .cd-checkout-cancel-confirm .pl-cancel-confirm-modal__body,
+    .cd-checkout-cancel-confirm .pl-cancel-confirm-modal__footer,
+    .cd-checkout-cancel-confirm .pl-cancel-confirm-modal__check {
       transition: none !important;
       transform: none !important;
     }
