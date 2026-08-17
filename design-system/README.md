@@ -732,7 +732,8 @@ Exact asset files in `assets/` (referenced with `<img>`, not the sprite): `googl
 `CP_logo.svg`, `playlist-logo.svg`, `Playlist-logo-mark.svg`, `playlist_app.svg`,
 `classpass_app.svg`, plus other exact exports (`Visa.svg`, `check_success.svg`,
 `apple_logo.svg`, `eye.svg`, `eyeSlash.svg`, `small_info.svg`, `calendar_empty_state.svg`,
-`map-card-pin.svg`, `calendar_add_16.svg`, `map_bookings.png`).
+`map-card-pin.svg`, `calendar_add_16.svg`, `map_bookings.png`, `validation_default.svg`,
+`validation_error.svg`, `validation_indicator.svg`).
 
 `Playlist-logo-mark.svg` is the exact 76×61 red mark (two parallelograms, `#E10E0E`).
 Do not redraw. Distinct from `playlist-logo.svg`, the wordmark. Use `<img>`.
