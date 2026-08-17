@@ -5132,6 +5132,112 @@
       return !!(r && r.optionType === 'pack');
     }
 
+    function cdCurrentVenueKey() {
+      var p = window.__currentVenuePin;
+      return p ? ((p.name || '') + '|' + (p.lat || '') + '|' + (p.lng || '')) : '';
+    }
+
+    function cdVenuePackKeys(source) {
+      var keys = [];
+      function add(key) {
+        if (key && keys.indexOf(key) === -1) keys.push(key);
+      }
+      if (source && source.venueKey) add(source.venueKey);
+      add(cdCurrentVenueKey());
+      return keys;
+    }
+
+    function cdGetVenuePack(venueKey) {
+      if (!window.__venuePacks) return null;
+      if (venueKey && window.__venuePacks[venueKey]) return window.__venuePacks[venueKey];
+      var keys = Object.keys(window.__venuePacks);
+      return keys.length === 1 ? window.__venuePacks[keys[0]] : null;
+    }
+
+    function cdSetVenuePack(venueKey, pack) {
+      if (!pack) return;
+      if (!window.__venuePacks) window.__venuePacks = {};
+      var keys = cdVenuePackKeys({ venueKey: venueKey || pack.venueKey });
+      if (pack.venueKey) keys = cdVenuePackKeys(pack).concat(keys);
+      var i;
+      for (i = 0; i < keys.length; i++) {
+        if (keys[i]) window.__venuePacks[keys[i]] = pack;
+      }
+    }
+
+    function cdVenueHasRedeemablePack(venueKey) {
+      var pack = cdGetVenuePack(venueKey || cdCurrentVenueKey());
+      return !!(pack && pack.remaining > 0);
+    }
+
+    function cdFillPackCard(pack, ids) {
+      if (!pack || !ids) return;
+      var titleEl = document.getElementById(ids.title);
+      var expiryEl = document.getElementById(ids.expiry);
+      var badgeEl = document.getElementById(ids.badge);
+      if (titleEl) titleEl.textContent = pack.title || '';
+      if (expiryEl) expiryEl.textContent = cdFormatPackExpiry(pack.expiryMonths || 12);
+      if (badgeEl) {
+        badgeEl.textContent = pack.remaining + ' of ' + pack.classes + ' visits left';
+      }
+    }
+
+    function cdApplyPackAfterPurchase(purchased) {
+      if (!purchased || purchased.optionType !== 'pack') return;
+      var venueKey = purchased.venueKey || cdCurrentVenueKey();
+      if (!venueKey) return;
+      var pack = cdGetVenuePack(venueKey);
+      if (pack && pack.remaining > 0) {
+        pack.remaining -= 1;
+      } else {
+        var classes = purchased.classes || 10;
+        pack = {
+          venueKey: venueKey,
+          title: purchased.optionTitle,
+          classes: classes,
+          remaining: Math.max(0, classes - 1),
+          expiryMonths: purchased.expiryMonths || 12,
+          optionId: purchased.optionId
+        };
+      }
+      pack.venueKey = venueKey;
+      cdSetVenuePack(venueKey, pack);
+    }
+
+    function cdReturnPackVisit(reservation) {
+      if (!reservation || !cdReservationIsPack(reservation)) return null;
+      var venueKey = reservation.venueKey || cdCurrentVenueKey();
+      var pack = cdGetVenuePack(venueKey);
+      var classes = (pack && pack.classes) || reservation.classes || 10;
+      if (!pack) {
+        pack = {
+          venueKey: venueKey,
+          title: reservation.optionTitle,
+          classes: classes,
+          remaining: Math.max(0, classes - 1),
+          expiryMonths: reservation.expiryMonths || 12,
+          optionId: reservation.optionId
+        };
+      }
+      pack.remaining = Math.min(pack.classes || classes, (pack.remaining || 0) + 1);
+      pack.venueKey = venueKey || pack.venueKey;
+      cdSetVenuePack(venueKey, pack);
+      return pack;
+    }
+
+    function cdCheckoutPrimaryCopy() {
+      if (cdCheckoutSheet.classList.contains('is-cancel-mode')) return 'Confirm cancellation';
+      if (cdCheckoutSheet.classList.contains('is-pack-redeem')) return 'Confirm reservation';
+      return 'Buy and reserve';
+    }
+
+    function cdSyncCheckoutPrimaryCopy() {
+      var copy = cdCheckoutPrimaryCopy();
+      if (cdCheckoutCtaLabel) cdCheckoutCtaLabel.textContent = copy;
+      var termsCta = document.getElementById('cd-checkout-terms-cta');
+      if (termsCta) termsCta.textContent = copy;
+    }
+
     function cdFormatReservationVenue(r) {
       if (!r) return '';
       if (r.locality && r.venueName) return r.venueName + ' - ' + r.locality;
@@ -5145,8 +5251,13 @@
       var instructorEl = document.getElementById('cd-booking-instructor');
       var venueEl = document.getElementById('cd-venue-text');
       var timeEl = document.getElementById('cd-checkout-time');
+      var venueKey = pin ? ((pin.name || '') + '|' + (pin.lat || '') + '|' + (pin.lng || '')) : '';
+      var redeemPack = cdCheckoutSheet.classList.contains('is-pack-redeem')
+        ? cdGetVenuePack(venueKey)
+        : null;
+      var isRedeem = !!(redeemPack && redeemPack.remaining > 0);
       return {
-        venueKey: pin ? ((pin.name || '') + '|' + (pin.lat || '') + '|' + (pin.lng || '')) : '',
+        venueKey: venueKey,
         classTitle: titleEl ? titleEl.textContent : '',
         slotTime: cdLastSlot ? cdLastSlot.time : '',
         absIdx: cdSelectedAbsIdx,
@@ -5191,11 +5302,11 @@
           _resolvedImageCategory: pin._resolvedImageCategory
         } : null,
         checkoutTime: timeEl ? timeEl.textContent : '',
-        optionId: opt ? opt.id : cdDefaultCheckoutOptionId(),
-        optionType: opt ? opt.type : 'dropin',
-        optionTitle: opt ? opt.title : '',
-        classes: opt && opt.classes ? opt.classes : null,
-        expiryMonths: opt && opt.expiryMonths ? opt.expiryMonths : 12
+        optionId: isRedeem ? redeemPack.optionId : (opt ? opt.id : cdDefaultCheckoutOptionId()),
+        optionType: isRedeem ? 'pack' : (opt ? opt.type : 'dropin'),
+        optionTitle: isRedeem ? redeemPack.title : (opt ? opt.title : ''),
+        classes: isRedeem ? redeemPack.classes : (opt && opt.classes ? opt.classes : null),
+        expiryMonths: isRedeem ? (redeemPack.expiryMonths || 12) : (opt && opt.expiryMonths ? opt.expiryMonths : 12)
       };
     }
 
@@ -5374,7 +5485,7 @@
       }
     }
 
-    function populateCancelConfirm(r) {
+    function populateCancelConfirm(r, returnedPack) {
       var isPack = cdReservationIsPack(r);
       if (cdCancelConfirmEl) {
         cdCancelConfirmEl.classList.toggle('pl-cancel-confirm-modal--pack', isPack);
@@ -5386,13 +5497,17 @@
           : '1 visit was returned to your balance';
       }
       if (!isPack || !r) return;
-      var classes = r.classes || 10;
-      var badgeEl = document.getElementById('cd-cancel-confirm-pack-badge');
-      var titleEl = document.getElementById('cd-cancel-confirm-pack-title');
-      var expiryEl = document.getElementById('cd-cancel-confirm-pack-expiry');
-      if (badgeEl) badgeEl.textContent = classes + ' of ' + classes + ' visits left';
-      if (titleEl) titleEl.textContent = r.optionTitle || '';
-      if (expiryEl) expiryEl.textContent = cdFormatPackExpiry(r.expiryMonths || 12);
+      var pack = returnedPack || cdGetVenuePack(r.venueKey || cdCurrentVenueKey()) || {
+        title: r.optionTitle,
+        classes: r.classes || 10,
+        remaining: r.classes || 10,
+        expiryMonths: r.expiryMonths || 12
+      };
+      cdFillPackCard(pack, {
+        title: 'cd-cancel-confirm-pack-title',
+        expiry: 'cd-cancel-confirm-pack-expiry',
+        badge: 'cd-cancel-confirm-pack-badge'
+      });
     }
 
     function cdRemeasureCheckoutHeight() {
@@ -5512,7 +5627,7 @@
         if (cdOptionsIsEntry) {
           cdOptionsIsEntry = false;
           if (cdCheckoutCtaLabel && !cdCheckoutSheet.classList.contains('is-cancel-mode')) {
-            cdCheckoutCtaLabel.textContent = 'Buy and reserve';
+            cdSyncCheckoutPrimaryCopy();
           }
           cdCheckoutSheet.classList.add('is-pushing-checkout');
           cdCheckoutSheet.classList.remove('is-options-open', 'is-options-pending', 'is-options-entry', 'is-popping-to-options');
@@ -5588,6 +5703,7 @@
     // reservation; default red "Book" otherwise). Cleared when the user
     // taps Cancel.
     window.__reservation = null;
+    window.__venuePacks = {};
     function currentSlotMatchesReservation() {
       var r = window.__reservation;
       if (!r) return false;
@@ -5663,7 +5779,8 @@
           if (cdCancelConfirmTimer) clearTimeout(cdCancelConfirmTimer);
           cdCancelConfirmTimer = setTimeout(function() {
             var canceled = window.__reservation;
-            populateCancelConfirm(canceled);
+            var returnedPack = cdReturnPackVisit(canceled);
+            populateCancelConfirm(canceled, returnedPack);
             window.__reservation = null;
             if (window.__applyReservedHighlights) window.__applyReservedHighlights();
             if (window.__syncBookingBarCta) window.__syncBookingBarCta();
@@ -5710,9 +5827,22 @@
       document.getElementById('cd-checkout-time').textContent = checkoutTime;
       document.getElementById('cd-checkout-instructor').textContent = instructor;
       document.getElementById('cd-checkout-venue').textContent = venueStr;
-      cdCheckoutOptionsCatalog = cdBuildCheckoutOptionsCatalog(venueStr);
-      cdCheckoutSelectedId = cdEnsureValidCheckoutOptionId(cdCheckoutSelectedId);
-      cdApplyCheckoutOptionToCard();
+      var redeemPack = cdGetVenuePack(cdCurrentVenueKey());
+      var redeeming = !cdCheckoutSheet.classList.contains('is-cancel-mode')
+        && !!(redeemPack && redeemPack.remaining > 0);
+      cdCheckoutSheet.classList.toggle('is-pack-redeem', redeeming);
+      if (redeeming) {
+        cdFillPackCard(redeemPack, {
+          title: 'cd-checkout-pack-title',
+          expiry: 'cd-checkout-pack-expiry',
+          badge: 'cd-checkout-pack-badge'
+        });
+      } else {
+        cdCheckoutOptionsCatalog = cdBuildCheckoutOptionsCatalog(venueStr);
+        cdCheckoutSelectedId = cdEnsureValidCheckoutOptionId(cdCheckoutSelectedId);
+        cdApplyCheckoutOptionToCard();
+      }
+      cdSyncCheckoutPrimaryCopy();
       // "Cancel by <date> at <time> ET" — exactly 12 hours before class
       // start. Computed from the same date/slotTime we populated above so
       // it always stays in sync with the booking.
@@ -5749,11 +5879,14 @@
     function openCheckout(opts) {
       if (cdCheckoutOpen) return;
       opts = opts || {};
-      var openOnOptions = !!opts.openOnOptions && !cdCheckoutSheet.classList.contains('is-cancel-mode');
       cdCheckoutOpen = true;
       populateCheckout();
+      var redeeming = cdCheckoutSheet.classList.contains('is-pack-redeem');
+      var openOnOptions = !!opts.openOnOptions
+        && !cdCheckoutSheet.classList.contains('is-cancel-mode')
+        && !redeeming;
       cdOptionsIsEntry = openOnOptions;
-      cdCheckoutSheet.classList.toggle('is-flow-b', purchaseFlow === 'B' && !cdCheckoutSheet.classList.contains('is-cancel-mode'));
+      cdCheckoutSheet.classList.toggle('is-flow-b', purchaseFlow === 'B' && !cdCheckoutSheet.classList.contains('is-cancel-mode') && !redeeming);
       cdCheckoutSheet.classList.toggle('is-options-entry', openOnOptions);
       if (openOnOptions) cdPrepareCheckoutOptions();
       // Clear any lingering transitionend listener or pending hide timer
@@ -5822,9 +5955,7 @@
       // the wider text during the early frames of the morph, but that
       // reads better than a 200ms-late text swap mid-expansion.
       if (cdCheckoutCtaLabel) {
-        cdCheckoutCtaLabel.textContent = cdCheckoutSheet.classList.contains('is-cancel-mode')
-          ? 'Confirm cancellation'
-          : 'Buy and reserve';
+        cdSyncCheckoutPrimaryCopy();
       }
       // Add is-open to trigger the coordinated CSS transitions.
       cdCheckoutSheet.classList.add('is-open');
@@ -5917,11 +6048,12 @@
       // The purchased option (drop-in vs pack, and which pack) is stored
       // so a later Cancel opens the matching cancel / confirm modals.
       if (cdCheckoutSheet.classList.contains('is-success')) {
+        cdApplyPackAfterPurchase(purchased);
         window.__reservation = purchased;
         if (window.__applyReservedHighlights) window.__applyReservedHighlights();
         if (window.__syncBookingsCard) window.__syncBookingsCard();
       }
-      cdCheckoutSheet.classList.remove('is-success', 'is-cancel-confirmed');
+      cdCheckoutSheet.classList.remove('is-success', 'is-cancel-confirmed', 'is-pack-redeem');
       if (cdCheckoutSuccessEl) cdCheckoutSuccessEl.setAttribute('aria-hidden', 'true');
       if (cdCancelConfirmEl) cdCancelConfirmEl.setAttribute('aria-hidden', 'true');
       // Morph the sheet's CTA to whatever state the booking bar will show

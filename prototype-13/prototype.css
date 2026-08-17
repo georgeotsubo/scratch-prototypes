@@ -86,6 +86,12 @@
     }
   }
 
+  /* Desktop hover on a phone-frame prototype reads as a stuck hover. Keep
+     press (:active) so taps still dim; skip the hovered fill. */
+  .pl-btn--primary:hover {
+    --btn-bg: var(--pl-accent-default);
+  }
+
   /* Persistent map backdrop */
   #live-map {
     position: absolute;
@@ -3442,6 +3448,17 @@
     font-weight: var(--pl-body-md-regular-weight);
     line-height: var(--pl-body-md-regular-lineheight);
     color: var(--pl-text-primary);
+  }
+  .cd-checkout-section-redeem {
+    gap: var(--pl-space-xs);
+  }
+  .cd-checkout-sheet:not(.is-pack-redeem) .cd-checkout-section-redeem {
+    display: none;
+  }
+  .cd-checkout-sheet.is-pack-redeem .pl-checkout-card__payment,
+  .cd-checkout-sheet.is-pack-redeem .pl-checkout-card__promo,
+  .cd-checkout-sheet.is-pack-redeem .cd-checkout-section-pay {
+    display: none;
   }
   /* Cancel-reservation mode: same sheet chrome, different body content.
      Mode-specific subsections opt-in to display with .cd-checkout-mode-*. */

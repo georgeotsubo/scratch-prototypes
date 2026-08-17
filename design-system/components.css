@@ -1068,10 +1068,10 @@ button.pl-card { cursor: pointer; -webkit-tap-highlight-color: transparent; }
 
 .pl-booking-card__weekday {
   color: var(--pl-accent-default);
-  font-family: var(--pl-label-lg-semibold-font);
-  font-size: var(--pl-label-lg-semibold-size);
-  line-height: var(--pl-label-lg-semibold-lineheight);
-  font-weight: var(--pl-label-lg-semibold-weight);
+  font-family: var(--pl-label-lg-medium-font);
+  font-size: var(--pl-label-lg-medium-size);
+  line-height: var(--pl-label-lg-medium-lineheight);
+  font-weight: var(--pl-label-lg-medium-weight);
   text-align: center;
 }
 
@@ -1690,7 +1690,9 @@ button.pl-venue-card { cursor: pointer; -webkit-tap-highlight-color: transparent
 
    Drop-in (2511:10595): product + qty/price row. Pack (2510:10502): product
    uses label/sm/medium; swap __qty for __details (remaining count + expiry)
-   and add __row--pack so the price sits on the expiry baseline. */
+   and add __row--pack so the price sits on the expiry baseline.
+   Pack redeem (12946:389454): `.pl-checkout-card--class-only` hides payment
+   and promo; pair with `.pl-pack-card` under Reserve with. */
 
 .pl-checkout-card {
   display: flex;
@@ -1865,6 +1867,12 @@ button.pl-venue-card { cursor: pointer; -webkit-tap-highlight-color: transparent
   line-height: var(--pl-label-sm-semibold-lineheight);
   font-weight: var(--pl-label-sm-semibold-weight);
   color: var(--pl-text-status-green);
+}
+
+/* Pack-redeem checkout (12946:389454) — class details only. */
+.pl-checkout-card--class-only .pl-checkout-card__payment,
+.pl-checkout-card--class-only .pl-checkout-card__promo {
+  display: none;
 }
 
 /* --- Payment section — .pl-payment-section (2511:11765 · 2511:11842) ------
@@ -2170,7 +2178,7 @@ button.pl-venue-card { cursor: pointer; -webkit-tap-highlight-color: transparent
 
 .pl-success-modal__detail-row {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: var(--pl-space-xs);
   width: 100%;
   min-width: 0;
@@ -2184,14 +2192,16 @@ button.pl-venue-card { cursor: pointer; -webkit-tap-highlight-color: transparent
 
 .pl-success-modal__detail-icon {
   flex: none;
-  display: inline-flex;
-  align-items: flex-start;
+  display: flex;
+  align-items: center;
   justify-content: center;
-  width: 20px;
+  width: var(--pl-icon-md);
+  height: var(--pl-icon-md);
   color: var(--pl-icon-default);
 }
 
 .pl-success-modal__detail-icon > .pl-icon {
+  display: block;
   width: var(--pl-icon-md);
   height: var(--pl-icon-md);
 }
@@ -2199,6 +2209,9 @@ button.pl-venue-card { cursor: pointer; -webkit-tap-highlight-color: transparent
 .pl-success-modal__detail-text {
   flex: 1;
   min-width: 0;
+  display: flex;
+  align-items: center;
+  line-height: var(--pl-icon-md);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -2504,6 +2517,11 @@ button.pl-venue-card { cursor: pointer; -webkit-tap-highlight-color: transparent
   flex: none;
 }
 
+/* --- Pack card — .pl-pack-card (12946:389175) -------------------------------
+   Owned pack summary: title, expiry, visits-left pill. Used on cancel-confirm
+   and on pack-redeem checkout ("Reserve with"). */
+
+.pl-pack-card,
 .pl-cancel-confirm-modal__pack {
   display: flex;
   flex-direction: column;
@@ -2517,6 +2535,7 @@ button.pl-venue-card { cursor: pointer; -webkit-tap-highlight-color: transparent
   border-radius: var(--pl-radius-semantic-lg);
 }
 
+.pl-pack-card__badge,
 .pl-cancel-confirm-modal__pack-badge {
   display: inline-flex;
   align-items: center;
@@ -2526,11 +2545,13 @@ button.pl-venue-card { cursor: pointer; -webkit-tap-highlight-color: transparent
   border-radius: var(--pl-radius-semantic-xxl);
 }
 
+.pl-pack-card__badge-text,
 .pl-cancel-confirm-modal__pack-badge-text {
   margin: 0;
   color: var(--pl-text-primary);
 }
 
+.pl-pack-card__copy,
 .pl-cancel-confirm-modal__pack-copy {
   display: flex;
   flex-direction: column;
@@ -2539,11 +2560,13 @@ button.pl-venue-card { cursor: pointer; -webkit-tap-highlight-color: transparent
   width: 100%;
 }
 
+.pl-pack-card__title,
 .pl-cancel-confirm-modal__pack-title {
   margin: 0;
   color: var(--pl-text-primary);
 }
 
+.pl-pack-card__meta,
 .pl-cancel-confirm-modal__pack-meta {
   margin: 0;
   color: var(--pl-text-secondary);

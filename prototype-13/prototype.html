@@ -13,11 +13,11 @@
      prototype.css so local rules can still override a component. -->
 <link rel="stylesheet" href="../design-system/tokens.css">
 <link rel="stylesheet" href="../design-system/typography.css">
-<link rel="stylesheet" href="../design-system/components.css?v=20260817packcard">
+<link rel="stylesheet" href="../design-system/components.css?v=20260817successalign">
 <!-- Injects the icon sprite, so `<svg class="pl-icon"><use href="#pl-back">` works.
      Deferred is wrong here: prototype.js builds icon markup as strings at load. -->
 <script src="../design-system/icons.js?v=20260817calendaradd16"></script>
-<link rel="stylesheet" href="prototype.css?v=20260817bookingscrim">
+<link rel="stylesheet" href="prototype.css?v=20260817nohover">
 <script src="https://cdn.jsdelivr.net/npm/motion@11.18.2/dist/motion.js"></script>
 <script src="config.js"></script>
 </head>
@@ -846,7 +846,7 @@
           <span class="pl-checkout-card__promo-text">Explore packs and memberships</span>
         </button>
       </div>
-      <div class="cd-checkout-section cd-checkout-mode-checkout">
+      <div class="cd-checkout-section cd-checkout-mode-checkout cd-checkout-section-pay">
         <h3 class="cd-checkout-section-title pl-text-title-md-medium">Payment</h3>
         <div class="pl-payment-section" id="cd-checkout-payment-section">
           <div class="pl-payment-section__method">
@@ -877,6 +877,18 @@
           </div>
         </div>
       </div>
+      <div class="cd-checkout-section cd-checkout-mode-checkout cd-checkout-section-redeem">
+        <h3 class="cd-checkout-section-title pl-text-title-md-medium">Reserve with</h3>
+        <div class="pl-pack-card" id="cd-checkout-pack-card">
+          <div class="pl-pack-card__copy">
+            <p class="pl-pack-card__title pl-text-title-lg-medium" id="cd-checkout-pack-title">10 class card (mat + towel)</p>
+            <p class="pl-pack-card__meta pl-text-body-md-regular" id="cd-checkout-pack-expiry">Expires Mar 9, 2027</p>
+          </div>
+          <div class="pl-pack-card__badge">
+            <p class="pl-pack-card__badge-text pl-text-body-md-medium" id="cd-checkout-pack-badge">4 of 10 visits left</p>
+          </div>
+        </div>
+      </div>
       <div class="cd-checkout-section cd-checkout-mode-checkout">
         <h3 class="cd-checkout-section-title pl-text-title-md-medium">Cancellation Policy</h3>
         <div class="cd-checkout-cancellation-block">
@@ -901,7 +913,7 @@
       </div>
     </div>
     <div class="cd-checkout-footer cd-checkout-mode-checkout">
-      <p class="cd-checkout-terms">By tapping &ldquo;Buy and reserve,&rdquo; you agree to the <a href="#" class="cd-checkout-link">Terms of Use</a>, Cancellation Policy above, and acknowledge the <a href="#" class="cd-checkout-link">Privacy Policy</a>.</p>
+      <p class="cd-checkout-terms">By tapping &ldquo;<span id="cd-checkout-terms-cta">Buy and reserve</span>,&rdquo; you agree to the <a href="#" class="cd-checkout-link">Terms of Use</a>, Cancellation Policy above, and acknowledge the <a href="#" class="cd-checkout-link">Privacy Policy</a>.</p>
     </div>
     <div class="cd-checkout-footer cd-checkout-mode-cancel">
       <p class="pl-cancel-modal__legal">By tapping &ldquo;Confirm cancellation,&rdquo; you agree to the <a href="#" class="cd-checkout-link">Terms of Use</a>, Cancellation Policy above, and acknowledge the <a href="#" class="cd-checkout-link">Privacy Policy</a>.</p>
@@ -1008,13 +1020,13 @@
           <span class="pl-btn__icon" aria-hidden="true"><svg class="pl-icon"><use href="#pl-calendar-small"></use></svg></span>
           Find a class
         </button>
-        <div class="pl-cancel-confirm-modal__pack" id="cd-cancel-confirm-pack">
-          <div class="pl-cancel-confirm-modal__pack-copy">
-            <p class="pl-cancel-confirm-modal__pack-title pl-text-title-lg-medium" id="cd-cancel-confirm-pack-title">10 class card (mat + towel included)</p>
-            <p class="pl-cancel-confirm-modal__pack-meta pl-text-body-md-regular" id="cd-cancel-confirm-pack-expiry">Expires Mar 9, 2027</p>
+        <div class="pl-pack-card pl-cancel-confirm-modal__pack" id="cd-cancel-confirm-pack">
+          <div class="pl-pack-card__copy pl-cancel-confirm-modal__pack-copy">
+            <p class="pl-pack-card__title pl-cancel-confirm-modal__pack-title pl-text-title-lg-medium" id="cd-cancel-confirm-pack-title">10 class card (mat + towel included)</p>
+            <p class="pl-pack-card__meta pl-cancel-confirm-modal__pack-meta pl-text-body-md-regular" id="cd-cancel-confirm-pack-expiry">Expires Mar 9, 2027</p>
           </div>
-          <div class="pl-cancel-confirm-modal__pack-badge">
-            <p class="pl-cancel-confirm-modal__pack-badge-text pl-text-body-md-medium" id="cd-cancel-confirm-pack-badge">10 of 10 visits left</p>
+          <div class="pl-pack-card__badge pl-cancel-confirm-modal__pack-badge">
+            <p class="pl-pack-card__badge-text pl-cancel-confirm-modal__pack-badge-text pl-text-body-md-medium" id="cd-cancel-confirm-pack-badge">10 of 10 visits left</p>
           </div>
         </div>
       </div>
@@ -1151,6 +1163,6 @@
   </div>
 </div>
 
-<script src="prototype.js?v=20260817packcard"></script>
+<script src="prototype.js?v=20260817packreturn"></script>
 </body>
 </html>

@@ -449,10 +449,29 @@ bottom sheet. Policy inset uses `surface/inset` for drop-in and `surface/subtle`
 </div>
 ```
 
+**`.pl-pack-card`** (`12946:389175`) — owned pack summary: title, expiry, visits-left pill.
+Used on cancel-confirm and pack-redeem checkout.
+
+```html
+<div class="pl-pack-card">
+  <div class="pl-pack-card__copy">
+    <p class="pl-pack-card__title pl-text-title-lg-medium">10 class card (mat + towel)</p>
+    <p class="pl-pack-card__meta pl-text-body-md-regular">Expires Mar 9, 2027</p>
+  </div>
+  <div class="pl-pack-card__badge">
+    <p class="pl-pack-card__badge-text pl-text-body-md-medium">4 of 10 visits left</p>
+  </div>
+</div>
+```
+
+**`.pl-checkout-card--class-only`** (`12946:389454`) — pack-redeem checkout: class details
+only (hides payment + promo). Pair with `.pl-pack-card` under a **Reserve with** heading.
+CTA is **Confirm reservation**. Once pack visits are used up, fall back to the paid checkout card.
+
 **`.pl-cancel-confirm-modal`** (`12909:346164` drop-in · `12909:346314` pack · pack card `12946:389175`) — post-cancellation
 success sheet. Checkmark is `assets/check_success.svg`. Drop-in shows a success message,
 optional neutral **Find a class** pill (`#pl-calendar-small`), and inverse **Done**. Pack
-adds `.pl-cancel-confirm-modal__pack` (title, expiry, visits-left badge) instead of Find a class.
+adds `.pl-pack-card` (title, expiry, visits-left badge) instead of Find a class.
 
 ```html
 <div class="pl-cancel-confirm-modal pl-cancel-confirm-modal--pack" role="dialog" aria-labelledby="cancel-confirm-title">
@@ -710,9 +729,17 @@ weighted heavier, so `#pl-calendar-small` (20px frame) reads bolder than
 | Tab bar | `#pl-tab-home` `#pl-tab-search` `#pl-tab-bookings` `#pl-tab-profile` (25px) |
 
 Exact asset files in `assets/` (referenced with `<img>`, not the sprite): `google_icon.png`,
-`CP_logo.svg`, `playlist-logo.svg`, plus other exact exports (`Visa.svg`, `check_success.svg`,
+`CP_logo.svg`, `playlist-logo.svg`, `Playlist-logo-mark.svg`, `playlist_app.svg`,
+`classpass_app.svg`, plus other exact exports (`Visa.svg`, `check_success.svg`,
 `apple_logo.svg`, `eye.svg`, `eyeSlash.svg`, `small_info.svg`, `calendar_empty_state.svg`,
 `map-card-pin.svg`, `calendar_add_16.svg`, `map_bookings.png`).
+
+`Playlist-logo-mark.svg` is the exact 76×61 red mark (two parallelograms, `#E10E0E`).
+Do not redraw. Distinct from `playlist-logo.svg`, the wordmark. Use `<img>`.
+
+`playlist_app.svg` and `classpass_app.svg` are the exact 40×40 circular app icons
+(red Playlist mark, blue ClassPass link). Do not redraw. Distinct from
+`Playlist-logo-mark.svg` (large mark) and `CP_logo.svg` (24px wordmark-style).
 
 `#pl-calendar-add-16` is the exact `assets/calendar_add_16.svg` export (20×18, 16pt
 SF Symbol weight) rewritten to `currentColor` for the sprite. Use it on Small
