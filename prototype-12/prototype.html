@@ -6,7 +6,7 @@
 <title>Playlist App – Sign Up Flow Prototype</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,100..1000&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,100..1000&family=Google+Sans+Flex:opsz,wght@6..144,1..1000&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../design-system/tokens.css">
 <link rel="stylesheet" href="../design-system/typography.css">
 <link rel="stylesheet" href="../design-system/components.css?v=20260817continue">
@@ -48,7 +48,7 @@
   </div>
 
   <!-- ===== SCREEN 1: Welcome ===== -->
-  <div class="screen welcome-screen active" id="screen-welcome">
+  <div class="screen welcome-screen active" id="screen-welcome" inert>
 
     <!-- Full-bleed hero (12854:337932). Gradient lives on ::after so the
          photo itself stays an unmodified asset. -->
@@ -78,7 +78,7 @@
   </div>
 
   <!-- ===== SCREEN 2: Continue with Playlist or ClassPass (12573:55135) ===== -->
-  <div class="screen continue-screen" id="screen-classpass">
+  <div class="screen continue-screen" id="screen-classpass" inert>
 
     <div class="toolbar">
       <button class="pl-icon-btn pl-icon-btn--md pl-icon-btn--raised" id="btn-back-classpass" aria-label="Back">
@@ -116,7 +116,7 @@
               Sign in with Apple
               <span class="pl-btn__icon" aria-hidden="true"></span>
             </button>
-            <button type="button" class="pl-btn pl-btn--md pl-btn--outline pl-btn--pill pl-btn--full pl-btn--edges">
+            <button type="button" class="pl-btn pl-btn--md pl-btn--outline pl-btn--pill pl-btn--full pl-btn--edges" id="btn-signin-google">
               <span class="pl-btn__icon" aria-hidden="true">
                 <img src="figma-screens/google_icon.png" alt="" width="24" height="24">
               </span>
@@ -158,109 +158,116 @@
     </div>
   </div>
 
-  <!-- ===== SCREEN 3: Sign up with Playlist ===== -->
-  <div class="screen signup-screen" id="screen-signup">
+  <!-- ===== SCREEN 3: Create an account (12901:344263) ===== -->
+  <div class="screen signup-screen" id="screen-signup" inert>
 
-    <!-- Toolbar / back -->
     <div class="toolbar">
-      <button class="icon-btn back-btn" id="btn-back-signup" aria-label="Back">
-        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M12.5 15.5L7 10L12.5 4.5" stroke="#020203" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
+      <button class="pl-icon-btn pl-icon-btn--md pl-icon-btn--raised" id="btn-back-signup" aria-label="Back">
+        <svg class="pl-icon" aria-hidden="true"><use href="#pl-back"></use></svg>
       </button>
     </div>
 
-    <div class="cp-content">
-      <h1 class="cp-title">Sign up with Playlist</h1>
-
-      <div class="cp-form">
-        <div class="field-group">
-          <div class="name-row">
-            <div class="input-field">
-              <input type="text" id="su-first" placeholder="First name" autocomplete="given-name">
-            </div>
-            <div class="input-field">
-              <input type="text" id="su-last" placeholder="Last name" autocomplete="family-name">
-            </div>
-          </div>
-          <div class="input-field">
-            <input type="email" id="su-email" placeholder="Email" autocomplete="email">
-          </div>
+    <div class="signup-content">
+      <div class="signup-header">
+        <div class="signup-copy">
+          <h1 class="pl-text-display-sm">Create an account</h1>
+          <p class="signup-signin-row">
+            <span class="pl-text-body-md-medium">Have a Playlist or ClassPass account?</span>
+            <button type="button" class="pl-btn pl-btn--sm pl-btn--link-accent" id="btn-signup-signin">Sign in</button>
+          </p>
         </div>
-
-        <div class="info-box">
-          <span class="info-icon">
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <circle cx="8" cy="8" r="7" fill="#020203"/>
-              <circle cx="8" cy="4.9" r="0.95" fill="#fff"/>
-              <rect x="7.2" y="6.8" width="1.6" height="5.2" rx="0.8" fill="#fff"/>
-            </svg>
+        <div class="pl-banner signup-note">
+          <span class="pl-banner__icon" aria-hidden="true">
+            <svg class="pl-icon"><use href="#pl-small-info"></use></svg>
           </span>
-          <p class="info-text">By signing up for Playlist, you are also creating a ClassPass account</p>
+          <div class="pl-banner__content">
+            <p class="pl-banner__text">By creating a Playlist account you’ll also be able to login to ClassPass with the same account.</p>
+          </div>
         </div>
+      </div>
 
-        <p class="cp-legal">
-          By tapping "Sign up," you agree to the
+      <hr class="continue-rule" aria-hidden="true">
+
+      <div class="signup-body">
+        <p class="continue-legal pl-text-caption-lg">
+          By tapping any button below, you agree to the
           <a href="#" class="legal-link">Terms of Use</a> and acknowledge the
-          <a href="#" class="legal-link">Privacy Policy</a>. For ClassPass members, the
-          payment method on file will be used for purchases in Playlist. Update anytime
-          in Account Settings.
+          <a href="#" class="legal-link">Privacy Policy</a>.
         </p>
 
-        <button class="btn btn-primary btn-disabled" id="btn-su-submit" disabled>Sign up</button>
+        <div class="signup-form">
+          <div class="signup-fields">
+            <div class="signup-names">
+              <label class="pl-field">
+                <span class="pl-field__box">
+                  <input class="pl-field__input" type="text" id="su-first" placeholder="First name" autocomplete="given-name">
+                </span>
+              </label>
+              <label class="pl-field">
+                <span class="pl-field__box">
+                  <input class="pl-field__input" type="text" id="su-last" placeholder="Last name" autocomplete="family-name">
+                </span>
+              </label>
+            </div>
+            <label class="pl-field">
+              <span class="pl-field__box">
+                <input class="pl-field__input" type="email" id="su-email" placeholder="Email" autocomplete="email">
+              </span>
+            </label>
+          </div>
+          <button type="button" class="pl-btn pl-btn--md pl-btn--primary pl-btn--pill pl-btn--full" id="btn-su-submit" disabled>Sign up</button>
+        </div>
       </div>
     </div>
   </div>
 
-  <!-- ===== SCREEN 4: Create a password ===== -->
-  <div class="screen password-screen" id="screen-password">
+  <!-- ===== SCREEN 4: Create a password (12901:344368) ===== -->
+  <div class="screen password-screen" id="screen-password" inert>
 
-    <!-- Toolbar / back -->
     <div class="toolbar">
-      <button class="icon-btn back-btn" id="btn-back-password" aria-label="Back">
-        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M12.5 15.5L7 10L12.5 4.5" stroke="#020203" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
+      <button class="pl-icon-btn pl-icon-btn--md pl-icon-btn--raised" id="btn-back-password" aria-label="Back">
+        <svg class="pl-icon" aria-hidden="true"><use href="#pl-back"></use></svg>
       </button>
     </div>
 
-    <div class="cp-content">
-      <h1 class="cp-title">Create a password</h1>
+    <div class="password-content">
+      <div class="password-copy">
+        <h1 class="pl-text-display-sm">Create a password</h1>
+      </div>
 
-      <div class="cp-form">
-        <div class="field-group">
-          <div class="input-field">
-            <input type="password" id="pw-password" placeholder="Password" autocomplete="new-password">
-            <button class="visibility-toggle" data-target="pw-password" aria-label="Show password">
-              <img src="figma-screens/eye-off.svg" alt="">
-            </button>
-          </div>
-
-          <div class="validation-msg" id="pw-validation">
-            <span class="validation-indicator">
-              <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <circle cx="10" cy="10" r="10" fill="currentColor"/>
-                <path d="M5.8 10.2L8.7 13L14.2 7" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
+      <div class="password-form">
+        <div class="password-fields">
+          <label class="pl-field pl-field--password">
+            <span class="pl-field__box">
+              <input class="pl-field__input" type="password" id="pw-password" placeholder="Password" autocomplete="new-password">
+              <button type="button" class="pl-field__icon js-password-toggle" aria-label="Show password">
+                <svg class="pl-icon" aria-hidden="true"><use href="#pl-eye-slash"></use></svg>
+              </button>
             </span>
-            <p class="validation-text">Your password must have at least 8 characters, and include a number or symbol.</p>
+          </label>
+
+          <div class="password-hint" id="pw-validation" data-state="default">
+            <img class="password-hint__icon" id="pw-hint-icon" src="../design-system/assets/validation_default.svg" alt="" width="20" height="20">
+            <p class="password-hint__text pl-text-caption-lg">Your password must have at least 8 characters, and include a number or symbol.</p>
           </div>
 
-          <div class="input-field">
-            <input type="password" id="pw-confirm" placeholder="Confirm password" autocomplete="new-password">
-            <button class="visibility-toggle" data-target="pw-confirm" aria-label="Show password">
-              <img src="figma-screens/eye-off.svg" alt="">
-            </button>
-          </div>
+          <label class="pl-field pl-field--password" id="pw-confirm-field">
+            <span class="pl-field__box">
+              <input class="pl-field__input" type="password" id="pw-confirm" placeholder="Confirm password" autocomplete="new-password">
+              <button type="button" class="pl-field__icon js-password-toggle" aria-label="Show password">
+                <svg class="pl-icon" aria-hidden="true"><use href="#pl-eye-slash"></use></svg>
+              </button>
+            </span>
+          </label>
         </div>
 
-        <button class="btn btn-primary btn-disabled" id="btn-pw-continue" disabled>Continue</button>
+        <button type="button" class="pl-btn pl-btn--md pl-btn--primary pl-btn--pill pl-btn--full" id="btn-pw-continue" disabled>Continue</button>
       </div>
     </div>
   </div>
 
   <!-- ===== SCREEN 5: Verify your number ===== -->
-  <div class="screen verify-screen" id="screen-verify">
+  <div class="screen verify-screen" id="screen-verify" inert>
 
     <!-- Toolbar / back -->
     <div class="toolbar">
@@ -289,7 +296,7 @@
   </div>
 
   <!-- ===== SCREEN 6: Enter the 4-digit code ===== -->
-  <div class="screen code-screen" id="screen-code">
+  <div class="screen code-screen" id="screen-code" inert>
 
     <!-- Toolbar / back -->
     <div class="toolbar">
@@ -320,7 +327,7 @@
   </div>
 
   <!-- ===== SCREEN 7: Reset your password ===== -->
-  <div class="screen reset-screen" id="screen-reset">
+  <div class="screen reset-screen" id="screen-reset" inert>
 
     <!-- Toolbar / back -->
     <div class="toolbar">
@@ -348,7 +355,7 @@
   </div>
 
   <!-- ===== SCREEN 8: Log in with Playlist (Welcome back) ===== -->
-  <div class="screen login-screen" id="screen-login">
+  <div class="screen login-screen" id="screen-login" inert>
 
     <!-- Toolbar / back -->
     <div class="toolbar">
@@ -437,6 +444,163 @@
           </div>
         </div>
         <button type="button" class="siwa-signin" id="siwa-signin">Sign In</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- iOS Google sign-in (13012:392650 alert → 13041:393345 sheet) -->
+  <div class="gauth" id="gauth" aria-hidden="true">
+    <div class="gauth-scrim" id="gauth-scrim"></div>
+    <div class="gauth-alert" role="dialog" aria-modal="true" aria-labelledby="gauth-title" aria-describedby="gauth-desc">
+      <div class="gauth-copy">
+        <h2 class="gauth-title" id="gauth-title">&ldquo;Playlist&rdquo; Wants to Use &ldquo;accounts.google.com&rdquo; to Sign In</h2>
+        <p class="gauth-desc" id="gauth-desc">This allows the app and website to share information about you.</p>
+      </div>
+      <div class="gauth-actions">
+        <button type="button" class="gauth-btn" id="gauth-cancel">Cancel</button>
+        <button type="button" class="gauth-btn" id="gauth-continue">Continue</button>
+      </div>
+    </div>
+
+    <div class="gauth-sheet" id="gauth-sheet" role="dialog" aria-modal="true" aria-labelledby="gauth-sheet-title" aria-hidden="true">
+      <div class="gauth-chrome">
+        <div class="gauth-chrome-bar">
+          <button type="button" class="pl-icon-btn pl-icon-btn--md pl-icon-btn--raised" id="gauth-sheet-close" aria-label="Close">
+            <svg class="pl-icon" aria-hidden="true"><use href="#pl-close"></use></svg>
+          </button>
+          <p class="gauth-chrome-url">accounts.google.com</p>
+          <button type="button" class="pl-icon-btn pl-icon-btn--md pl-icon-btn--raised" aria-label="Page menu">
+            <img src="figma-screens/gauth-page.svg" alt="" width="20" height="20">
+          </button>
+        </div>
+        <div class="gauth-chrome-brand">
+          <img src="figma-screens/google_icon.png" alt="" width="24" height="24">
+          <span>Sign in with Google</span>
+        </div>
+      </div>
+
+      <div class="gauth-body">
+        <div class="gauth-steps">
+          <div class="gauth-step is-active" id="gauth-step-choose">
+            <div class="gauth-heading">
+              <img class="gauth-app-icon" src="figma-screens/playlist_app.svg" alt="" width="40" height="40">
+              <div class="gauth-heading-copy">
+                <h2 class="gauth-sheet-title" id="gauth-sheet-title">Choose an account</h2>
+                <p class="gauth-sheet-sub">to continue to <a href="#" class="gauth-link legal-link">Playlist</a></p>
+              </div>
+            </div>
+
+            <div class="gauth-accounts">
+              <button type="button" class="gauth-account" id="gauth-pick-account">
+                <img class="gauth-avatar" src="figma-screens/siwa-avatar.jpg" alt="" width="27" height="27">
+                <span class="gauth-account-copy">
+                  <span class="gauth-account-name">George Otsubo</span>
+                  <span class="gauth-account-email">g.otsubo@gmail.com</span>
+                </span>
+              </button>
+              <button type="button" class="gauth-account gauth-account--other">
+                <img class="gauth-account-glyph" src="figma-screens/gauth-account.svg" alt="" width="20" height="20">
+                <span class="gauth-account-copy">
+                  <span class="gauth-account-name">Use another account</span>
+                </span>
+              </button>
+            </div>
+
+            <p class="gauth-legal">
+              Before using this app, you can review Playlist’s
+              <a href="#" class="gauth-link legal-link">Privacy Policy</a>
+              and
+              <a href="#" class="gauth-link legal-link">Terms of Service</a>.
+            </p>
+          </div>
+
+          <div class="gauth-step" id="gauth-step-resume" aria-hidden="true">
+            <div class="gauth-heading gauth-heading--resume">
+              <img class="gauth-app-icon" src="figma-screens/playlist_app.svg" alt="" width="40" height="40">
+              <div class="gauth-heading-copy">
+                <h2 class="gauth-sheet-title" id="gauth-resume-title">You’re signing back in to Playlist</h2>
+                <button type="button" class="gauth-chip" id="gauth-chip" aria-label="G.Otsubo@gmail.com, change account">
+                  <img class="gauth-avatar" src="figma-screens/siwa-avatar.jpg" alt="" width="27" height="27">
+                  <span class="gauth-chip-label">
+                    <span class="gauth-chip-email">G.Otsubo@gmail.com</span>
+                    <img class="gauth-chip-caret" src="figma-screens/gauth-caret.svg" alt="" width="8" height="4">
+                  </span>
+                </button>
+              </div>
+            </div>
+
+            <div class="gauth-legal-stack">
+              <p class="gauth-legal">
+                Review Playlist’s
+                <a href="#" class="gauth-link legal-link">Privacy Policy</a>
+                and
+                <a href="#" class="gauth-link legal-link">Terms of Service</a>
+                to understand how Playlist will process and protect your data.
+              </p>
+              <p class="gauth-legal">
+                To make changes at any time, go to your
+                <a href="#" class="gauth-link legal-link">Google Account</a>.
+              </p>
+              <p class="gauth-legal">
+                Learn more about
+                <a href="#" class="gauth-link legal-link">Sign in with Google</a>.
+              </p>
+            </div>
+
+            <div class="gauth-cta">
+              <button type="button" class="gauth-outline" id="gauth-resume-cancel">Cancel</button>
+              <button type="button" class="gauth-outline" id="gauth-resume-continue">Continue</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="gauth-foot">
+          <div class="gauth-meta">
+            <button type="button" class="gauth-lang">
+              English (United States)
+              <img src="figma-screens/gauth-caret.svg" alt="" width="8" height="4">
+            </button>
+            <div class="gauth-meta-links">
+              <a href="#" class="legal-link">Help</a>
+              <a href="#" class="legal-link">Privacy</a>
+              <a href="#" class="legal-link">Terms</a>
+            </div>
+          </div>
+          <div class="gauth-safari">
+            <button type="button" class="pl-icon-btn pl-icon-btn--md pl-icon-btn--raised gauth-safari-back" disabled aria-label="Back">
+              <svg class="pl-icon" aria-hidden="true"><use href="#pl-back"></use></svg>
+            </button>
+            <div class="gauth-safari-actions">
+              <button type="button" class="gauth-safari-icon" aria-label="Share">
+                <svg class="pl-icon" aria-hidden="true"><use href="#pl-share"></use></svg>
+              </button>
+              <button type="button" class="gauth-safari-icon" aria-label="Refresh">
+                <img src="figma-screens/gauth-refresh.svg" alt="" width="20" height="20">
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Location prompt (12901:344255) — over Create a password after Continue -->
+  <div class="loc" id="loc" aria-hidden="true">
+    <div class="loc-scrim" id="loc-scrim"></div>
+    <div class="loc-dialog" role="dialog" aria-modal="true" aria-labelledby="loc-title" aria-describedby="loc-desc">
+      <div class="loc-hero" aria-hidden="true">
+        <img class="loc-hero__map" src="figma-screens/location-map-blur.png" alt="" width="360" height="148">
+        <span class="loc-hero__pin">
+          <svg class="pl-icon" width="80" height="80" aria-hidden="true"><use href="#pl-map-pin"></use></svg>
+        </span>
+      </div>
+      <div class="loc-copy">
+        <h2 class="loc-title pl-text-title-lg-medium" id="loc-title">See what’s available nearby</h2>
+        <p class="loc-desc pl-text-body-sm-regular" id="loc-desc">Turn on Location Services to finish setting up your account and get personal recommendations nearby.</p>
+      </div>
+      <div class="loc-actions">
+        <button type="button" class="pl-btn pl-btn--md pl-btn--inverse pl-btn--pill pl-btn--full" id="loc-enable">Enable location</button>
+        <button type="button" class="pl-btn pl-btn--md pl-btn--link" id="loc-later">Not now</button>
       </div>
     </div>
   </div>

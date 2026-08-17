@@ -7,6 +7,19 @@
 
   function currentId() { return navStack[navStack.length - 1]; }
 
+  // Off-screen views stay in the DOM (for the slide transition) but must not
+  // be tabbable. Focusing a translated field makes the browser scroll it into
+  // view and the frame appears stuck between two screens.
+  function syncScreenInert() {
+    const current = currentId();
+    const home = document.getElementById('screen-home');
+    const homeShowing = home && !home.classList.contains('launching') && !home.classList.contains('settled');
+    document.querySelectorAll('#app > .screen').forEach((el) => {
+      const on = homeShowing ? el.id === 'screen-home' : el.id === current;
+      el.toggleAttribute('inert', !on);
+    });
+  }
+
   // Basic email shape: something@something.something (no whitespace).
   const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -35,6 +48,7 @@
     // Stack by nav depth so the incoming screen always paints above the
     // outgoing one, regardless of DOM order (kept well below the status bar).
     to.style.zIndex = String(navStack.length);
+    syncScreenInert();
 
     releaseAfterAnim();
   }
@@ -50,6 +64,7 @@
     from.classList.remove('active'); // slides back out to the right (default transform)
     to.classList.remove('behind');
     to.classList.add('active');
+    syncScreenInert();
 
     releaseAfterAnim(() => { from.style.zIndex = ''; });
   }
@@ -82,6 +97,7 @@
     if (reduceMotion) {
       homeScreen.classList.add('launching', 'covered', 'settled');
       statusBar.classList.remove('hidden');
+      syncScreenInert();
       revealWelcome();
       return;
     }
@@ -94,6 +110,7 @@
       requestAnimationFrame(() => {
         launchTile.classList.add('expanding');
         homeScreen.classList.add('launching');
+        syncScreenInert();
       });
     });
 
@@ -159,8 +176,78 @@
     console.log('[signup] Sign in with Apple submitted');
     enterApp();
   });
+
+  // Sign in with Google — iOS ASWebAuthenticationSession alert, then
+  // the accounts.google.com choose-account sheet.
+  const gauth = document.getElementById('gauth');
+  const gauthCancel = document.getElementById('gauth-cancel');
+  const gauthSheetClose = document.getElementById('gauth-sheet-close');
+  const gauthAlert = gauth.querySelector('.gauth-alert');
+  const gauthSheet = document.getElementById('gauth-sheet');
+  const gauthStepChoose = document.getElementById('gauth-step-choose');
+  const gauthStepResume = document.getElementById('gauth-step-resume');
+  function setGauthStep(step) {
+    const resume = step === 'resume';
+    gauth.classList.toggle('is-resume', resume);
+    gauthStepChoose.classList.toggle('is-active', !resume);
+    gauthStepResume.classList.toggle('is-active', resume);
+    gauthStepChoose.setAttribute('aria-hidden', resume ? 'true' : 'false');
+    gauthStepResume.setAttribute('aria-hidden', resume ? 'false' : 'true');
+    gauthSheet.setAttribute('aria-labelledby', resume ? 'gauth-resume-title' : 'gauth-sheet-title');
+  }
+  function openGauth() {
+    gauth.classList.add('is-open', 'is-alert');
+    gauth.classList.remove('is-sheet', 'is-resume');
+    gauth.setAttribute('aria-hidden', 'false');
+    gauthAlert.removeAttribute('aria-hidden');
+    gauthSheet.setAttribute('aria-hidden', 'true');
+    setGauthStep('choose');
+    gauthCancel.focus({ preventScroll: true });
+  }
+  function showGauthSheet() {
+    gauth.classList.add('is-open', 'is-sheet');
+    gauth.classList.remove('is-alert');
+    gauth.setAttribute('aria-hidden', 'false');
+    gauthAlert.setAttribute('aria-hidden', 'true');
+    gauthSheet.removeAttribute('aria-hidden');
+    setGauthStep('choose');
+    gauthSheetClose.focus({ preventScroll: true });
+  }
+  function closeGauth(opts) {
+    if (!gauth.classList.contains('is-open')) return;
+    gauth.classList.remove('is-open', 'is-alert', 'is-sheet', 'is-resume');
+    gauth.setAttribute('aria-hidden', 'true');
+    setGauthStep('choose');
+    if (!opts || opts.restoreFocus !== false) {
+      document.getElementById('btn-signin-google').focus({ preventScroll: true });
+    }
+  }
+  document.getElementById('btn-signin-google').addEventListener('click', (e) => {
+    e.preventDefault();
+    openGauth();
+  });
+  gauthCancel.addEventListener('click', closeGauth);
+  document.getElementById('gauth-scrim').addEventListener('click', closeGauth);
+  document.getElementById('gauth-continue').addEventListener('click', () => {
+    showGauthSheet();
+  });
+  gauthSheetClose.addEventListener('click', closeGauth);
+  document.getElementById('gauth-pick-account').addEventListener('click', () => {
+    setGauthStep('resume');
+  });
+  document.getElementById('gauth-chip').addEventListener('click', () => {
+    setGauthStep('choose');
+  });
+  document.getElementById('gauth-resume-cancel').addEventListener('click', closeGauth);
+  document.getElementById('gauth-resume-continue').addEventListener('click', () => {
+    console.log('[signup] Sign in with Google submitted');
+    enterApp();
+  });
   document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') closeSiwa();
+    if (e.key !== 'Escape') return;
+    if (gauth.classList.contains('is-open')) closeGauth();
+    else if (loc.classList.contains('is-open')) finishLocPrompt();
+    else closeSiwa();
   });
 
   // ===== Logged-in tab bar =====
@@ -189,6 +276,7 @@
     appFrame.classList.remove('welcome-photo');
     setTab('home');
     closeSiwa({ restoreFocus: false });
+    closeGauth({ restoreFocus: false });
   }
 
   tabBar.addEventListener('click', (e) => {
@@ -235,6 +323,8 @@
   // ===== Sign up (Playlist) screen interactions =====
   document.getElementById('btn-back-signup')
     .addEventListener('click', goBack);
+  document.getElementById('btn-signup-signin')
+    .addEventListener('click', () => pushScreen('screen-classpass'));
 
   const suFirst = document.getElementById('su-first');
   const suLast = document.getElementById('su-last');
@@ -244,7 +334,6 @@
   function updateSuState() {
     const ok = suFirst.value.trim() && suLast.value.trim() && EMAIL_RE.test(suEmail.value.trim());
     suSubmit.disabled = !ok;
-    suSubmit.classList.toggle('btn-disabled', !ok);
   }
   [suFirst, suLast, suEmail].forEach(el => el.addEventListener('input', updateSuState));
 
@@ -259,8 +348,15 @@
 
   const pwPassword = document.getElementById('pw-password');
   const pwConfirm = document.getElementById('pw-confirm');
+  const pwConfirmField = document.getElementById('pw-confirm-field');
   const pwValidation = document.getElementById('pw-validation');
+  const pwHintIcon = document.getElementById('pw-hint-icon');
   const pwContinue = document.getElementById('btn-pw-continue');
+  const PW_HINT = {
+    default: '../design-system/assets/validation_default.svg',
+    error: '../design-system/assets/validation_error.svg',
+    valid: '../design-system/assets/validation_indicator.svg'
+  };
 
   // Requirement: at least 8 characters AND a number or symbol.
   function passwordMeetsRules(v) {
@@ -268,13 +364,16 @@
   }
 
   function updatePasswordState() {
-    const valid = passwordMeetsRules(pwPassword.value);
-    const matches = pwConfirm.value.length > 0 && pwPassword.value === pwConfirm.value;
-    pwValidation.classList.toggle('valid', valid);
+    const value = pwPassword.value;
+    const valid = passwordMeetsRules(value);
+    const state = !value ? 'default' : (valid ? 'valid' : 'error');
+    pwValidation.dataset.state = state;
+    pwHintIcon.src = PW_HINT[state];
 
-    const canContinue = valid && matches;
-    pwContinue.disabled = !canContinue;
-    pwContinue.classList.toggle('btn-disabled', !canContinue);
+    const matches = pwConfirm.value.length > 0 && value === pwConfirm.value;
+    pwConfirmField.classList.toggle('is-error', pwConfirm.value.length > 0 && !matches);
+
+    pwContinue.disabled = !(valid && matches);
   }
 
   pwPassword.addEventListener('input', updatePasswordState);
@@ -282,8 +381,30 @@
 
   pwContinue.addEventListener('click', () => {
     if (pwContinue.disabled) return;
-    pushScreen('screen-verify');
+    openLocPrompt();
   });
+
+  // Location prompt over Create a password (12901:344255).
+  const loc = document.getElementById('loc');
+  const locEnable = document.getElementById('loc-enable');
+  function openLocPrompt() {
+    loc.classList.add('is-open');
+    loc.setAttribute('aria-hidden', 'false');
+    document.getElementById('screen-password').setAttribute('inert', '');
+    locEnable.focus({ preventScroll: true });
+  }
+  function finishLocPrompt() {
+    if (!loc.classList.contains('is-open')) return;
+    loc.classList.remove('is-open');
+    loc.setAttribute('aria-hidden', 'true');
+    pushScreen('screen-verify');
+  }
+  locEnable.addEventListener('click', () => {
+    const done = () => finishLocPrompt();
+    if (!navigator.geolocation) { done(); return; }
+    navigator.geolocation.getCurrentPosition(done, done, { timeout: 4000, maximumAge: 0 });
+  });
+  document.getElementById('loc-later').addEventListener('click', finishLocPrompt);
 
   // ===== Verify your number screen interactions =====
   document.getElementById('btn-back-verify')
@@ -408,4 +529,6 @@
   document.querySelectorAll('.legal-link').forEach(link => {
     link.addEventListener('click', (e) => e.preventDefault());
   });
+
+  syncScreenInert();
 })();
