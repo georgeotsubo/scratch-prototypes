@@ -16,38 +16,7 @@
   let currentSearchLabel = '';
   let currentLocationLabel = '';
   let wasDragging = false; // prevents venue card click after drag scroll
-  let purchaseFlow = 'A'; // prototype chrome: Book CTA opens checkout (A) or Select option (B)
-
-  (function initPurchaseFlowToggle() {
-    var STORAGE_KEY = 'plPurchaseFlow';
-    var btnA = document.getElementById('purchase-flow-a');
-    var btnB = document.getElementById('purchase-flow-b');
-    if (!btnA || !btnB) return;
-    var stored = sessionStorage.getItem(STORAGE_KEY);
-    if (stored === 'A' || stored === 'B') purchaseFlow = stored;
-    function applyChipUi() {
-      var aOn = purchaseFlow === 'A';
-      btnA.classList.toggle('pl-chip--neutral', aOn);
-      btnA.classList.toggle('pl-chip--outline', !aOn);
-      btnA.setAttribute('aria-checked', aOn ? 'true' : 'false');
-      btnB.classList.toggle('pl-chip--neutral', !aOn);
-      btnB.classList.toggle('pl-chip--outline', aOn);
-      btnB.setAttribute('aria-checked', aOn ? 'false' : 'true');
-    }
-    applyChipUi();
-    function setFlow(flow) {
-      if (flow === purchaseFlow) return;
-      sessionStorage.setItem(STORAGE_KEY, flow);
-      if (flow === 'B') {
-        location.reload();
-        return;
-      }
-      purchaseFlow = flow;
-      applyChipUi();
-    }
-    btnA.addEventListener('click', function() { setFlow('A'); });
-    btnB.addEventListener('click', function() { setFlow('B'); });
-  })();
+  let purchaseFlow = 'B'; // Book opens Select option, then checkout
 
   // ========== RATING DESIGN SYSTEM HELPERS ==========
   window.__plStarXs = function(name) {
@@ -3144,9 +3113,45 @@
   }
 
   var BOOKINGS_MAP_PREVIEW = '../assets/map_bookings.png';
+  window.__reservations = window.__reservations || [];
 
-  function setBookingsCardMap(lat, lng) {
-    var img = document.getElementById('bookings-card-map-img');
+  function reservationIdentity(r) {
+    if (!r) return '';
+    return [r.venueKey || '', r.classTitle || '', r.slotTime || '', String(r.absIdx || 0)].join('|');
+  }
+
+  function getReservations() {
+    return window.__reservations || [];
+  }
+
+  window.__addReservation = function (purchased) {
+    if (!purchased) return;
+    if (!window.__reservations) window.__reservations = [];
+    var key = reservationIdentity(purchased);
+    var i;
+    for (i = 0; i < window.__reservations.length; i++) {
+      if (reservationIdentity(window.__reservations[i]) === key) {
+        window.__reservations[i] = purchased;
+        window.__reservation = purchased;
+        return;
+      }
+    }
+    window.__reservations.push(purchased);
+    window.__reservation = purchased;
+  };
+
+  window.__removeReservation = function (r) {
+    if (!window.__reservations) window.__reservations = [];
+    if (r) {
+      var key = reservationIdentity(r);
+      window.__reservations = window.__reservations.filter(function (item) {
+        return reservationIdentity(item) !== key;
+      });
+    }
+    window.__reservation = window.__reservations[window.__reservations.length - 1] || null;
+  };
+
+  function setBookingsCardMap(img, lat, lng) {
     if (!img) return;
     if (lat && lng && window.MAPBOX_TOKEN) {
       img.src = 'https://api.mapbox.com/styles/v1/mapbox/streets-v12/static/'
@@ -3156,8 +3161,7 @@
     }
   }
 
-  function setBookingsCardThumb(url) {
-    var img = document.getElementById('bookings-card-thumb');
+  function setBookingsCardThumb(img, url) {
     if (!img) return;
     if (url) {
       img.src = url;
@@ -3181,49 +3185,33 @@
     };
   }
 
-  function fillBookingsCard(data) {
-    var set = function (id, text) {
-      var el = document.getElementById(id);
-      if (el) el.textContent = text;
-    };
-    set('bookings-card-weekday', data.weekday);
-    set('bookings-card-day', data.day);
-    set('bookings-card-month', data.month);
-    set('bookings-card-title', data.title);
-    set('bookings-card-meta', data.meta);
-    set('bookings-card-venue', data.venue);
+  function bookingCardVenueLine(r) {
+    var venueName = r.venueTitle || r.venueName || '';
+    var hood = r.neighborhood || r.locality || '';
+    if (hood && venueName && venueName.indexOf(hood) === -1) {
+      return venueName + ' · ' + hood;
+    }
+    return venueName ? venueName.replace(' - ', ' · ') : '';
   }
 
-  function syncBookingsCard() {
-    var r = window.__reservation;
-    if (!r) {
-      setBookingsCardMap(null, null);
-      setBookingsCardThumb(null);
-      return;
-    }
+  function fillBookingsCard(card, r) {
     var date = bookingsDateParts(r.absIdx);
     var instructor = (r.instructor || '').replace(/\s+/g, ' ').trim();
     var time = r.slotTime || '';
     var meta = date.metaDate
       + (time ? ' · ' + time : '')
       + (instructor ? ' · ' + instructor : '');
-    var venueName = r.venueTitle || r.venueName || '';
-    var hood = r.neighborhood || r.locality || '';
-    var venueLine = venueName;
-    if (hood && venueName && venueName.indexOf(hood) === -1) {
-      venueLine = venueName + ' · ' + hood;
-    } else if (venueName) {
-      venueLine = venueName.replace(' - ', ' · ');
-    }
-    fillBookingsCard({
-      weekday: date.weekday,
-      day: date.day,
-      month: date.month,
-      title: r.classTitle || '',
-      meta: meta,
-      venue: venueLine
-    });
-    setBookingsCardMap(r.lat, r.lng);
+    var set = function (sel, text) {
+      var el = card.querySelector(sel);
+      if (el) el.textContent = text;
+    };
+    set('.pl-booking-card__weekday', date.weekday);
+    set('.pl-booking-card__day', date.day);
+    set('.pl-booking-card__month', date.month);
+    set('.pl-booking-card__title', r.classTitle || '');
+    set('.pl-booking-card__meta', meta);
+    set('.pl-booking-card__venue', bookingCardVenueLine(r));
+    setBookingsCardMap(card.querySelector('.pl-booking-card__map-img'), r.lat, r.lng);
     var thumb = r.imageUrl;
     if (!thumb) {
       var triple = pickVenueImages({
@@ -3235,7 +3223,26 @@
       }, r.venueIndex);
       thumb = triple ? triple[0] : null;
     }
-    setBookingsCardThumb(thumb);
+    setBookingsCardThumb(card.querySelector('.pl-booking-card__pin-thumb'), thumb);
+  }
+
+  function syncBookingsCard() {
+    var list = document.getElementById('bookings-list');
+    var tpl = document.getElementById('bookings-card-template');
+    if (!list || !tpl) return;
+    list.innerHTML = '';
+    var reservations = getReservations().slice().sort(function (a, b) {
+      var da = a.absIdx || 0;
+      var db = b.absIdx || 0;
+      if (da !== db) return da - db;
+      return (a.slotTime || '').localeCompare(b.slotTime || '');
+    });
+    reservations.forEach(function (r) {
+      var card = tpl.content.firstElementChild.cloneNode(true);
+      card.dataset.reservationKey = reservationIdentity(r);
+      fillBookingsCard(card, r);
+      list.appendChild(card);
+    });
   }
 
   function setBookingsEmptyCopy(tab) {
@@ -3248,7 +3255,7 @@
 
   function setBookingsSection(tab) {
     var upcoming = tab !== 'attended';
-    var hasUpcoming = !!(window.__reservation);
+    var hasUpcoming = getReservations().length > 0;
     var showList = upcoming && hasUpcoming;
     var list = document.getElementById('bookings-list');
     var empty = document.getElementById('bookings-empty');
@@ -3336,9 +3343,10 @@
     return 0;
   }
 
-  function openBookedClassDetail() {
-    var r = window.__reservation;
+  function openBookedClassDetail(r) {
+    r = r || window.__reservation;
     if (!r || typeof window.__openClassDetail !== 'function') return;
+    window.__reservation = r;
     var idx = pinIndexForReservation(r);
     if (idx < 0) return;
     var cls = {
@@ -3373,11 +3381,17 @@
     if (window.__resetClassDetailTabs) window.__resetClassDetailTabs();
   }
 
-  var bookingsCard = document.getElementById('bookings-card');
-  if (bookingsCard) {
-    bookingsCard.addEventListener('click', function (e) {
+  var bookingsList = document.getElementById('bookings-list');
+  if (bookingsList) {
+    bookingsList.addEventListener('click', function (e) {
       if (e.target.closest('.pl-booking-card__actions')) return;
-      openBookedClassDetail();
+      var card = e.target.closest('.pl-booking-card');
+      if (!card) return;
+      var key = card.dataset.reservationKey;
+      var match = getReservations().filter(function (item) {
+        return reservationIdentity(item) === key;
+      })[0];
+      if (match) openBookedClassDetail(match);
     });
   }
 
@@ -5459,7 +5473,8 @@
     }
 
     function populateCancelModal() {
-      var r = window.__reservation;
+      var r = (typeof window.__findReservationForCurrentSlot === 'function'
+        && window.__findReservationForCurrentSlot()) || window.__reservation;
       var isPack = cdReservationIsPack(r);
       var modal = document.getElementById('cd-cancel-modal');
       if (modal) modal.classList.toggle('pl-cancel-modal--pack', isPack);
@@ -5702,20 +5717,31 @@
     // (black "Cancel" when the currently-viewed class+slot matches the
     // reservation; default red "Book" otherwise). Cleared when the user
     // taps Cancel.
-    window.__reservation = null;
+    window.__reservations = window.__reservations || [];
+    window.__reservation = window.__reservation || null;
     window.__venuePacks = {};
     function currentSlotMatchesReservation() {
-      var r = window.__reservation;
-      if (!r) return false;
+      return !!window.__findReservationForCurrentSlot();
+    }
+    window.__findReservationForCurrentSlot = function() {
+      var list = window.__reservations || [];
       var p = window.__currentVenuePin;
       var venueKey = p ? ((p.name || '') + '|' + (p.lat || '') + '|' + (p.lng || '')) : '';
-      if (venueKey !== r.venueKey) return false;
       var cdTitleEl = document.getElementById('cd-title');
-      if (!cdTitleEl || cdTitleEl.textContent !== r.classTitle) return false;
-      if (!cdLastSlot || cdLastSlot.time !== r.slotTime) return false;
-      if (cdSelectedAbsIdx !== r.absIdx) return false;
-      return true;
-    }
+      var title = cdTitleEl ? cdTitleEl.textContent : '';
+      var slotTime = cdLastSlot ? cdLastSlot.time : '';
+      var i;
+      for (i = 0; i < list.length; i++) {
+        var r = list[i];
+        if (r.venueKey === venueKey
+          && r.classTitle === title
+          && r.slotTime === slotTime
+          && r.absIdx === cdSelectedAbsIdx) {
+          return r;
+        }
+      }
+      return null;
+    };
     window.__syncBookingBarCta = function() {
       if (!cdBookingCta) return;
       if (currentSlotMatchesReservation()) {
@@ -5745,27 +5771,29 @@
       }
     }
     window.__applyReservedHighlights = function() {
-      var r = window.__reservation;
+      var list = window.__reservations || [];
       document.querySelectorAll('.cd-time-slot.is-reserved, .vd-schedule-card.is-reserved').forEach(clearReservedCard);
-      if (!r) return;
+      if (!list.length) return;
       var p = window.__currentVenuePin;
       var venueKey = p ? ((p.name || '') + '|' + (p.lat || '') + '|' + (p.lng || '')) : '';
-      if (venueKey !== r.venueKey) return;
-      // Class-detail time slots only highlight when the currently-viewed
-      // class AND the currently-viewed date match the reservation — without
-      // the date check, the same time slot on a different day would falsely
-      // show as reserved when the user tabs through the date picker.
       var cdTitleEl = document.getElementById('cd-title');
-      if (cdTitleEl && cdTitleEl.textContent === r.classTitle && cdViewingAbsIdx === r.absIdx) {
-        document.querySelectorAll('.cd-time-slot').forEach(function(slot) {
-          if (slot.dataset.time === r.slotTime) markReservedCard(slot);
-        });
-      }
-      // Venue-detail schedule cards match on title + time.
-      document.querySelectorAll('.vd-schedule-card').forEach(function(card) {
-        if (card.dataset.title === r.classTitle && card.dataset.time === r.slotTime) {
-          markReservedCard(card);
+      list.forEach(function(r) {
+        if (venueKey !== r.venueKey) return;
+        // Class-detail time slots only highlight when the currently-viewed
+        // class AND the currently-viewed date match the reservation — without
+        // the date check, the same time slot on a different day would falsely
+        // show as reserved when the user tabs through the date picker.
+        if (cdTitleEl && cdTitleEl.textContent === r.classTitle && cdViewingAbsIdx === r.absIdx) {
+          document.querySelectorAll('.cd-time-slot').forEach(function(slot) {
+            if (slot.dataset.time === r.slotTime) markReservedCard(slot);
+          });
         }
+        // Venue-detail schedule cards match on title + time.
+        document.querySelectorAll('.vd-schedule-card').forEach(function(card) {
+          if (card.dataset.title === r.classTitle && card.dataset.time === r.slotTime) {
+            markReservedCard(card);
+          }
+        });
       });
     };
     if (cdCheckoutCta) {
@@ -5778,10 +5806,12 @@
           cdCheckoutCta.classList.add('is-loading');
           if (cdCancelConfirmTimer) clearTimeout(cdCancelConfirmTimer);
           cdCancelConfirmTimer = setTimeout(function() {
-            var canceled = window.__reservation;
+            var canceled = (typeof window.__findReservationForCurrentSlot === 'function'
+              && window.__findReservationForCurrentSlot()) || window.__reservation;
             var returnedPack = cdReturnPackVisit(canceled);
             populateCancelConfirm(canceled, returnedPack);
-            window.__reservation = null;
+            if (typeof window.__removeReservation === 'function') window.__removeReservation(canceled);
+            else window.__reservation = null;
             if (window.__applyReservedHighlights) window.__applyReservedHighlights();
             if (window.__syncBookingBarCta) window.__syncBookingBarCta();
             if (window.__syncBookingsCard) window.__syncBookingsCard();
@@ -6049,7 +6079,8 @@
       // so a later Cancel opens the matching cancel / confirm modals.
       if (cdCheckoutSheet.classList.contains('is-success')) {
         cdApplyPackAfterPurchase(purchased);
-        window.__reservation = purchased;
+        if (typeof window.__addReservation === 'function') window.__addReservation(purchased);
+        else window.__reservation = purchased;
         if (window.__applyReservedHighlights) window.__applyReservedHighlights();
         if (window.__syncBookingsCard) window.__syncBookingsCard();
       }
