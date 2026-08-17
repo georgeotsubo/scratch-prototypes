@@ -14,6 +14,12 @@
      `assets/iOS_chevron_down_small.svg` / `assets/iOS_chevron_up_small.svg`
    - calendar-add: exact copy of `assets/iOS_calendar_add.svg` (24×24, `currentColor`
      in icons/ for the sprite; baked `#020203` kept in assets/)
+   - calendar-add-16: exact copy of `assets/calendar_add_16.svg` (20×18, `currentColor`
+     in icons/ for the sprite; baked `#020203` kept in assets/). 16pt SF Symbol
+     weight for Small button slots — not a scaled-down `#pl-calendar-add`.
+   - calendar-empty: exact copy of `assets/calendar_empty state.svg` (45×44,
+     `currentColor` in icons/ for the sprite; baked `#020203` kept in
+     `assets/calendar_empty_state.svg`)
    - share-small: exact copy of `assets/iOS_share_small.svg` (24×24, `currentColor`
      in icons/ for the sprite; baked `#020203` kept in assets/)
    - map-pin: exact copy of `assets/Map card pin.svg` (49×52, baked red/white
@@ -38,7 +44,7 @@ const GROUPS = [
   ['Navigation', ['back', 'close', 'chevron-down', 'chevron-down-small', 'chevron-up-small', 'right-chevron', 'search', 'share', 'share-small']],
   ['Contact & place', ['location-pin', 'location-pin-small', 'person-small',
                        'directions', 'phone', 'globe', 'tag', 'map-pin']],
-  ['Booking', ['calendar-small', 'calendar-add', 'calendar-large', 'stack']],
+  ['Booking', ['calendar-small', 'calendar-add', 'calendar-add-16', 'calendar-large', 'calendar-empty', 'stack']],
   ['Rating', ['star-fill', 'star-half', 'star-outline']],
   ['Auth & form', ['apple-logo', 'eye', 'eye-slash', 'small-info']],
   ['Tab bar', ['tab-home', 'tab-search', 'tab-bookings', 'tab-profile']],

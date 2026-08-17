@@ -10,6 +10,7 @@
      Pasword field 800:31      (page "Form")
      Class card    1361:5034   Schedule card 1194:1271   Schedule price 1194:1153
      Map card      1662:1623   See all       1662:1693   Venue card    1456:15761
+     Booking card  12909:348896
      Icons         "Icons WIP" page (iOS set) — see icons/ and icons.js
      Review card   1306:5340
      Ratings summary 1321:5446   Rating distribution 1323:5708
@@ -965,6 +966,171 @@ button.pl-card { cursor: pointer; -webkit-tap-highlight-color: transparent; }
   font-size: var(--pl-body-sm-regular-size);
   line-height: var(--pl-body-sm-regular-lineheight);
   font-weight: var(--pl-body-sm-regular-weight);
+}
+
+/* --- Booking card — .pl-booking-card (12909:348896) -----------------------
+   Upcoming reservation on the Bookings tab. Not a .pl-card — Figma's padding
+   is asymmetric (space/sm top, space/md bottom, card/padding-sm x) around a
+   132px map slot. Pin chrome is assets/map-card-pin-chrome.svg (93×84, exact
+   bubble path + drop-shadow from map-card-pin.svg). Thumbnail is a 50×50
+   rx=10 photo at (21.28, 14.43) — first venue image in the prototype, static
+   preview on this page. Map preview is assets/map_bookings.png; the prototype
+   uses a Mapbox static image of the venue. Actions are real
+   PLButtons: Neutral / Small / Pill with #pl-calendar-add-16 and #pl-directions. */
+
+.pl-booking-card {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--pl-space-xs);
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 358px;
+  padding:
+    calc(var(--pl-space-sm) - var(--pl-border-semantic-100))
+    calc(var(--pl-card-padding-sm) - var(--pl-border-semantic-100))
+    calc(var(--pl-space-md) - var(--pl-border-semantic-100));
+  border: var(--pl-border-semantic-100) solid var(--pl-border-default);
+  border-radius: var(--pl-radius-semantic-lg);
+  background: var(--pl-surface-default);
+  color: var(--pl-text-primary);
+  font-family: var(--pl-type-font-primary);
+}
+
+.pl-booking-card__map {
+  position: relative;
+  height: 132px;
+  overflow: hidden;
+  border-radius: var(--pl-radius-semantic-md);
+  background: var(--pl-surface-inset);
+  flex-shrink: 0;
+}
+
+.pl-booking-card__map > :not(.pl-booking-card__pin) {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+}
+
+/* Native size of assets/map-card-pin-chrome.svg (93×84). Thumbnail is the
+   Figma 50×50 rx=10 photo sitting on the bubble at (21.28, 14.43). Explicit
+   both axes so .pl-icon's square 20px default can't squash the artwork. */
+.pl-booking-card__pin {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 93px;
+  height: 84px;
+  pointer-events: none;
+}
+
+.pl-booking-card__pin-chrome {
+  position: relative;
+  z-index: 0;
+  width: 93px;
+  height: 84px;
+  display: block;
+}
+
+.pl-booking-card__pin-thumb {
+  position: absolute;
+  z-index: 1;
+  left: 21.2803px;
+  top: 14.4297px;
+  width: 50px;
+  height: 50px;
+  border-radius: 10px;
+  object-fit: cover;
+  display: block;
+}
+
+.pl-booking-card__pin-thumb[hidden] {
+  display: none;
+}
+
+.pl-booking-card__body {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--pl-space-sm);
+  width: 100%;
+}
+
+.pl-booking-card__date {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex-shrink: 0;
+  min-width: 40px;
+  padding: 0 var(--pl-space-xxs);
+}
+
+.pl-booking-card__weekday {
+  color: var(--pl-accent-default);
+  font-family: var(--pl-label-lg-semibold-font);
+  font-size: var(--pl-label-lg-semibold-size);
+  line-height: var(--pl-label-lg-semibold-lineheight);
+  font-weight: var(--pl-label-lg-semibold-weight);
+  text-align: center;
+}
+
+.pl-booking-card__day {
+  color: var(--pl-text-primary);
+  font-family: var(--pl-label-lg-medium-font);
+  font-size: var(--pl-label-lg-medium-size);
+  line-height: var(--pl-label-lg-medium-lineheight);
+  font-weight: var(--pl-label-lg-medium-weight);
+  text-align: center;
+}
+
+.pl-booking-card__month {
+  color: var(--pl-text-primary);
+  font-family: var(--pl-caption-lg-font);
+  font-size: var(--pl-caption-lg-size);
+  line-height: var(--pl-caption-lg-lineheight);
+  font-weight: var(--pl-caption-lg-weight);
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.pl-booking-card__info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--pl-space-sm);
+  flex: 1;
+  min-width: 0;
+}
+
+.pl-booking-card__copy {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  width: 100%;
+}
+
+.pl-booking-card__title,
+.pl-booking-card__meta {
+  color: var(--pl-text-primary);
+  font-family: var(--pl-label-lg-medium-font);
+  font-size: var(--pl-label-lg-medium-size);
+  line-height: var(--pl-label-lg-medium-lineheight);
+  font-weight: var(--pl-label-lg-medium-weight);
+}
+
+.pl-booking-card__venue {
+  color: var(--pl-text-primary);
+  font-family: var(--pl-caption-lg-font);
+  font-size: var(--pl-caption-lg-size);
+  line-height: var(--pl-caption-lg-lineheight);
+  font-weight: var(--pl-caption-lg-weight);
+}
+
+.pl-booking-card__actions {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--pl-space-sm);
 }
 
 /* --- See all — .pl-see-all (1662:1693) ------------------------------------ */
@@ -2230,11 +2396,11 @@ button.pl-venue-card { cursor: pointer; -webkit-tap-highlight-color: transparent
 }
 
 /* --- Cancel confirm modal — .pl-cancel-confirm-modal -----------------------
-   (12909:346164 drop-in · 12909:346314 pack)
+   (12909:346164 drop-in · 12909:346314 pack · pack card 12946:389175)
 
    Post-cancellation success sheet. Reuses check_success.svg (same 40×40 export
    as booking success). Drop-in adds a neutral Find a class pill; pack adds a
-   bordered pack summary card with visits-left badge. */
+   bordered pack summary card (title + expiry, visits-left badge below). */
 
 .pl-cancel-confirm-modal {
   display: flex;
@@ -2341,8 +2507,8 @@ button.pl-venue-card { cursor: pointer; -webkit-tap-highlight-color: transparent
 .pl-cancel-confirm-modal__pack {
   display: flex;
   flex-direction: column;
-  align-items: stretch;
-  gap: var(--pl-space-sm);
+  align-items: flex-start;
+  gap: var(--pl-space-xs);
   box-sizing: border-box;
   width: 100%;
   padding: var(--pl-space-md);
@@ -2355,7 +2521,6 @@ button.pl-venue-card { cursor: pointer; -webkit-tap-highlight-color: transparent
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  align-self: flex-start;
   padding: var(--pl-space-xs) var(--pl-space-sm);
   background: var(--pl-surface-subtle);
   border-radius: var(--pl-radius-semantic-xxl);
@@ -2380,11 +2545,6 @@ button.pl-venue-card { cursor: pointer; -webkit-tap-highlight-color: transparent
 }
 
 .pl-cancel-confirm-modal__pack-meta {
-  margin: 0;
-  color: var(--pl-text-secondary);
-}
-
-.pl-cancel-confirm-modal__pack-venue {
   margin: 0;
   color: var(--pl-text-secondary);
 }

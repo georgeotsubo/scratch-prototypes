@@ -16,6 +16,38 @@
   let currentSearchLabel = '';
   let currentLocationLabel = '';
   let wasDragging = false; // prevents venue card click after drag scroll
+  let purchaseFlow = 'A'; // prototype chrome: Book CTA opens checkout (A) or Select option (B)
+
+  (function initPurchaseFlowToggle() {
+    var STORAGE_KEY = 'plPurchaseFlow';
+    var btnA = document.getElementById('purchase-flow-a');
+    var btnB = document.getElementById('purchase-flow-b');
+    if (!btnA || !btnB) return;
+    var stored = sessionStorage.getItem(STORAGE_KEY);
+    if (stored === 'A' || stored === 'B') purchaseFlow = stored;
+    function applyChipUi() {
+      var aOn = purchaseFlow === 'A';
+      btnA.classList.toggle('pl-chip--neutral', aOn);
+      btnA.classList.toggle('pl-chip--outline', !aOn);
+      btnA.setAttribute('aria-checked', aOn ? 'true' : 'false');
+      btnB.classList.toggle('pl-chip--neutral', !aOn);
+      btnB.classList.toggle('pl-chip--outline', aOn);
+      btnB.setAttribute('aria-checked', aOn ? 'false' : 'true');
+    }
+    applyChipUi();
+    function setFlow(flow) {
+      if (flow === purchaseFlow) return;
+      sessionStorage.setItem(STORAGE_KEY, flow);
+      if (flow === 'B') {
+        location.reload();
+        return;
+      }
+      purchaseFlow = flow;
+      applyChipUi();
+    }
+    btnA.addEventListener('click', function() { setFlow('A'); });
+    btnB.addEventListener('click', function() { setFlow('B'); });
+  })();
 
   // ========== RATING DESIGN SYSTEM HELPERS ==========
   window.__plStarXs = function(name) {
@@ -2875,9 +2907,10 @@
     }
   ];
 
-  function openVenueDetail(index, initialTab) {
+  function openVenueDetail(index, initialTab, opts) {
     const pin = currentPins[index];
     if (!pin) return;
+    var fromBookings = !!(opts && opts.fromBookings);
     window.__currentVenuePin = pin;
     window.__currentVenueIndex = index;
     window.__currentVenueHasIntroOffer = hasVenueIntroOffer(pin);
@@ -2975,9 +3008,14 @@
     venueDetailScroll.scrollLeft = 0;
     venueDetailEl.querySelectorAll('.vd-hscroll').forEach(function(s) { s.scrollLeft = 0; });
     // Reset the sheet to the venue pane (in case a prior session left the
-    // class pane visible — e.g. dismissed mid-class-detail).
-    venueDetailSheet.classList.remove('show-class');
-    classDetailOpen = false;
+    // class pane visible — e.g. dismissed mid-class-detail). Opening from
+    // Bookings starts on the class pane so the sheet rises as class detail
+    // with no horizontal push, over a checkout-style scrim.
+    venueDetailSheet.classList.toggle('from-bookings', fromBookings);
+    venueDetailSheet.classList.toggle('show-class', fromBookings);
+    venueDetailEl.classList.toggle('from-bookings', fromBookings);
+    classDetailOpen = fromBookings;
+    if (fromBookings) void classDetailScroll.offsetWidth;
     if (motionAnimate) venueDetailSheet.getAnimations().forEach(function(a) { a.cancel(); });
     venueDetailEl.style.background = '';
     // Snap the booking bar back to its hidden resting state — no animation.
@@ -3046,12 +3084,20 @@
     }
   }
 
+  function resetVenueDetailPanes() {
+    venueDetailSheet.classList.remove('show-class', 'from-bookings');
+  }
+
   function closeVenueDetail() {
+    var fromBookings = venueDetailSheet.classList.contains('from-bookings');
     venueDetailOpen = false;
     classDetailOpen = false;
-    venueDetailSheet.classList.remove('show-class');
+    // Keep .from-bookings on the sheet during dismiss so the class pane
+    // doesn't slide sideways while the modal drops. Scrim fades with
+    // .venue-detail-visible.
+    if (!fromBookings) resetVenueDetailPanes();
     venueDetailEl.style.background = '';
-    venueDetailEl.classList.remove('venue-detail-visible');
+    venueDetailEl.classList.remove('venue-detail-visible', 'from-bookings');
     if (typeof window.__hideBookingBar === 'function') window.__hideBookingBar();
     // Get the sheet height so we can animate to a pixel value (avoids % vs px mismatch)
     var sheetHeight = venueDetailSheet.offsetHeight;
@@ -3059,6 +3105,7 @@
       motionAnimate(venueDetailSheet, { transform: 'translateY(' + sheetHeight + 'px)' }, { duration: 0.25, easing: 'cubic-bezier(.25, .46, .45, .94)' }).then(function() {
         venueDetailSheet.style.transform = '';
         venueDetailSheet.style.visibility = '';
+        resetVenueDetailPanes();
       });
     } else {
       venueDetailSheet.style.transition = '';
@@ -3070,12 +3117,269 @@
         venueDetailSheet.style.transform = '';
         venueDetailSheet.style.transition = '';
         venueDetailSheet.style.visibility = '';
+        resetVenueDetailPanes();
       }, { once: true });
     }
   }
 
   // Close button
   document.getElementById('venue-detail-close').addEventListener('click', closeVenueDetail);
+
+  // Tapping the dimmed Bookings peek (same as checkout scrim) dismisses.
+  venueDetailEl.addEventListener('click', function (e) {
+    if (e.target !== venueDetailEl) return;
+    if (venueDetailEl.classList.contains('from-bookings')) closeVenueDetail();
+  });
+
+  // ========== BOOKINGS TAB ==========
+  function tabBarLabel(item) {
+    var spans = item.querySelectorAll('span');
+    return spans.length ? spans[spans.length - 1].textContent.trim() : item.textContent.trim();
+  }
+
+  function setBottomTab(name) {
+    document.querySelectorAll('.pl-tab-bar .tab-item').forEach(function (item) {
+      item.classList.toggle('is-selected', tabBarLabel(item) === name);
+    });
+  }
+
+  var BOOKINGS_MAP_PREVIEW = '../assets/map_bookings.png';
+
+  function setBookingsCardMap(lat, lng) {
+    var img = document.getElementById('bookings-card-map-img');
+    if (!img) return;
+    if (lat && lng && window.MAPBOX_TOKEN) {
+      img.src = 'https://api.mapbox.com/styles/v1/mapbox/streets-v12/static/'
+        + lng + ',' + lat + ',15,0/334x132@2x?access_token=' + MAPBOX_TOKEN;
+    } else {
+      img.src = BOOKINGS_MAP_PREVIEW;
+    }
+  }
+
+  function setBookingsCardThumb(url) {
+    var img = document.getElementById('bookings-card-thumb');
+    if (!img) return;
+    if (url) {
+      img.src = url;
+      img.hidden = false;
+    } else {
+      img.removeAttribute('src');
+      img.hidden = true;
+    }
+  }
+
+  function bookingsDateParts(absIdx) {
+    var d = new Date();
+    d.setDate(d.getDate() + (absIdx || 0));
+    var wds = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    var mos = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    return {
+      weekday: wds[d.getDay()],
+      day: String(d.getDate()),
+      month: mos[d.getMonth()],
+      metaDate: mos[d.getMonth()] + ' ' + d.getDate()
+    };
+  }
+
+  function fillBookingsCard(data) {
+    var set = function (id, text) {
+      var el = document.getElementById(id);
+      if (el) el.textContent = text;
+    };
+    set('bookings-card-weekday', data.weekday);
+    set('bookings-card-day', data.day);
+    set('bookings-card-month', data.month);
+    set('bookings-card-title', data.title);
+    set('bookings-card-meta', data.meta);
+    set('bookings-card-venue', data.venue);
+  }
+
+  function syncBookingsCard() {
+    var r = window.__reservation;
+    if (!r) {
+      setBookingsCardMap(null, null);
+      setBookingsCardThumb(null);
+      return;
+    }
+    var date = bookingsDateParts(r.absIdx);
+    var instructor = (r.instructor || '').replace(/\s+/g, ' ').trim();
+    var time = r.slotTime || '';
+    var meta = date.metaDate
+      + (time ? ' · ' + time : '')
+      + (instructor ? ' · ' + instructor : '');
+    var venueName = r.venueTitle || r.venueName || '';
+    var hood = r.neighborhood || r.locality || '';
+    var venueLine = venueName;
+    if (hood && venueName && venueName.indexOf(hood) === -1) {
+      venueLine = venueName + ' · ' + hood;
+    } else if (venueName) {
+      venueLine = venueName.replace(' - ', ' · ');
+    }
+    fillBookingsCard({
+      weekday: date.weekday,
+      day: date.day,
+      month: date.month,
+      title: r.classTitle || '',
+      meta: meta,
+      venue: venueLine
+    });
+    setBookingsCardMap(r.lat, r.lng);
+    var thumb = r.imageUrl;
+    if (!thumb) {
+      var triple = pickVenueImages({
+        name: r.venueTitle || r.venueName,
+        lat: r.lat,
+        lng: r.lng,
+        category: r.category,
+        _resolvedImageCategory: r.category
+      }, r.venueIndex);
+      thumb = triple ? triple[0] : null;
+    }
+    setBookingsCardThumb(thumb);
+  }
+
+  function setBookingsEmptyCopy(tab) {
+    var subtitle = document.getElementById('bookings-empty-subtitle');
+    if (!subtitle) return;
+    subtitle.textContent = tab === 'attended'
+      ? 'You have no past reservations'
+      : 'You have no upcoming reservations';
+  }
+
+  function setBookingsSection(tab) {
+    var upcoming = tab !== 'attended';
+    var hasUpcoming = !!(window.__reservation);
+    var showList = upcoming && hasUpcoming;
+    var list = document.getElementById('bookings-list');
+    var empty = document.getElementById('bookings-empty');
+    if (list) list.hidden = !showList;
+    if (empty) empty.hidden = showList;
+    setBookingsEmptyCopy(tab);
+  }
+
+  function resetBookingsSectionTabs() {
+    var tabs = document.querySelectorAll('#bookings-section-tabs .pl-tab-nav__item');
+    tabs.forEach(function (tab) {
+      var on = tab.getAttribute('data-bookings-tab') === 'upcoming';
+      tab.classList.toggle('is-selected', on);
+      tab.setAttribute('aria-selected', on ? 'true' : 'false');
+    });
+    syncBookingsCard();
+    setBookingsSection('upcoming');
+  }
+
+  function openBookingsTab() {
+    if (venueDetailOpen) closeVenueDetail();
+    resetBookingsSectionTabs();
+    setBottomTab('Bookings');
+    if (currentScreen !== 'screen-bookings') showScreen('screen-bookings');
+  }
+
+  window.__syncBookingsCard = function () {
+    syncBookingsCard();
+    var selected = document.querySelector('#bookings-section-tabs .pl-tab-nav__item.is-selected');
+    setBookingsSection(selected ? selected.getAttribute('data-bookings-tab') : 'upcoming');
+  };
+
+  function openSearchTab() {
+    if (venueDetailOpen) closeVenueDetail();
+    setBottomTab('Search');
+    // From Bookings (or any non-map screen) land on the Search tab's map.
+    // Don't yank the user off a results map they already have open.
+    if (!MAP_SCREENS.includes(currentScreen)) showScreen('screen-map-default');
+  }
+
+  document.querySelectorAll('.pl-tab-bar').forEach(function (bar) {
+    bar.addEventListener('click', function (e) {
+      var item = e.target.closest('.tab-item');
+      if (!item || !bar.contains(item)) return;
+      var label = tabBarLabel(item);
+      if (label === 'Bookings') openBookingsTab();
+      else if (label === 'Search') openSearchTab();
+    });
+  });
+
+  document.getElementById('bookings-start-exploring').addEventListener('click', openSearchTab);
+
+  var bookingsSectionTabs = document.getElementById('bookings-section-tabs');
+  if (bookingsSectionTabs) {
+    bookingsSectionTabs.addEventListener('click', function (e) {
+      var tab = e.target.closest('.pl-tab-nav__item');
+      if (!tab) return;
+      bookingsSectionTabs.querySelectorAll('.pl-tab-nav__item').forEach(function (t) {
+        var on = t === tab;
+        t.classList.toggle('is-selected', on);
+        t.setAttribute('aria-selected', on ? 'true' : 'false');
+      });
+      setBookingsSection(tab.getAttribute('data-bookings-tab'));
+    });
+  }
+
+  function pinIndexForReservation(r) {
+    var pin = r && (r.pin || {
+      name: r.venueTitle || r.venueName,
+      lat: r.lat,
+      lng: r.lng,
+      locality: r.neighborhood || r.locality,
+      neighborhood: r.neighborhood,
+      category: r.category,
+      address: r.address,
+      _resolvedNeighborhood: r.neighborhood,
+      _resolvedImageCategory: r.category
+    });
+    if (!pin || !pin.name) return -1;
+    var i;
+    for (i = 0; i < currentPins.length; i++) {
+      if (currentPins[i].name === pin.name && currentPins[i].lat === pin.lat) return i;
+    }
+    currentPins.unshift(pin);
+    return 0;
+  }
+
+  function openBookedClassDetail() {
+    var r = window.__reservation;
+    if (!r || typeof window.__openClassDetail !== 'function') return;
+    var idx = pinIndexForReservation(r);
+    if (idx < 0) return;
+    var cls = {
+      title: r.classTitle,
+      time: r.slotTime || '',
+      instructor: r.instructor || '',
+      rating: r.rating || '4.9 (250)',
+      plainPrice: r.plainPrice || '$35',
+      absIdx: r.absIdx || 0,
+      imageUrl: r.imageUrl
+    };
+    openVenueDetail(idx, null, { fromBookings: true });
+    var generated = window.__lastGeneratedClasses || [];
+    var hasTitle = generated.some(function (c) { return c.title === cls.title; });
+    if (!hasTitle) {
+      generated.unshift({
+        time: (cls.time.split(' · ')[0] || cls.time) + ' · 60 min',
+        title: cls.title,
+        instructor: cls.instructor,
+        rating: cls.rating,
+        plainPrice: cls.plainPrice
+      });
+      window.__lastGeneratedClasses = generated;
+    }
+    window.__openClassDetail(cls, { alreadyOpen: true });
+    var venueEl = document.getElementById('cd-venue-text');
+    if (venueEl) {
+      var name = r.venueTitle || r.venueName || venueEl.textContent;
+      var hood = r.neighborhood || r.locality || '';
+      venueEl.textContent = (hood && name.indexOf(hood) === -1) ? (name + ' - ' + hood) : name;
+    }
+    if (window.__resetClassDetailTabs) window.__resetClassDetailTabs();
+  }
+
+  var bookingsCard = document.getElementById('bookings-card');
+  if (bookingsCard) {
+    bookingsCard.addEventListener('click', function (e) {
+      if (e.target.closest('.pl-booking-card__actions')) return;
+      openBookedClassDetail();
+    });
+  }
 
   // Sticky nav: show venue name when scrolled past the header.
   // Also fade tabs in once the user scrolls into the Available today area —
@@ -3911,9 +4215,7 @@
         // Animate from current drag position straight down using CSS transition
         venueDetailOpen = false;
         classDetailOpen = false;
-        venueDetailEl.classList.remove('venue-detail-visible');
-        // Reset the sheet so a re-open of any venue starts on the venue pane
-        venueDetailSheet.classList.remove('show-class');
+        venueDetailEl.classList.remove('venue-detail-visible', 'from-bookings');
         venueDetailEl.style.background = '';
         if (typeof window.__hideBookingBar === 'function') window.__hideBookingBar();
         var sheetHeight = venueDetailSheet.offsetHeight;
@@ -3933,6 +4235,7 @@
           venueDetailSheet.style.transform = '';
           venueDetailSheet.style.transition = '';
           venueDetailSheet.style.visibility = '';
+          resetVenueDetailPanes();
         }, { once: true });
       } else {
         // Snap back with spring (use px to match current inline transform)
@@ -4233,6 +4536,16 @@
       }
       // Mark the tapped slot as selected only if it actually exists.
       if (collected[firstTime]) collected[firstTime].primary = true;
+      else if (firstTime) {
+        collected[firstTime] = {
+          time: firstTime,
+          duration: '60 min',
+          instructor: primaryInstructor || '',
+          price: '$35',
+          strikePrice: null,
+          primary: true
+        };
+      }
 
       var data = Object.keys(collected).map(function(k) {
         var s = collected[k];
@@ -4579,8 +4892,12 @@
         if (!p) return p;
         return /\.\d{2}$/.test(p) ? p : (p + '.00');
       }
-      // Date/slots — picker leads with today (absIdx = 0)
-      renderCdDatePicker(0);
+      // Date/slots — picker leads with today unless the class was opened
+      // from a booked reservation (absIdx is the reserved day).
+      var absIdx = (cls.absIdx != null) ? cls.absIdx : 0;
+      cdViewingAbsIdx = absIdx;
+      cdSelectedAbsIdx = absIdx;
+      renderCdDatePicker(absIdx);
       renderCdTimeSlots(cls.time, cls.instructor, cls.title);
       // Description / prep / cancel
       document.getElementById('cd-description-body').textContent = pick(CD_DESCRIPTIONS);
@@ -4652,8 +4969,8 @@
       if (tabBarBlurReset) tabBarBlurReset.classList.remove('hidden-down');
     }
 
-    window.__openClassDetail = function(cls) {
-      if (classDetailOpen) return;
+    window.__openClassDetail = function(cls, opts) {
+      if (classDetailOpen && !(opts && opts.alreadyOpen)) return;
       // Mark open BEFORE populate so syncCdBookingBarVisibility (called from
       // renderCdTimeSlots during populate) can reveal the booking bar when
       // the default first slot is pre-selected.
@@ -4667,7 +4984,7 @@
       for (var ci = 0; ci < cdHeroSlideEls.length; ci++) {
         setVenuePhotoBg(cdHeroSlideEls[ci], cdTriple ? cdTriple[ci] : null);
       }
-      setVenuePhotoBg(document.getElementById('cd-thumb'), cdTriple ? cdTriple[0] : null);
+      setVenuePhotoBg(document.getElementById('cd-thumb'), (cdTriple && cdTriple[0]) || cls.imageUrl || null);
       // Reset class scroll to the top so the hero is visible on every push.
       classDetailScroll.scrollTop = 0;
       // Drop .scrolled on the shared nav — class scroll is at 0, so the
@@ -4798,6 +5115,7 @@
     var cdCheckoutSelectedId = null;
     var cdCheckoutPendingId = null;
     var cdCheckoutOptionsCatalog = [];
+    var cdOptionsIsEntry = false;
 
     function cdFormatExpiryDate(monthsFromNow) {
       var d = new Date();
@@ -4835,6 +5153,43 @@
         instructor: instructorEl ? instructorEl.textContent : '',
         venueName: venueEl ? venueEl.textContent : ((pin && pin.name) || ''),
         locality: (pin && pin.locality) || '',
+        lat: pin && pin.lat,
+        lng: pin && pin.lng,
+        address: pin && pin.address,
+        neighborhood: pin
+          ? (pin._resolvedNeighborhood || pin.neighborhood || pin.locality || '')
+          : '',
+        venueTitle: pin ? pin.name : '',
+        category: pin ? (pin._resolvedImageCategory || pin.category || '') : '',
+        imageUrl: (function () {
+          var triple = pickVenueImages(pin, window.__currentVenueIndex);
+          return triple ? triple[0] : null;
+        })(),
+        venueIndex: window.__currentVenueIndex,
+        rating: (function () {
+          var n = document.getElementById('cd-header-rating-num');
+          var c = document.getElementById('cd-header-rating-count');
+          if (n && c && n.textContent) return n.textContent + ' ' + c.textContent;
+          return '4.9 (250)';
+        })(),
+        plainPrice: (function () {
+          var el = document.querySelector('#cd-booking-price .cd-booking-price-plain, #cd-booking-price .cd-booking-price-final');
+          return el ? el.textContent.trim() : '$35';
+        })(),
+        pin: pin ? {
+          name: pin.name,
+          lat: pin.lat,
+          lng: pin.lng,
+          locality: pin.locality,
+          neighborhood: pin.neighborhood,
+          category: pin.category,
+          address: pin.address,
+          distance: pin.distance,
+          _rating: pin._rating,
+          _reviews: pin._reviews,
+          _resolvedNeighborhood: pin._resolvedNeighborhood,
+          _resolvedImageCategory: pin._resolvedImageCategory
+        } : null,
         checkoutTime: timeEl ? timeEl.textContent : '',
         optionId: opt ? opt.id : cdDefaultCheckoutOptionId(),
         optionType: opt ? opt.type : 'dropin',
@@ -4931,11 +5286,15 @@
       packsEl.innerHTML = packHtml;
     }
 
-    function cdSyncOptionsDoneVisibility() {
+    function cdSyncOptionsCta() {
+      var isEntry = cdOptionsIsEntry;
       var changed = cdCheckoutPendingId !== cdCheckoutSelectedId;
-      if (cdCheckoutOptionsDone) cdCheckoutOptionsDone.hidden = !changed;
+      if (cdCheckoutOptionsDone) {
+        cdCheckoutOptionsDone.textContent = isEntry ? 'Continue' : 'Done';
+        cdCheckoutOptionsDone.hidden = isEntry ? false : !changed;
+      }
       if (cdCheckoutSheet) {
-        cdCheckoutSheet.classList.toggle('is-options-pending', changed);
+        cdCheckoutSheet.classList.toggle('is-options-pending', isEntry || changed);
       }
     }
 
@@ -5031,11 +5390,9 @@
       var badgeEl = document.getElementById('cd-cancel-confirm-pack-badge');
       var titleEl = document.getElementById('cd-cancel-confirm-pack-title');
       var expiryEl = document.getElementById('cd-cancel-confirm-pack-expiry');
-      var venueEl = document.getElementById('cd-cancel-confirm-pack-venue');
       if (badgeEl) badgeEl.textContent = classes + ' of ' + classes + ' visits left';
       if (titleEl) titleEl.textContent = r.optionTitle || '';
       if (expiryEl) expiryEl.textContent = cdFormatPackExpiry(r.expiryMonths || 12);
-      if (venueEl) venueEl.textContent = cdFormatReservationVenue(r);
     }
 
     function cdRemeasureCheckoutHeight() {
@@ -5105,14 +5462,40 @@
       cdSetOptionsTab(section);
     }
 
-    function cdOpenCheckoutOptions() {
-      if (!cdCheckoutOpen || cdCheckoutSheet.classList.contains('is-cancel-mode')) return;
+    function cdPrepareCheckoutOptions() {
       var venueText = document.getElementById('cd-venue-text');
       cdCheckoutOptionsCatalog = cdBuildCheckoutOptionsCatalog(venueText ? venueText.textContent : '');
       cdCheckoutSelectedId = cdEnsureValidCheckoutOptionId(cdCheckoutSelectedId);
       cdCheckoutPendingId = cdCheckoutSelectedId;
       cdRenderCheckoutOptionsLists();
-      cdSyncOptionsDoneVisibility();
+      cdSyncOptionsCta();
+    }
+
+    function cdPopCheckoutToOptions() {
+      cdOptionsIsEntry = true;
+      cdPrepareCheckoutOptions();
+      cdCheckoutSheet.classList.add('is-popping-to-options', 'is-options-open', 'is-options-entry');
+      cdCheckoutSheet.classList.remove('is-pushing-checkout');
+      if (cdCheckoutOptionsPanel) cdCheckoutOptionsPanel.setAttribute('aria-hidden', 'false');
+      var mainPane = cdCheckoutSheet.querySelector('.cd-checkout-pane--main');
+      var onPopEnd = function(ev) {
+        if (ev.target !== mainPane || ev.propertyName !== 'transform') return;
+        mainPane.removeEventListener('transitionend', onPopEnd);
+        cdCheckoutSheet.classList.remove('is-popping-to-options');
+      };
+      if (mainPane) mainPane.addEventListener('transitionend', onPopEnd);
+      setTimeout(function() {
+        if (cdCheckoutSheet) cdCheckoutSheet.classList.remove('is-popping-to-options');
+      }, 560);
+    }
+
+    function cdOpenCheckoutOptions() {
+      if (!cdCheckoutOpen || cdCheckoutSheet.classList.contains('is-cancel-mode')) return;
+      if (purchaseFlow === 'B' && cdCheckoutSheet.classList.contains('is-pushing-checkout')) {
+        cdPopCheckoutToOptions();
+        return;
+      }
+      cdPrepareCheckoutOptions();
       cdCheckoutSheet.classList.add('is-options-open');
       if (cdCheckoutOptionsPanel) {
         cdCheckoutOptionsPanel.setAttribute('aria-hidden', 'false');
@@ -5126,6 +5509,17 @@
       if (apply) {
         cdCheckoutSelectedId = cdCheckoutPendingId;
         cdApplyCheckoutOptionToCard();
+        if (cdOptionsIsEntry) {
+          cdOptionsIsEntry = false;
+          if (cdCheckoutCtaLabel && !cdCheckoutSheet.classList.contains('is-cancel-mode')) {
+            cdCheckoutCtaLabel.textContent = 'Buy and reserve';
+          }
+          cdCheckoutSheet.classList.add('is-pushing-checkout');
+          cdCheckoutSheet.classList.remove('is-options-open', 'is-options-pending', 'is-options-entry', 'is-popping-to-options');
+          if (cdCheckoutOptionsPanel) cdCheckoutOptionsPanel.setAttribute('aria-hidden', 'true');
+          if (cdCheckoutOptionsDone) cdCheckoutOptionsDone.hidden = true;
+          return;
+        }
       } else {
         cdCheckoutPendingId = cdCheckoutSelectedId;
       }
@@ -5137,14 +5531,20 @@
     function cdSelectCheckoutOption(id) {
       cdCheckoutPendingId = id;
       cdRenderCheckoutOptionsLists();
-      cdSyncOptionsDoneVisibility();
+      cdSyncOptionsCta();
     }
 
     if (cdCheckoutPromoBtn) {
       cdCheckoutPromoBtn.addEventListener('click', cdOpenCheckoutOptions);
     }
     if (cdCheckoutOptionsBack) {
-      cdCheckoutOptionsBack.addEventListener('click', function() { cdCloseCheckoutOptions(false); });
+      cdCheckoutOptionsBack.addEventListener('click', function() {
+        if (cdCheckoutSheet.classList.contains('is-options-open')) {
+          cdCloseCheckoutOptions(false);
+        } else if (purchaseFlow === 'B') {
+          cdOpenCheckoutOptions();
+        }
+      });
     }
     if (cdCheckoutOptionsDone) {
       cdCheckoutOptionsDone.addEventListener('click', function() { cdCloseCheckoutOptions(true); });
@@ -5267,6 +5667,7 @@
             window.__reservation = null;
             if (window.__applyReservedHighlights) window.__applyReservedHighlights();
             if (window.__syncBookingBarCta) window.__syncBookingBarCta();
+            if (window.__syncBookingsCard) window.__syncBookingsCard();
             cdCancelConfirmTimer = null;
             if (!cdCheckoutOpen) return;
             cdEnterCancelConfirm();
@@ -5345,10 +5746,16 @@
     var cdCheckoutEndHandler = null;
     var cdCheckoutHideTimer = null;
 
-    function openCheckout() {
+    function openCheckout(opts) {
       if (cdCheckoutOpen) return;
+      opts = opts || {};
+      var openOnOptions = !!opts.openOnOptions && !cdCheckoutSheet.classList.contains('is-cancel-mode');
       cdCheckoutOpen = true;
       populateCheckout();
+      cdOptionsIsEntry = openOnOptions;
+      cdCheckoutSheet.classList.toggle('is-flow-b', purchaseFlow === 'B' && !cdCheckoutSheet.classList.contains('is-cancel-mode'));
+      cdCheckoutSheet.classList.toggle('is-options-entry', openOnOptions);
+      if (openOnOptions) cdPrepareCheckoutOptions();
       // Clear any lingering transitionend listener or pending hide timer
       // from a cancelled close.
       if (cdCheckoutEndHandler) {
@@ -5384,6 +5791,12 @@
       // CTA starts a tiny morph toward Book-position and back, which the user
       // sees as a jerk just before the real animation begins.
       cdCheckoutCta.style.transition = 'none';
+      if (openOnOptions) {
+        cdCheckoutSheet.classList.add('is-options-open', 'is-options-instant');
+        if (cdCheckoutOptionsPanel) cdCheckoutOptionsPanel.setAttribute('aria-hidden', 'false');
+        cdSetOptionsTab('dropins');
+        if (cdCheckoutOptionsScroll) cdCheckoutOptionsScroll.scrollTop = 0;
+      }
       cdCheckoutSheet.classList.add('is-open');
       cdCheckoutSheet.style.height = 'auto';
       var naturalH = cdCheckoutSheet.getBoundingClientRect().height;
@@ -5416,6 +5829,11 @@
       // Add is-open to trigger the coordinated CSS transitions.
       cdCheckoutSheet.classList.add('is-open');
       cdCheckoutSheet.style.height = targetH + 'px';
+      if (openOnOptions) {
+        requestAnimationFrame(function() {
+          cdCheckoutSheet.classList.remove('is-options-instant');
+        });
+      }
     }
 
     // Open the same sheet but in cancel-reservation mode — pack vs
@@ -5473,9 +5891,13 @@
       cdCheckoutCta.classList.remove('is-loading');
       // Reset the cancel-mode UI so the next open starts in checkout mode.
       cdCheckoutSheet.classList.remove('is-cancel-mode');
-      cdCheckoutSheet.classList.remove('is-options-open', 'is-options-pending');
+      cdCheckoutSheet.classList.remove('is-options-open', 'is-options-pending', 'is-flow-b', 'is-options-entry', 'is-options-instant', 'is-pushing-checkout', 'is-popping-to-options');
+      cdOptionsIsEntry = false;
       if (cdCheckoutOptionsPanel) cdCheckoutOptionsPanel.setAttribute('aria-hidden', 'true');
-      if (cdCheckoutOptionsDone) cdCheckoutOptionsDone.hidden = true;
+      if (cdCheckoutOptionsDone) {
+        cdCheckoutOptionsDone.hidden = true;
+        cdCheckoutOptionsDone.textContent = 'Done';
+      }
       var purchased = cdSnapshotPurchase();
       cdCheckoutSelectedId = null;
       cdCheckoutPendingId = null;
@@ -5497,6 +5919,7 @@
       if (cdCheckoutSheet.classList.contains('is-success')) {
         window.__reservation = purchased;
         if (window.__applyReservedHighlights) window.__applyReservedHighlights();
+        if (window.__syncBookingsCard) window.__syncBookingsCard();
       }
       cdCheckoutSheet.classList.remove('is-success', 'is-cancel-confirmed');
       if (cdCheckoutSuccessEl) cdCheckoutSuccessEl.setAttribute('aria-hidden', 'true');
@@ -5561,14 +5984,31 @@
         openCancelCheckout();
         return;
       }
+      if (purchaseFlow === 'B') {
+        openCheckout({ openOnOptions: true });
+        return;
+      }
       openCheckout();
     });
     if (cdCheckoutCloseBtn) cdCheckoutCloseBtn.addEventListener('click', closeCheckout);
     if (cdCheckoutSuccessCloseBtn) cdCheckoutSuccessCloseBtn.addEventListener('click', closeCheckout);
     if (cdCancelConfirmCloseBtn) cdCancelConfirmCloseBtn.addEventListener('click', closeCheckout);
-    if (cdCancelConfirmDoneBtn) cdCancelConfirmDoneBtn.addEventListener('click', closeCheckout);
+    if (cdCancelConfirmDoneBtn) {
+      cdCancelConfirmDoneBtn.addEventListener('click', function() {
+        var fromBookings = venueDetailSheet.classList.contains('from-bookings');
+        closeCheckout();
+        if (fromBookings) closeVenueDetail();
+      });
+    }
     if (cdCancelConfirmFindBtn) {
       cdCancelConfirmFindBtn.addEventListener('click', function() {
+        var fromBookings = venueDetailSheet.classList.contains('from-bookings');
+        closeCheckout();
+        if (fromBookings) {
+          closeVenueDetail();
+          openSearchTab();
+          return;
+        }
         closeClassDetail();
         if (window.__switchVenueDetailTab) window.__switchVenueDetailTab('schedule');
       });
@@ -5585,7 +6025,10 @@
     };
 
     // Close button
-    document.getElementById('class-detail-close').addEventListener('click', closeClassDetail);
+    document.getElementById('class-detail-close').addEventListener('click', function() {
+      if (venueDetailSheet.classList.contains('from-bookings')) closeVenueDetail();
+      else closeClassDetail();
+    });
 
     // Tapping the venue link (e.g. "JetSet Pilates · New York ›") dismisses the class detail
     // and returns the user to the venue detail underneath.
@@ -5593,6 +6036,8 @@
     if (cdVenueLinkEl) {
       cdVenueLinkEl.addEventListener('click', function() {
         if (wasDragging) return;
+        venueDetailSheet.classList.remove('from-bookings');
+        venueDetailEl.classList.remove('from-bookings');
         closeClassDetail();
       });
     }
