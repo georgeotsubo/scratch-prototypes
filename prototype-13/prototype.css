@@ -20,6 +20,20 @@
      reads as a distinct surface against a white page; the previous 1px
      #e4e5e7 against #fff body was effectively invisible (especially on
      high-DPI displays where 1px sub-pixels). */
+  /* Layout box matches the visual (scaled) phone so the page can center it.
+     The frame itself stays 393×852 — Mapbox measures clientWidth, and CSS
+     zoom was shrinking that, which left a gap on the right of the map. */
+  .device-scale {
+    --device-scale: min(1, 100dvh / 852px, 100vw / 393px);
+    width: calc(393px * var(--device-scale));
+    height: calc(852px * var(--device-scale));
+    flex-shrink: 0;
+  }
+
+  html.is-standalone .device-scale {
+    --device-scale: min(1, (100dvh - 24px) / 852px, (100vw - 24px) / 393px);
+  }
+
   .device-frame {
     width: 393px;
     height: 852px;
@@ -31,12 +45,21 @@
     overflow: hidden;
     position: relative;
     box-shadow: var(--pl-elevation-overlay);
+    transform: scale(var(--device-scale));
+    transform-origin: top left;
   }
 
   /* On mobile, go full screen */
   @media (max-width: 430px) {
     body { background: var(--pl-surface-default); align-items: flex-start; }
+    .device-scale {
+      --device-scale: 1;
+      width: 100vw;
+      height: 100vh;
+      height: 100dvh;
+    }
     .device-frame {
+      transform: none;
       width: 100vw;
       height: 100vh;
       height: 100dvh;
@@ -1548,12 +1571,13 @@
     transform: translateX(-25%);
   }
   /* From Bookings the class pane is already the modal — skip the iOS push
-     so the sheet rises with class detail in place. */
-  .venue-detail-sheet.from-bookings .vd-pane-stack > .venue-detail-scroll,
-  .venue-detail-sheet.from-bookings .vd-pane-stack > .class-detail-scroll {
+     so the sheet rises with class detail in place. Keep the venue pane
+     hidden only while class is showing; the venue link pops it back. */
+  .venue-detail-sheet.from-bookings.show-class .vd-pane-stack > .venue-detail-scroll,
+  .venue-detail-sheet.from-bookings.show-class .vd-pane-stack > .class-detail-scroll {
     transition: none;
   }
-  .venue-detail-sheet.from-bookings .vd-pane-stack > .venue-detail-scroll {
+  .venue-detail-sheet.from-bookings.show-class .vd-pane-stack > .venue-detail-scroll {
     visibility: hidden;
   }
 

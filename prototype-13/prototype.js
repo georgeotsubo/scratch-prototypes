@@ -6194,13 +6194,12 @@
     });
 
     // Tapping the venue link (e.g. "JetSet Pilates · New York ›") dismisses the class detail
-    // and returns the user to the venue detail underneath.
+    // and returns the user to the venue detail underneath. Keep .from-bookings
+    // so the Bookings scrim stays while the venue sheet is still a modal.
     var cdVenueLinkEl = document.getElementById('cd-venue-link');
     if (cdVenueLinkEl) {
       cdVenueLinkEl.addEventListener('click', function() {
         if (wasDragging) return;
-        venueDetailSheet.classList.remove('from-bookings');
-        venueDetailEl.classList.remove('from-bookings');
         closeClassDetail();
       });
     }
