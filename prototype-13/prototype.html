@@ -13,15 +13,20 @@
      prototype.css so local rules can still override a component. -->
 <link rel="stylesheet" href="../design-system/tokens.css">
 <link rel="stylesheet" href="../design-system/typography.css">
-<link rel="stylesheet" href="../design-system/components.css?v=20260817successicons">
+<link rel="stylesheet" href="../design-system/components.css?v=20260817packcard">
 <!-- Injects the icon sprite, so `<svg class="pl-icon"><use href="#pl-back">` works.
      Deferred is wrong here: prototype.js builds icon markup as strings at load. -->
-<script src="../design-system/icons.js?v=20260817sharesmall"></script>
-<link rel="stylesheet" href="prototype.css?v=20260817cancelfade2">
+<script src="../design-system/icons.js?v=20260817calendaradd16"></script>
+<link rel="stylesheet" href="prototype.css?v=20260817bookingscrim">
 <script src="https://cdn.jsdelivr.net/npm/motion@11.18.2/dist/motion.js"></script>
 <script src="config.js"></script>
 </head>
 <body>
+
+<div class="purchase-flow-toggle" role="radiogroup" aria-label="Purchase flow">
+  <button type="button" class="pl-chip pl-chip--neutral" id="purchase-flow-a" role="radio" aria-checked="true">Purchase flow A</button>
+  <button type="button" class="pl-chip pl-chip--outline" id="purchase-flow-b" role="radio" aria-checked="false">Purchase flow B</button>
+</div>
 
 <div class="device-frame" id="app">
 
@@ -311,7 +316,8 @@
       <div class="venue-detail-handle"></div>
 
       <!-- Shared sticky nav: stays in place across pane swaps. The X icon
-           crossfades to a back arrow when the class detail pane is active. -->
+           crossfades to a back arrow when the class detail pane is active,
+           except .from-bookings which keeps the X (class detail is the modal). -->
       <div class="vd-sticky-nav" id="vd-sticky-nav">
         <div class="vd-top-bar">
           <div class="vd-nav-left">
@@ -980,8 +986,8 @@
       </footer>
     </div>
     <!-- Cancel confirmed — design-system .pl-cancel-confirm-modal
-         (12909:346164 drop-in · 12909:346314 pack). Pack vs drop-in is
-         toggled in JS from the reservation's purchased option. -->
+         (12909:346164 drop-in · 12909:346314 pack · pack card 12946:389175).
+         Pack vs drop-in is toggled in JS from the reservation's purchased option. -->
     <div class="pl-cancel-confirm-modal cd-checkout-cancel-confirm" id="cd-cancel-confirm" aria-hidden="true">
       <header class="pl-cancel-confirm-modal__header">
         <div class="pl-cancel-confirm-modal__toolbar">
@@ -1003,13 +1009,12 @@
           Find a class
         </button>
         <div class="pl-cancel-confirm-modal__pack" id="cd-cancel-confirm-pack">
-          <div class="pl-cancel-confirm-modal__pack-badge">
-            <p class="pl-cancel-confirm-modal__pack-badge-text pl-text-body-md-medium" id="cd-cancel-confirm-pack-badge">10 of 10 visits left</p>
-          </div>
           <div class="pl-cancel-confirm-modal__pack-copy">
             <p class="pl-cancel-confirm-modal__pack-title pl-text-title-lg-medium" id="cd-cancel-confirm-pack-title">10 class card (mat + towel included)</p>
             <p class="pl-cancel-confirm-modal__pack-meta pl-text-body-md-regular" id="cd-cancel-confirm-pack-expiry">Expires Mar 9, 2027</p>
-            <p class="pl-cancel-confirm-modal__pack-venue pl-text-body-md-medium" id="cd-cancel-confirm-pack-venue">KIN Kollective - Nomad</p>
+          </div>
+          <div class="pl-cancel-confirm-modal__pack-badge">
+            <p class="pl-cancel-confirm-modal__pack-badge-text pl-text-body-md-medium" id="cd-cancel-confirm-pack-badge">10 of 10 visits left</p>
           </div>
         </div>
       </div>
@@ -1047,6 +1052,75 @@
     <div class="venue-list cluster-sheet-list" id="cluster-sheet-list"></div>
   </div>
 
+  <!-- ===== SCREEN: Bookings ===== -->
+  <div class="screen" id="screen-bookings">
+    <div class="status-bar">
+      <img src="figma-screens/status-bar.png" alt="Status bar">
+    </div>
+    <div class="bookings-header">
+      <h1 class="pl-page-title">Bookings</h1>
+      <div class="pl-tab-nav" id="bookings-section-tabs" role="tablist">
+        <button type="button" class="pl-tab-nav__item is-selected" data-bookings-tab="upcoming" role="tab" aria-selected="true">
+          <span class="pl-tab-nav__label">Upcoming</span>
+          <span class="pl-tab-nav__indicator" aria-hidden="true"></span>
+        </button>
+        <button type="button" class="pl-tab-nav__item" data-bookings-tab="attended" role="tab" aria-selected="false">
+          <span class="pl-tab-nav__label">Attended</span>
+          <span class="pl-tab-nav__indicator" aria-hidden="true"></span>
+        </button>
+      </div>
+    </div>
+    <div class="bookings-body">
+      <div class="bookings-list" id="bookings-list" hidden>
+        <div class="pl-booking-card" id="bookings-card">
+          <div class="pl-booking-card__map" id="bookings-card-map">
+            <img src="../assets/map_bookings.png" alt="" id="bookings-card-map-img">
+            <div class="pl-booking-card__pin">
+              <img class="pl-booking-card__pin-chrome" src="../design-system/assets/map-card-pin-chrome.svg" alt="" width="93" height="84">
+              <img class="pl-booking-card__pin-thumb" id="bookings-card-thumb" alt="" width="50" height="50" hidden>
+            </div>
+          </div>
+          <div class="pl-booking-card__body">
+            <div class="pl-booking-card__date">
+              <span class="pl-booking-card__weekday" id="bookings-card-weekday">Tue</span>
+              <span class="pl-booking-card__day" id="bookings-card-day">20</span>
+              <span class="pl-booking-card__month" id="bookings-card-month">Mar</span>
+            </div>
+            <div class="pl-booking-card__info">
+              <div class="pl-booking-card__copy">
+                <div class="pl-booking-card__title" id="bookings-card-title">Reformer Vitality</div>
+                <div class="pl-booking-card__meta" id="bookings-card-meta">Mar 20 · 12:00 PM ·&nbsp;Sue Dickey M.</div>
+                <div class="pl-booking-card__venue" id="bookings-card-venue">KIN Kollective · Nomad</div>
+              </div>
+              <div class="pl-booking-card__actions">
+                <button type="button" class="pl-btn pl-btn--sm pl-btn--neutral pl-btn--pill">
+                  <span class="pl-btn__icon" aria-hidden="true"><svg class="pl-icon"><use href="#pl-calendar-add-16"></use></svg></span>
+                  Add
+                </button>
+                <button type="button" class="pl-btn pl-btn--sm pl-btn--neutral pl-btn--pill">
+                  <span class="pl-btn__icon" aria-hidden="true"><svg class="pl-icon"><use href="#pl-directions"></use></svg></span>
+                  Directions
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="bookings-empty" id="bookings-empty">
+        <span class="bookings-empty__icon" aria-hidden="true">
+          <svg class="pl-icon" width="45" height="44" viewBox="0 0 45 44">
+            <use href="#pl-calendar-empty"></use>
+          </svg>
+        </span>
+        <div class="bookings-empty__copy">
+          <p class="bookings-empty__title pl-section-header">Time to book!</p>
+          <p class="bookings-empty__subtitle pl-body-small-regular" id="bookings-empty-subtitle">You have no upcoming reservations</p>
+        </div>
+        <button type="button" class="pl-btn pl-btn--md pl-btn--primary pl-btn--pill" id="bookings-start-exploring">Start exploring</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Blurred overlay behind the persistent tab bar -->
   <div class="tab-bar-blur" id="tab-bar-blur"></div>
 
@@ -1077,6 +1151,6 @@
   </div>
 </div>
 
-<script src="prototype.js?v=20260817cancelfade2"></script>
+<script src="prototype.js?v=20260817packcard"></script>
 </body>
 </html>

@@ -9,7 +9,7 @@
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="tokens.css">
 <link rel="stylesheet" href="typography.css">
-<link rel="stylesheet" href="components.css?v=20260817calendarscale">
+<link rel="stylesheet" href="components.css?v=20260817packcard">
 <style>
   * { box-sizing: border-box; }
   html { scroll-behavior: smooth; }
@@ -174,6 +174,12 @@
   #icon-groups h3:first-child { margin-top: 0; }
   .icon-cell code { background: none; padding: 0; font-size: 11px; line-height: 1.3;
                     color: var(--pl-text-secondary); overflow-wrap: anywhere; }
+  .icons--lg { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); }
+  .icon-cell--lg {
+    aspect-ratio: auto;
+    min-height: 140px;
+    padding: var(--pl-space-4);
+  }
 
   /* --- Component demo surfaces ------------------------------------------ */
   .row { display: flex; flex-wrap: wrap; gap: var(--pl-space-3); align-items: center; }
@@ -692,6 +698,50 @@ Valid for all classes.</span>
       </div>
     </section>
 
+    <section id="c-bookingcard">
+      <h2>Booking card <span class="count">.pl-booking-card · 12909:348896</span></h2>
+      <p class="lede">Upcoming reservation on the Bookings tab. Map preview is
+        <code>assets/map_bookings.png</code> (static stand-in — the prototype uses
+        a Mapbox image of the actual venue). Pin is
+        <code>assets/map-card-pin-chrome.svg</code> (exact bubble) with a 50×50
+        venue thumbnail. Actions are Neutral /
+        Small / Pill PLButtons — Add uses <code>#pl-calendar-add-16</code>, Directions
+        uses <code>#pl-directions</code>.</p>
+      <div class="pl-booking-card" id="booking-card" style="width:358px">
+        <div class="pl-booking-card__map" id="booking-card-map">
+          <img src="assets/map_bookings.png" alt="">
+          <div class="pl-booking-card__pin">
+            <img class="pl-booking-card__pin-chrome" src="assets/map-card-pin-chrome.svg" alt="" width="93" height="84">
+            <img class="pl-booking-card__pin-thumb" src="../images/pilates/studio_1/image01.jpg" alt="" width="50" height="50">
+          </div>
+        </div>
+        <div class="pl-booking-card__body">
+          <div class="pl-booking-card__date">
+            <span class="pl-booking-card__weekday">Tue</span>
+            <span class="pl-booking-card__day">20</span>
+            <span class="pl-booking-card__month">Mar</span>
+          </div>
+          <div class="pl-booking-card__info">
+            <div class="pl-booking-card__copy">
+              <div class="pl-booking-card__title">Reformer Vitality</div>
+              <div class="pl-booking-card__meta">Mar 20 · 12:00 PM ·&nbsp;Sue Dickey M.</div>
+              <div class="pl-booking-card__venue">KIN Kollective · Nomad</div>
+            </div>
+            <div class="pl-booking-card__actions">
+              <button type="button" class="pl-btn pl-btn--sm pl-btn--neutral pl-btn--pill">
+                <span class="pl-btn__icon" aria-hidden="true"><svg class="pl-icon"><use href="#pl-calendar-add-16"></use></svg></span>
+                Add
+              </button>
+              <button type="button" class="pl-btn pl-btn--sm pl-btn--neutral pl-btn--pill">
+                <span class="pl-btn__icon" aria-hidden="true"><svg class="pl-icon"><use href="#pl-directions"></use></svg></span>
+                Directions
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <section id="c-venuecard">
       <h2>Venue card <span class="count">.pl-venue-card · 1456:15761</span></h2>
       <p class="lede">The image is a square sized by the info column, not a fixed size — so the
@@ -1021,13 +1071,14 @@ Valid for all classes.</span>
     </section>
 
     <section id="c-cancelconfirm">
-      <h2>Cancel confirm modal <span class="count">.pl-cancel-confirm-modal · 12909:346164 / 12909:346314</span></h2>
+      <h2>Cancel confirm modal <span class="count">.pl-cancel-confirm-modal · 12909:346164 / 12909:346314 · pack 12946:389175</span></h2>
       <p class="lede">Post-cancellation success sheet from Playlist App MVP. Checkmark is
         <code>assets/check_success.svg</code> (same export as booking success). Drop-in
         (<code>12909:346164</code>) returns a visit to balance and offers a neutral
         <strong>Find a class</strong> pill with <code>#pl-calendar-small</code>. Pack
-        (<code>12909:346314</code>) shows a pack summary card with visits-left badge.
-        Both end with an inverse <strong>Done</strong> CTA.</p>
+        (<code>12909:346314</code>) shows a pack summary card (<code>12946:389175</code>)
+        with title, expiry, and visits-left badge. Both end with an inverse
+        <strong>Done</strong> CTA.</p>
       <div class="cancel-modal-demos">
         <div>
           <h3>Drop-in · 12909:346164</h3>
@@ -1079,13 +1130,12 @@ Valid for all classes.</span>
                   <p class="pl-cancel-confirm-modal__message pl-text-body-md-medium">Your visit is back in your pack</p>
                 </div>
                 <div class="pl-cancel-confirm-modal__pack">
-                  <div class="pl-cancel-confirm-modal__pack-badge">
-                    <p class="pl-cancel-confirm-modal__pack-badge-text pl-text-body-md-medium">9 of 10 visits left</p>
-                  </div>
                   <div class="pl-cancel-confirm-modal__pack-copy">
                     <p class="pl-cancel-confirm-modal__pack-title pl-text-title-lg-medium">10 class card (mat + towel)</p>
                     <p class="pl-cancel-confirm-modal__pack-meta pl-text-body-md-regular">Expires Mar 9, 2027</p>
-                    <p class="pl-cancel-confirm-modal__pack-venue pl-text-body-md-medium">KIN Kollective - Nomad</p>
+                  </div>
+                  <div class="pl-cancel-confirm-modal__pack-badge">
+                    <p class="pl-cancel-confirm-modal__pack-badge-text pl-text-body-md-medium">9 of 10 visits left</p>
                   </div>
                 </div>
               </div>
@@ -1181,7 +1231,7 @@ Valid for all classes.</span>
   </main>
 </div>
 
-<script src="icons.js?v=20260817sharesmall"></script>
+<script src="icons.js?v=20260817calendaradd16"></script>
 <script src="tokens.js"></script>
 <script src="typography.js"></script>
 <script>
@@ -1361,10 +1411,29 @@ Valid for all classes.</span>
   document.getElementById('foundations').innerHTML = out.join('');
 
   // ---------- Icons -------------------------------------------------------
-  var PL_ASSET_ICONS = [
-    { name: 'google-icon', src: 'assets/google_icon.png', width: 24, height: 24 },
-    { name: 'cp-logo', src: 'assets/CP_logo.svg', width: 24, height: 24 },
-    { name: 'playlist-logo', src: 'assets/playlist-logo.svg', width: 120, height: 16 },
+  var PL_ASSET_GROUPS = [
+    {
+      name: 'Bookings',
+      lede: 'Exact Figma exports used on the Bookings tab — speech-bubble map pin ' +
+        '(93×84, embedded map photo) and the booking-card map preview. Use ' +
+        '<code>&lt;img&gt;</code>, not the sprite. Distinct from <code>#pl-map-pin</code>, ' +
+        'the red location marker on <code>.pl-map-card</code>. The prototype swaps the ' +
+        'map preview for a Mapbox static image of the venue.',
+      icons: [
+        { name: 'map-card-pin', src: 'assets/map-card-pin.svg', width: 93, height: 84 },
+        { name: 'map-bookings', src: 'assets/map_bookings.png', width: 167, height: 66 }
+      ]
+    },
+    {
+      name: 'Exact assets',
+      lede: 'Raster or multi-colour marks in <code>assets/</code> — use ' +
+        '<code>&lt;img src=&quot;assets/google_icon.png&quot;&gt;</code>, not the sprite.',
+      icons: [
+        { name: 'google-icon', src: 'assets/google_icon.png', width: 24, height: 24 },
+        { name: 'cp-logo', src: 'assets/CP_logo.svg', width: 24, height: 24 },
+        { name: 'playlist-logo', src: 'assets/playlist-logo.svg', width: 120, height: 16 }
+      ]
+    }
   ];
 
   function renderIconCell(name) {
@@ -1373,26 +1442,29 @@ Valid for all classes.</span>
   }
 
   function renderAssetIconCell(asset) {
-    return '<div class="icon-cell"><img src="' + esc(asset.src) + '" alt="" width="' +
-      asset.width + '" height="' + asset.height + '"><code>' + esc(asset.name) + '</code></div>';
+    var large = asset.width > 48 || asset.height > 48;
+    return '<div class="icon-cell' + (large ? ' icon-cell--lg' : '') + '"><img src="' +
+      esc(asset.src) + '" alt="" width="' + asset.width + '" height="' + asset.height +
+      '"><code>' + esc(asset.name) + '</code></div>';
   }
 
   var iconGroups = window.PL_ICONS || [];
   var iconNames = [];
   iconGroups.forEach(function (g) { iconNames = iconNames.concat(g.names); });
-  var iconCount = iconNames.length + PL_ASSET_ICONS.length;
+  var assetCount = PL_ASSET_GROUPS.reduce(function (n, g) { return n + g.icons.length; }, 0);
+  var iconCount = iconNames.length + assetCount;
 
   var groupsHtml = iconGroups.map(function (g) {
     return '<h3>' + esc(g.name) + '</h3><div class="icons">' +
       g.names.map(renderIconCell).join('') + '</div>';
   }).join('');
 
-  if (PL_ASSET_ICONS.length) {
-    groupsHtml += '<h3>Exact assets</h3><p class="lede">Raster or multi-colour marks in ' +
-      '<code>assets/</code> — use <code>&lt;img src=&quot;assets/google_icon.png&quot;&gt;</code>, ' +
-      'not the sprite.</p><div class="icons">' +
-      PL_ASSET_ICONS.map(renderAssetIconCell).join('') + '</div>';
-  }
+  PL_ASSET_GROUPS.forEach(function (g) {
+    var large = g.icons.some(function (a) { return a.width > 48 || a.height > 48; });
+    groupsHtml += '<h3>' + esc(g.name) + '</h3><p class="lede">' + g.lede + '</p>' +
+      '<div class="icons' + (large ? ' icons--lg' : '') + '">' +
+      g.icons.map(renderAssetIconCell).join('') + '</div>';
+  });
 
   document.getElementById('icon-groups').innerHTML = groupsHtml;
   var ic = document.querySelector('#c-icons h2 .count');
@@ -1431,6 +1503,7 @@ Valid for all classes.</span>
     ['Rating distribution height', 'rd-rated', 'offsetHeight', 144],
     ['Rating distribution track height', 'rd-track', 'offsetHeight', 8],
     ['Map card map area', 'mc-map', 'offsetHeight', 168],
+    ['Booking card map area', 'booking-card-map', 'offsetHeight', 132],
     ['Venue card header†', 'vc-header', 'offsetHeight', 106], ['Venue card image†', 'vc-img', 'offsetWidth', 106],
     ['Banner height @311px', 'banner', 'offsetHeight', 56],
     ['Checkout card drop-in height @353px', 'checkout-card', 'offsetHeight', 244],
@@ -1471,7 +1544,7 @@ Valid for all classes.</span>
                      'f-spacing', 'f-componentspacing', 'f-radius', 'f-elevation', 'f-size']],
     ['Components', ['c-button', 'c-iconbutton', 'c-chip', 'c-form', 'c-searchbar', 'c-classcard',
                     'c-schedulecard', 'c-pack', 'c-reviewcard', 'c-ratingssummary', 'c-ratingdistribution',
-                    'c-mapcard', 'c-venuecard', 'c-banner', 'c-promo-banner', 'c-checkoutcard',
+                    'c-mapcard', 'c-bookingcard', 'c-venuecard', 'c-banner', 'c-promo-banner', 'c-checkoutcard',
                     'c-paymentsection', 'c-successmodal', 'c-cancelmodal', 'c-cancelconfirm', 'c-tabnav', 'c-tabbar', 'c-icons']],
     ['Reference', ['parity']]
   ];

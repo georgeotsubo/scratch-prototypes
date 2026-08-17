@@ -10,10 +10,22 @@
     font-family: var(--pl-type-font-primary);
     background: var(--pl-surface-default);
     display: flex;
+    flex-direction: column;
     justify-content: center;
     align-items: center;
+    gap: 16px;
     min-height: 100vh;
     overflow: hidden;
+  }
+
+  /* Prototype chrome — sits above the phone, not inside the app. */
+  .purchase-flow-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    flex-shrink: 0;
+    z-index: 2;
   }
 
   /* iPhone frame for desktop. Stronger border + soft shadow so the device
@@ -33,9 +45,37 @@
     box-shadow: var(--pl-elevation-overlay);
   }
 
+  /* Iframe / short window: overlay the chips on the device so the 852px
+     phone frame still fills the viewport. */
+  @media (max-height: 920px) {
+    body { gap: 0; }
+    .purchase-flow-toggle {
+      position: fixed;
+      top: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 9999;
+      padding: 4px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.88);
+      backdrop-filter: blur(8px);
+    }
+  }
+
   /* On mobile, go full screen */
   @media (max-width: 430px) {
-    body { background: var(--pl-surface-default); align-items: flex-start; }
+    body { background: var(--pl-surface-default); align-items: flex-start; gap: 0; }
+    .purchase-flow-toggle {
+      position: fixed;
+      top: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 9999;
+      padding: 4px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.88);
+      backdrop-filter: blur(8px);
+    }
     .device-frame {
       width: 100vw;
       height: 100vh;
@@ -1224,8 +1264,12 @@
     transition: background 0.35s ease;
   }
   /* No default overlay dim — the venue sheet itself provides the visual.
-     The JS applies an inline rgba background only when a class detail is stacked on top. */
+     From Bookings, class detail is a modal over the tab, so dim like checkout. */
   #venue-detail.venue-detail-visible .venue-detail-sheet {
+    pointer-events: auto;
+  }
+  #venue-detail.venue-detail-visible.from-bookings {
+    background: rgba(0, 0, 0, 0.32);
     pointer-events: auto;
   }
 
@@ -1367,6 +1411,19 @@
   .venue-detail-sheet.show-class .vd-nav-back {
     opacity: 1;
     pointer-events: auto;
+  }
+  /* Opened from Bookings: class detail is the modal, so keep the X and
+     hide back. Schedule is a venue-discovery tab — Overview / Reviews only. */
+  .venue-detail-sheet.from-bookings.show-class .venue-detail-close {
+    opacity: 1;
+    pointer-events: auto;
+  }
+  .venue-detail-sheet.from-bookings.show-class .vd-nav-back {
+    opacity: 0;
+    pointer-events: none;
+  }
+  .venue-detail-sheet.from-bookings .cd-tabs [data-cdtab="schedule"] {
+    display: none;
   }
   .vd-actions-pill { flex-shrink: 0; }
 
@@ -1523,6 +1580,15 @@
      push pattern). It keeps its solid sheet bg so it doesn't bleed through. */
   .venue-detail-sheet.show-class .vd-pane-stack > .venue-detail-scroll {
     transform: translateX(-25%);
+  }
+  /* From Bookings the class pane is already the modal — skip the iOS push
+     so the sheet rises with class detail in place. */
+  .venue-detail-sheet.from-bookings .vd-pane-stack > .venue-detail-scroll,
+  .venue-detail-sheet.from-bookings .vd-pane-stack > .class-detail-scroll {
+    transition: none;
+  }
+  .venue-detail-sheet.from-bookings .vd-pane-stack > .venue-detail-scroll {
+    visibility: hidden;
   }
 
   /* Fallback for any .venue-detail-scroll that is NOT inside a pane stack
@@ -2964,6 +3030,21 @@
     opacity: 1;
     pointer-events: auto;
   }
+  /* Flow B checkout (after Continue) can go back to Select option. */
+  .cd-checkout-sheet.is-flow-b:not(.is-options-open):not(.is-cancel-mode) .cd-checkout-options-back {
+    opacity: 1;
+    pointer-events: auto;
+  }
+  /* Flow B entry opens on Select option — X only, no back. */
+  .cd-checkout-sheet.is-options-entry .cd-checkout-options-back {
+    opacity: 0;
+    pointer-events: none;
+  }
+  /* Skip the iOS push when Book opens directly onto the options pane. */
+  .cd-checkout-sheet.is-options-instant .cd-checkout-pane--main,
+  .cd-checkout-sheet.is-options-instant .cd-checkout-pane--options {
+    transition: none;
+  }
   .cd-checkout-title-wrap {
     position: absolute;
     left: 50%;
@@ -3041,6 +3122,34 @@
     transform: translateX(-25%);
   }
   .cd-checkout-sheet.is-options-open .cd-checkout-pane--options {
+    transform: translateX(0);
+    pointer-events: auto;
+  }
+  /* Flow B entry: checkout waits off-screen right so Continue can push it
+     in the same direction as Flow A's options pane. */
+  .cd-checkout-sheet.is-options-entry .cd-checkout-pane--main {
+    transform: translateX(100%);
+  }
+  .cd-checkout-sheet.is-options-entry .cd-checkout-pane--options {
+    transform: translateX(0);
+    pointer-events: auto;
+  }
+  /* Continue: checkout slides in from the right; Select option drifts left.
+     Stays on after the push so packs remain parked underneath for a back pop. */
+  .cd-checkout-sheet.is-pushing-checkout .cd-checkout-pane--main {
+    transform: translateX(0);
+    z-index: 3;
+  }
+  .cd-checkout-sheet.is-pushing-checkout .cd-checkout-pane--options {
+    transform: translateX(-25%);
+    pointer-events: none;
+  }
+  /* Flow B green banner / back: checkout exits right, packs come from the left. */
+  .cd-checkout-sheet.is-popping-to-options .cd-checkout-pane--main {
+    transform: translateX(100%);
+    z-index: 3;
+  }
+  .cd-checkout-sheet.is-popping-to-options .cd-checkout-pane--options {
     transform: translateX(0);
     pointer-events: auto;
   }
@@ -3805,4 +3914,86 @@
     transform-origin: center center;
     will-change: transform, opacity;
     transition: opacity 0.2s ease-out, aspect-ratio 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  /* ========== BOOKINGS TAB (empty state, Figma 12925:349136) ========== */
+  #screen-bookings {
+    background: var(--pl-bg-default);
+  }
+  .bookings-header {
+    flex-shrink: 0;
+    padding: 0 22px;
+  }
+  .bookings-header .pl-page-title {
+    margin: 28px 0 0;
+    color: var(--pl-text-primary);
+  }
+  .bookings-header .pl-tab-nav {
+    margin-top: 28px;
+  }
+  .bookings-body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    overflow-y: auto;
+    padding-bottom: 110px;
+  }
+  .bookings-list {
+    width: 100%;
+    padding: 16px 18px 0;
+    box-sizing: border-box;
+  }
+  .bookings-list .pl-booking-card {
+    max-width: 100%;
+    cursor: pointer;
+  }
+  .bookings-list[hidden],
+  .bookings-empty[hidden] {
+    display: none;
+  }
+  .bookings-empty {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--pl-space-md);
+    width: 323px;
+    max-width: 100%;
+    margin: 0 auto;
+    padding: var(--pl-space-lg) var(--pl-modal-dialog-padding);
+    box-sizing: border-box;
+    text-align: center;
+  }
+  /* Native size of assets/calendar_empty_state.svg (45×44). Explicit both
+     axes so .pl-icon's 20px default can't squash the artwork. Grey matches
+     Figma's button/label/neutral/fg/disabled on the empty-state glyph. */
+  .bookings-empty__icon {
+    width: 45px;
+    height: 44px;
+    color: var(--pl-icon-disabled);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .bookings-empty__icon > .pl-icon {
+    width: 45px;
+    height: 44px;
+  }
+  .bookings-empty__copy {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--pl-space-xxs);
+    width: 100%;
+  }
+  .bookings-empty__title {
+    margin: 0;
+    color: var(--pl-text-primary);
+  }
+  .bookings-empty__subtitle {
+    margin: 0;
+    color: var(--pl-text-secondary);
   }
