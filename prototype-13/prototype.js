@@ -2880,6 +2880,7 @@
     if (!pin) return;
     window.__currentVenuePin = pin;
     window.__currentVenueIndex = index;
+    window.__currentVenueHasIntroOffer = hasVenueIntroOffer(pin);
     // Re-render the Schedule tab so prices reflect this venue's intro-offer flag
     if (window.__renderVdSchedule) window.__renderVdSchedule();
     // Render the Overview's "Available today" list from the same generated
@@ -4801,8 +4802,15 @@
       return 'Expires ' + month + ' ' + d.getDate() + ', ' + d.getFullYear();
     }
 
+    function cdRefreshVenueIntroOfferFlag() {
+      window.__currentVenueHasIntroOffer = !!(window.__hasVenueIntroOffer
+        && window.__currentVenuePin
+        && window.__hasVenueIntroOffer(window.__currentVenuePin));
+    }
+
     function cdCurrentVenueHasIntroOffer() {
-      return typeof hasVenueIntroOffer === 'function' && hasVenueIntroOffer(window.__currentVenuePin);
+      cdRefreshVenueIntroOfferFlag();
+      return !!window.__currentVenueHasIntroOffer;
     }
 
     function cdBuildCheckoutOptionsCatalog(venueName) {
