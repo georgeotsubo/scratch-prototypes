@@ -9,7 +9,7 @@
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="tokens.css">
 <link rel="stylesheet" href="typography.css">
-<link rel="stylesheet" href="components.css?v=20260815pack">
+<link rel="stylesheet" href="components.css?v=20260816payment2">
 <style>
   * { box-sizing: border-box; }
   html { scroll-behavior: smooth; }
@@ -663,6 +663,128 @@ Valid for all classes.</span>
       </div>
     </section>
 
+    <section id="c-checkoutcard">
+      <h2>Checkout card <span class="count">.pl-checkout-card · 2511:10595 · 2510:10502</span></h2>
+      <p class="lede">Booking checkout summary — class details, selected payment line, and an
+        optional promo row. Drop-in is product + qty/price; Pack swaps in remaining-count
+        and expiry lines with <code>__product--pack</code>, <code>__details</code>, and
+        <code>__row--pack</code>. Icons are <code>#pl-tag</code> and
+        <code>#pl-right-chevron</code> from the sprite.</p>
+      <div class="stage" style="max-width:353px">
+        <div class="pl-checkout-card" id="checkout-card">
+          <div class="pl-checkout-card__class">
+            <div class="pl-checkout-card__title">Reformer Vitality</div>
+            <div class="pl-checkout-card__meta">Tue, Mar 3 · 2:00 PM</div>
+            <div class="pl-checkout-card__meta">Sue Dickey M.</div>
+            <div class="pl-checkout-card__meta">KIN Kollective - Nomad</div>
+          </div>
+          <div class="pl-checkout-card__payment">
+            <div class="pl-checkout-card__product">Nomad New Member Trial Class</div>
+            <div class="pl-checkout-card__row">
+              <span class="pl-checkout-card__qty">1 class</span>
+              <span class="pl-checkout-card__price">$20.00</span>
+            </div>
+          </div>
+          <button type="button" class="pl-checkout-card__promo">
+            <span class="pl-checkout-card__promo-icon" aria-hidden="true"><svg class="pl-icon"><use href="#pl-tag"></use></svg></span>
+            <span class="pl-checkout-card__promo-text">Explore packs and memberships</span>
+            <span class="pl-checkout-card__promo-chevron" aria-hidden="true"><svg class="pl-icon"><use href="#pl-right-chevron"></use></svg></span>
+          </button>
+        </div>
+        <div class="pl-checkout-card" id="checkout-card-pack">
+          <div class="pl-checkout-card__class">
+            <div class="pl-checkout-card__title">Reformer Vitality</div>
+            <div class="pl-checkout-card__meta">Tue, Mar 3 · 2:00 PM</div>
+            <div class="pl-checkout-card__meta">Sue Dickey M.</div>
+            <div class="pl-checkout-card__meta">KIN Kollective - Nomad</div>
+          </div>
+          <div class="pl-checkout-card__payment">
+            <div class="pl-checkout-card__product pl-checkout-card__product--pack">5 class card (mat + towel included)</div>
+            <div class="pl-checkout-card__row pl-checkout-card__row--pack">
+              <div class="pl-checkout-card__details">
+                <div class="pl-checkout-card__detail">4 of 5 left after booking</div>
+                <div class="pl-checkout-card__detail">Expires Mar 9, 2027</div>
+              </div>
+              <span class="pl-checkout-card__price pl-checkout-card__price--pack">$200.00</span>
+            </div>
+          </div>
+          <button type="button" class="pl-checkout-card__promo">
+            <span class="pl-checkout-card__promo-icon" aria-hidden="true"><svg class="pl-icon"><use href="#pl-tag"></use></svg></span>
+            <span class="pl-checkout-card__promo-text">Explore packs and memberships</span>
+            <span class="pl-checkout-card__promo-chevron" aria-hidden="true"><svg class="pl-icon"><use href="#pl-right-chevron"></use></svg></span>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <section id="c-paymentsection">
+      <h2>Payment section <span class="count">.pl-payment-section · 2511:11765 · 2511:11842</span></h2>
+      <p class="lede">Checkout payment card — saved card row, Change link, and a collapsible
+        total. Collapsed shows Total only; expanded (<code>.is-expanded</code>) reveals
+        Subtotal and Taxes above Total and rotates <code>#pl-chevron-down-small</code>.
+        Visa mark is <code>assets/Visa.svg</code> (exact export).</p>
+      <div class="stage" style="max-width:353px">
+        <p class="label" style="margin:0 0 4px;font-size:var(--pl-caption-lg-size);color:var(--pl-text-secondary)">Collapsed · tap Total to expand</p>
+        <div class="pl-payment-section" id="payment-section">
+          <div class="pl-payment-section__method">
+            <div class="pl-payment-section__card">
+              <img class="pl-payment-section__brand" src="assets/Visa.svg" alt="" width="29" height="20">
+              <span class="pl-payment-section__number">•••• 4242</span>
+            </div>
+            <button type="button" class="pl-payment-section__change">Change</button>
+          </div>
+          <div class="pl-payment-section__totals">
+            <div class="pl-payment-section__breakdown">
+              <div class="pl-payment-section__breakdown-row">
+                <span>Subtotal</span>
+                <span>$250.00</span>
+              </div>
+              <div class="pl-payment-section__breakdown-row">
+                <span>Taxes</span>
+                <span>$0.00</span>
+              </div>
+            </div>
+            <div class="pl-payment-section__total-row">
+              <button type="button" class="pl-payment-section__total-toggle" id="payment-section-toggle" aria-expanded="false">
+                <span class="pl-payment-section__total-label">Total</span>
+                <span class="pl-payment-section__total-chevron" aria-hidden="true"><svg class="pl-icon"><use href="#pl-chevron-down-small"></use></svg></span>
+              </button>
+              <span class="pl-payment-section__total-amount">$20.00</span>
+            </div>
+          </div>
+        </div>
+        <p class="label" style="margin:var(--pl-space-3) 0 4px;font-size:var(--pl-caption-lg-size);color:var(--pl-text-secondary)">Expanded · <code>.is-expanded</code></p>
+        <div class="pl-payment-section is-expanded" id="payment-section-expanded">
+          <div class="pl-payment-section__method">
+            <div class="pl-payment-section__card">
+              <img class="pl-payment-section__brand" src="assets/Visa.svg" alt="" width="29" height="20">
+              <span class="pl-payment-section__number">•••• 4242</span>
+            </div>
+            <button type="button" class="pl-payment-section__change">Change</button>
+          </div>
+          <div class="pl-payment-section__totals">
+            <div class="pl-payment-section__breakdown">
+              <div class="pl-payment-section__breakdown-row">
+                <span>Subtotal</span>
+                <span>$250.00</span>
+              </div>
+              <div class="pl-payment-section__breakdown-row">
+                <span>Taxes</span>
+                <span>$0.00</span>
+              </div>
+            </div>
+            <div class="pl-payment-section__total-row">
+              <button type="button" class="pl-payment-section__total-toggle" aria-expanded="true">
+                <span class="pl-payment-section__total-label">Total</span>
+                <span class="pl-payment-section__total-chevron" aria-hidden="true"><svg class="pl-icon"><use href="#pl-chevron-down-small"></use></svg></span>
+              </button>
+              <span class="pl-payment-section__total-amount">$20.00</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <section id="c-tabnav">
       <h2>Tab navigation <span class="count">.pl-tab-nav · 1192:843</span></h2>
       <p class="lede">Underline tabs for switching sections within a screen — separate
@@ -743,7 +865,7 @@ Valid for all classes.</span>
   </main>
 </div>
 
-<script src="icons.js?v=20260815pin"></script>
+<script src="icons.js?v=20260816chevrons"></script>
 <script src="tokens.js"></script>
 <script src="typography.js"></script>
 <script>
@@ -969,6 +1091,10 @@ Valid for all classes.</span>
     ['Map card map area', 'mc-map', 'offsetHeight', 168],
     ['Venue card header†', 'vc-header', 'offsetHeight', 106], ['Venue card image†', 'vc-img', 'offsetWidth', 106],
     ['Banner height @311px', 'banner', 'offsetHeight', 56],
+    ['Checkout card drop-in height @353px', 'checkout-card', 'offsetHeight', 244],
+    ['Checkout card pack height @353px', 'checkout-card-pack', 'offsetHeight', 262],
+    ['Payment section collapsed @353px', 'payment-section', 'offsetHeight', 108],
+    ['Payment section expanded @353px', 'payment-section-expanded', 'offsetHeight', 152],
     ['Tab navigation height', 'tabnav', 'offsetHeight', 41],
     ['Tab bar height', 'tabbar', 'offsetHeight', 62], ['Tab min height', 'tab1', 'offsetHeight', 54],
     ['Link underline', 'btn-link', 'style:text-decoration-line', 'underline'],
@@ -1002,7 +1128,8 @@ Valid for all classes.</span>
                      'f-spacing', 'f-componentspacing', 'f-radius', 'f-elevation', 'f-size']],
     ['Components', ['c-button', 'c-iconbutton', 'c-chip', 'c-field', 'c-searchbar', 'c-classcard',
                     'c-schedulecard', 'c-pack', 'c-reviewcard', 'c-ratingssummary', 'c-ratingdistribution',
-                    'c-mapcard', 'c-venuecard', 'c-banner', 'c-tabnav', 'c-tabbar', 'c-icons']],
+                    'c-mapcard', 'c-venuecard', 'c-banner', 'c-promo-banner', 'c-checkoutcard',
+                    'c-paymentsection', 'c-tabnav', 'c-tabbar', 'c-icons']],
     ['Reference', ['parity']]
   ];
   document.getElementById('nav').innerHTML = GROUPS.map(function (g) {
@@ -1105,6 +1232,16 @@ Valid for all classes.</span>
       next.focus();
     });
     selectTab(tabs[0]);
+  }
+
+  // ---------- Payment section expand ------------------------------------
+  var paymentSection = document.getElementById('payment-section');
+  var paymentToggle = document.getElementById('payment-section-toggle');
+  if (paymentSection && paymentToggle) {
+    paymentToggle.addEventListener('click', function () {
+      var open = paymentSection.classList.toggle('is-expanded');
+      paymentToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+    });
   }
 
   // ---------- Theme -------------------------------------------------------

@@ -10,6 +10,8 @@
    Exact-export exceptions — do not redraw, re-trace, or hand-edit path data;
    if the source artwork changes, replace the file wholesale with the new export:
    - star-fill / star-half / star-outline: iOS star SVGs (`#FFB54D` / `#B3B5BC`)
+   - chevron-down-small / chevron-up-small: exact copies of
+     `assets/iOS_chevron_down_small.svg` / `assets/iOS_chevron_up_small.svg`
    - map-pin: exact copy of `assets/Map card pin.svg` (49×52, baked red/white
      plus its drop-shadow filter). IDs are kept so the filter url(#…) still
      resolves. A map marker shouldn't invert in dark mode.
@@ -29,7 +31,7 @@ const DIR = new URL('./icons/', import.meta.url).pathname;
 /* Display order on the design-system page. Anything not listed still ships —
    it lands in "Other" so a newly-exported icon is never silently dropped. */
 const GROUPS = [
-  ['Navigation', ['back', 'close', 'chevron-down', 'right-chevron', 'search', 'share']],
+  ['Navigation', ['back', 'close', 'chevron-down', 'chevron-down-small', 'chevron-up-small', 'right-chevron', 'search', 'share']],
   ['Contact & place', ['location-pin', 'location-pin-small', 'person-small',
                        'directions', 'phone', 'globe', 'tag', 'map-pin']],
   ['Booking', ['calendar-small', 'calendar-large', 'stack']],

@@ -311,6 +311,93 @@ padding-x to `inline/md` (not in the export; renders 16, same as
 Default is stacked lines — that's text-formatting drift, so the CSS follows
 Default.
 
+**`.pl-checkout-card`** (`2511:10595` · `2510:10502`) — booking checkout summary
+with class details, a payment line, and an optional green promo row. Not a
+`.pl-card` — display-only shell. Promo icons are `#pl-tag` and
+`#pl-right-chevron` (Figma `iOS_tag` / `iOS_right_chevron`).
+
+Drop-in (`2511:10595`):
+
+```html
+<div class="pl-checkout-card">
+  <div class="pl-checkout-card__class">
+    <div class="pl-checkout-card__title">Reformer Vitality</div>
+    <div class="pl-checkout-card__meta">Tue, Mar 3 · 2:00 PM</div>
+    <div class="pl-checkout-card__meta">Sue Dickey M.</div>
+    <div class="pl-checkout-card__meta">KIN Kollective - Nomad</div>
+  </div>
+  <div class="pl-checkout-card__payment">
+    <div class="pl-checkout-card__product">Nomad New Member Trial Class</div>
+    <div class="pl-checkout-card__row">
+      <span class="pl-checkout-card__qty">1 class</span>
+      <span class="pl-checkout-card__price">$20.00</span>
+    </div>
+  </div>
+  <button type="button" class="pl-checkout-card__promo">…</button>
+</div>
+```
+
+Pack (`2510:10502`) — swap qty for `__details`, add pack modifiers:
+
+```html
+<div class="pl-checkout-card">
+  <div class="pl-checkout-card__class">…</div>
+  <div class="pl-checkout-card__payment">
+    <div class="pl-checkout-card__product pl-checkout-card__product--pack">5 class card (mat + towel included)</div>
+    <div class="pl-checkout-card__row pl-checkout-card__row--pack">
+      <div class="pl-checkout-card__details">
+        <div class="pl-checkout-card__detail">4 of 5 left after booking</div>
+        <div class="pl-checkout-card__detail">Expires Mar 9, 2027</div>
+      </div>
+      <span class="pl-checkout-card__price pl-checkout-card__price--pack">$200.00</span>
+    </div>
+  </div>
+  <button type="button" class="pl-checkout-card__promo">…</button>
+</div>
+```
+
+Drop-in: product is `body/md/medium`; qty is `body/sm/regular` /
+`text/secondary`; price is `body/md/semibold`. Pack: product is
+`label/sm/medium`; details are `body/sm/regular` / `text/secondary`; price is
+`label/sm/semibold` and sits on the expiry baseline (`__row--pack`). Promo text
+is `label/sm/semibold` on `surface/variant/green` with `text/status/green`.
+
+**`.pl-payment-section`** (`2511:11765` · `2511:11842`) — checkout payment card
+with saved card row, Change link, and collapsible total. Visa mark is
+`assets/Visa.svg` (exact export — do not redraw). Chevron is
+`#pl-chevron-down-small`; add `.is-expanded` to reveal Subtotal/Taxes and
+rotate the chevron 180°.
+
+```html
+<div class="pl-payment-section is-expanded">
+  <div class="pl-payment-section__method">
+    <div class="pl-payment-section__card">
+      <img class="pl-payment-section__brand" src="assets/Visa.svg" alt="" width="29" height="20">
+      <span class="pl-payment-section__number">•••• 4242</span>
+    </div>
+    <button type="button" class="pl-payment-section__change">Change</button>
+  </div>
+  <div class="pl-payment-section__totals">
+    <div class="pl-payment-section__breakdown">
+      <div class="pl-payment-section__breakdown-row"><span>Subtotal</span><span>$250.00</span></div>
+      <div class="pl-payment-section__breakdown-row"><span>Taxes</span><span>$0.00</span></div>
+    </div>
+    <div class="pl-payment-section__total-row">
+      <button type="button" class="pl-payment-section__total-toggle" aria-expanded="true">
+        <span class="pl-payment-section__total-label">Total</span>
+        <span class="pl-payment-section__total-chevron"><svg class="pl-icon"><use href="#pl-chevron-down-small"></use></svg></span>
+      </button>
+      <span class="pl-payment-section__total-amount">$20.00</span>
+    </div>
+  </div>
+</div>
+```
+
+Card number is `caption/lg`; Change is `label/sm/medium` /
+`text/link`. Breakdown rows are `body/sm/regular` / `text/secondary`.
+Total label and amount are `body/md/semibold`. Omit `.is-expanded` for the
+collapsed state (2511:11765).
+
 **`.pl-review-card`** (`1306:5340`) — avatar, name, star rating and date over a title
 and the review body:
 
@@ -453,14 +540,14 @@ Underline-style section tabs for detail screens. The row gets a
 <svg class="pl-icon" aria-hidden="true"><use href="#pl-back"></use></svg>
 ```
 
-24 icons in five groups. The `-small` / `-large` suffixes are the Figma frame the
+26 icons in five groups. The `-small` / `-large` suffixes are the Figma frame the
 artwork was drawn for, not a rendered size — SF Symbols drawn for a smaller frame are
 weighted heavier, so `#pl-calendar-small` (20px frame) reads bolder than
 `#pl-calendar-large` (24px). Pick by weight, then set the size with a modifier.
 
 | Group | Ids |
 | --- | --- |
-| Navigation | `#pl-back` `#pl-close` `#pl-chevron-down` `#pl-right-chevron` `#pl-search` `#pl-share` |
+| Navigation | `#pl-back` `#pl-close` `#pl-chevron-down` `#pl-chevron-down-small` `#pl-chevron-up-small` `#pl-right-chevron` `#pl-search` `#pl-share` |
 | Contact & place | `#pl-location-pin` `#pl-location-pin-small` `#pl-person-small` `#pl-directions` `#pl-phone` `#pl-globe` `#pl-tag` `#pl-map-pin` |
 | Booking | `#pl-calendar-small` `#pl-calendar-large` `#pl-stack` |
 | Rating | `#pl-star-fill` `#pl-star-half` `#pl-star-outline` |

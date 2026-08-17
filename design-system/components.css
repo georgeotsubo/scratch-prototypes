@@ -14,6 +14,7 @@
      Review card   1306:5340
      Ratings summary 1321:5446   Rating distribution 1323:5708
      Banner        2363:121    Tab bar       1495:394    (pages "Card", "Banner", "Tab bar")
+     Checkout card 2511:10595  Payment section 2511:11765 · 2511:11842
 
    Every value below traces to a bound variable in Figma. Where Figma had no
    variable, or the binding was broken, it's called out in a comment and in
@@ -1495,6 +1496,349 @@ button.pl-venue-card { cursor: pointer; -webkit-tap-highlight-color: transparent
   line-height: var(--pl-caption-lg-lineheight);
   font-weight: var(--pl-caption-lg-weight);
   color: var(--pl-text-secondary);
+}
+
+/* --- Checkout card — .pl-checkout-card (2511:10595 · 2510:10502) ------------
+
+   Booking checkout summary: class details, selected payment line, and an
+   optional green promo row. Not a .pl-card — display-only shell with the same
+   surface, radius and border. The promo row uses #pl-tag and #pl-right-chevron
+   at 16px (iOS_tag / iOS_right_chevron in Figma).
+
+   Drop-in (2511:10595): product + qty/price row. Pack (2510:10502): product
+   uses label/sm/medium; swap __qty for __details (remaining count + expiry)
+   and add __row--pack so the price sits on the expiry baseline. */
+
+.pl-checkout-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--pl-space-md);
+  box-sizing: border-box;
+  width: 100%;
+  padding: calc(var(--pl-card-padding-md) - var(--pl-border-semantic-100));
+  background: var(--pl-bg-default);
+  border: var(--pl-border-semantic-100) solid var(--pl-border-default);
+  border-radius: var(--pl-radius-component-card-default);
+  color: var(--pl-text-primary);
+  text-align: left;
+  font-family: var(--pl-type-font-primary);
+}
+
+.pl-checkout-card__class {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  width: 100%;
+  min-width: 0;
+}
+
+.pl-checkout-card__title {
+  font-family: var(--pl-title-md-medium-font);
+  font-size: var(--pl-title-md-medium-size);
+  line-height: var(--pl-title-md-medium-lineheight);
+  font-weight: var(--pl-title-md-medium-weight);
+  color: var(--pl-text-primary);
+}
+
+.pl-checkout-card__meta {
+  font-family: var(--pl-body-sm-regular-font);
+  font-size: var(--pl-body-sm-regular-size);
+  line-height: var(--pl-body-sm-regular-lineheight);
+  font-weight: var(--pl-body-sm-regular-weight);
+  color: var(--pl-text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  width: 100%;
+}
+
+.pl-checkout-card__payment {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--pl-space-xxs);
+  box-sizing: border-box;
+  width: 100%;
+  padding-top: calc(var(--pl-space-md) - var(--pl-border-semantic-100));
+  border-top: var(--pl-border-semantic-100) solid var(--pl-border-default);
+}
+
+.pl-checkout-card__product {
+  font-family: var(--pl-body-md-medium-font);
+  font-size: var(--pl-body-md-medium-size);
+  line-height: var(--pl-body-md-medium-lineheight);
+  font-weight: var(--pl-body-md-medium-weight);
+  color: var(--pl-text-primary);
+}
+
+/* Pack checkout — label/sm/medium product title (2510:10502). */
+.pl-checkout-card__product--pack {
+  font-family: var(--pl-label-sm-medium-font);
+  font-size: var(--pl-label-sm-medium-size);
+  line-height: var(--pl-label-sm-medium-lineheight);
+  font-weight: var(--pl-label-sm-medium-weight);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  width: 100%;
+}
+
+.pl-checkout-card__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  gap: var(--pl-space-xs);
+}
+
+.pl-checkout-card__row--pack { align-items: flex-end; }
+
+.pl-checkout-card__details {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--pl-space-xxs);
+  min-width: 0;
+}
+
+.pl-checkout-card__detail {
+  font-family: var(--pl-body-sm-regular-font);
+  font-size: var(--pl-body-sm-regular-size);
+  line-height: var(--pl-body-sm-regular-lineheight);
+  font-weight: var(--pl-body-sm-regular-weight);
+  color: var(--pl-text-secondary);
+}
+
+.pl-checkout-card__qty {
+  font-family: var(--pl-body-sm-regular-font);
+  font-size: var(--pl-body-sm-regular-size);
+  line-height: var(--pl-body-sm-regular-lineheight);
+  font-weight: var(--pl-body-sm-regular-weight);
+  color: var(--pl-text-secondary);
+}
+
+.pl-checkout-card__price {
+  font-family: var(--pl-body-md-semibold-font);
+  font-size: var(--pl-body-md-semibold-size);
+  line-height: var(--pl-body-md-semibold-lineheight);
+  font-weight: var(--pl-body-md-semibold-weight);
+  color: var(--pl-text-primary);
+  white-space: nowrap;
+}
+
+.pl-checkout-card__price--pack {
+  font-family: var(--pl-label-sm-semibold-font);
+  font-size: var(--pl-label-sm-semibold-size);
+  line-height: var(--pl-label-sm-semibold-lineheight);
+  font-weight: var(--pl-label-sm-semibold-weight);
+}
+
+.pl-checkout-card__promo {
+  display: flex;
+  align-items: center;
+  gap: var(--pl-space-xs);
+  box-sizing: border-box;
+  width: 100%;
+  margin: 0;
+  padding: var(--pl-space-sm);
+  border: 0;
+  border-radius: var(--pl-radius-semantic-md);
+  background: var(--pl-surface-variant-green);
+  color: var(--pl-text-status-green);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.pl-checkout-card__promo-icon,
+.pl-checkout-card__promo-chevron {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--pl-symbol-size-md);
+  height: var(--pl-symbol-size-md);
+  color: inherit;
+}
+.pl-checkout-card__promo-icon > .pl-icon,
+.pl-checkout-card__promo-chevron > .pl-icon {
+  width: 100%;
+  height: 100%;
+  display: block;
+  fill: currentColor;
+}
+
+.pl-checkout-card__promo-text {
+  flex: 1 1 0%;
+  min-width: 0;
+  font-family: var(--pl-label-sm-semibold-font);
+  font-size: var(--pl-label-sm-semibold-size);
+  line-height: var(--pl-label-sm-semibold-lineheight);
+  font-weight: var(--pl-label-sm-semibold-weight);
+  color: inherit;
+}
+
+/* --- Payment section — .pl-payment-section (2511:11765 · 2511:11842) ------
+
+   Checkout payment card: saved card row + collapsible total. Collapsed
+   (2511:11765) shows Visa mark, masked number, Change link, and a single
+   Total row with #pl-chevron-down-small (13×11). Expanded (2511:11842)
+   adds Subtotal/Taxes rows above Total; chevron rotates 180°. Visa mark is
+   assets/Visa.svg — exact export, not redrawn. */
+
+.pl-payment-section {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  box-sizing: border-box;
+  width: 100%;
+  padding:
+    var(--pl-space-sm)
+    calc(var(--pl-card-padding-md) - var(--pl-border-semantic-100))
+    var(--pl-card-padding-md);
+  background: var(--pl-bg-default);
+  border: var(--pl-border-semantic-100) solid var(--pl-border-default);
+  border-radius: var(--pl-radius-component-card-default);
+  color: var(--pl-text-primary);
+  text-align: left;
+  font-family: var(--pl-type-font-primary);
+}
+
+.pl-payment-section__method {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  gap: var(--pl-space-xs);
+  padding: var(--pl-space-xs) 0 var(--pl-space-md);
+}
+
+.pl-payment-section__card {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--pl-space-xs);
+  min-width: 0;
+}
+
+.pl-payment-section__brand {
+  flex: none;
+  display: block;
+  width: 29px;
+  height: 20px;
+}
+
+.pl-payment-section__number {
+  font-family: var(--pl-caption-lg-font);
+  font-size: var(--pl-caption-lg-size);
+  line-height: var(--pl-caption-lg-lineheight);
+  font-weight: var(--pl-caption-lg-weight);
+  color: var(--pl-text-primary);
+  white-space: nowrap;
+}
+
+.pl-payment-section__change {
+  flex: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font-family: var(--pl-label-sm-medium-font);
+  font-size: var(--pl-label-sm-medium-size);
+  line-height: var(--pl-label-sm-medium-lineheight);
+  font-weight: var(--pl-label-sm-medium-weight);
+  color: var(--pl-text-link);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.pl-payment-section__change:active { opacity: 0.6; }
+
+.pl-payment-section__totals {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pl-space-xxs);
+  box-sizing: border-box;
+  width: 100%;
+  padding-top: calc(var(--pl-space-md) - var(--pl-border-semantic-100));
+  border-top: var(--pl-border-semantic-100) solid var(--pl-border-default);
+}
+
+.pl-payment-section__breakdown {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pl-space-xxs);
+  max-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  transition:
+    max-height 0.3s cubic-bezier(.25, .46, .45, .94),
+    opacity 0.2s ease;
+}
+.pl-payment-section.is-expanded .pl-payment-section__breakdown {
+  max-height: 120px;
+  opacity: 1;
+}
+
+.pl-payment-section__breakdown-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  font-family: var(--pl-body-sm-regular-font);
+  font-size: var(--pl-body-sm-regular-size);
+  line-height: var(--pl-body-sm-regular-lineheight);
+  font-weight: var(--pl-body-sm-regular-weight);
+  color: var(--pl-text-secondary);
+}
+
+.pl-payment-section__total-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.pl-payment-section__total-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--pl-space-xs);
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.pl-payment-section__total-label,
+.pl-payment-section__total-amount {
+  font-family: var(--pl-body-md-semibold-font);
+  font-size: var(--pl-body-md-semibold-size);
+  line-height: var(--pl-body-md-semibold-lineheight);
+  font-weight: var(--pl-body-md-semibold-weight);
+  color: var(--pl-text-primary);
+  white-space: nowrap;
+}
+
+.pl-payment-section__total-chevron {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 13px;
+  height: 11px;
+  transition: transform 0.3s cubic-bezier(.25, .46, .45, .94);
+}
+.pl-payment-section__total-chevron > .pl-icon {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+.pl-payment-section.is-expanded .pl-payment-section__total-chevron {
+  transform: rotate(180deg);
 }
 
 /* ===========================================================================
