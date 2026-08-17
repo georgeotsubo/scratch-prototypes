@@ -6,7 +6,11 @@
 <title>Playlist App – Sign Up Flow Prototype</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400..700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,100..1000&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../design-system/tokens.css">
+<link rel="stylesheet" href="../design-system/typography.css">
+<link rel="stylesheet" href="../design-system/components.css?v=20260817continue">
+<script src="../design-system/icons.js?v=20260817calendaradd16"></script>
 <!-- Cache-bust CSS/JS on every load so iterations always show fresh (avoids
      stale-cache issues in embedded browser panes). -->
 <script>document.write('<link rel="stylesheet" href="prototype.css?v=' + Date.now() + '">');</script>
@@ -35,34 +39,25 @@
     <span class="home-app-label">Playlist</span>
   </div>
 
-  <!-- App-launch tile — scales up out of the app icon to fill the frame, so the
-       welcome screen is revealed the way iOS opens an app. It starts inside the
-       icon (same red gradient), so the icon itself covers the opening frames
-       and no separate icon artwork is needed here. -->
-  <div class="launch-tile" id="launch-tile" aria-hidden="true"></div>
+  <!-- App-launch tile — white fill scales up out of the icon (transform,
+       not clip-path), then the mark fades in and the tile dissolves onto
+       the welcome photo. -->
+  <div class="launch-tile" id="launch-tile" aria-hidden="true">
+    <div class="launch-fill"></div>
+    <img class="launch-logo" src="figma-screens/Playlist-logo-mark.svg" alt="" width="76" height="61">
+  </div>
 
   <!-- ===== SCREEN 1: Welcome ===== -->
   <div class="screen welcome-screen active" id="screen-welcome">
 
-    <!-- Scattered photo collage. DOM order is stacking order: the big centre
-         tile paints last and overlaps its neighbours. -->
-    <div class="collage" aria-hidden="true">
-      <div class="collage-tile tile-bottomleft"><img src="figma-screens/collage-bottomleft.jpg" alt=""></div>
-      <div class="collage-tile tile-left"><img src="figma-screens/collage-left.jpg" alt=""></div>
-      <div class="collage-tile tile-topleft"><img src="figma-screens/collage-topleft.jpg" alt=""></div>
-      <div class="collage-tile tile-right"><img src="figma-screens/collage-right.jpg" alt=""></div>
-      <div class="collage-tile tile-topright"><img src="figma-screens/collage-topright.jpg" alt=""></div>
-      <div class="collage-tile tile-center"><img src="figma-screens/collage-center.jpg" alt=""></div>
+    <!-- Full-bleed hero (12854:337932). Gradient lives on ::after so the
+         photo itself stays an unmodified asset. -->
+    <div class="welcome-hero" aria-hidden="true">
+      <img src="figma-screens/welcome-hero.jpg" alt="">
     </div>
 
-    <!-- Playlist wordmark -->
-    <div class="brand-logo">
-      <img src="figma-screens/playlist-logo-black.svg" alt="Playlist">
-    </div>
-
-    <!-- Bottom action block -->
+    <!-- Bottom action block — sits on the photo gradient, no opaque sheet. -->
     <div class="welcome-actions">
-      <!-- Legal copy + divider sit 16px inset from the buttons -->
       <div class="welcome-preamble">
         <p class="legal-text">
           By tapping any button below, you agree to the
@@ -82,61 +77,82 @@
     </div>
   </div>
 
-  <!-- ===== SCREEN 2: Sign in with ClassPass ===== -->
-  <div class="screen classpass-screen" id="screen-classpass">
+  <!-- ===== SCREEN 2: Continue with Playlist or ClassPass (12573:55135) ===== -->
+  <div class="screen continue-screen" id="screen-classpass">
 
-    <!-- Toolbar / back -->
     <div class="toolbar">
-      <button class="icon-btn back-btn" id="btn-back-classpass" aria-label="Back">
-        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M12.5 15.5L7 10L12.5 4.5" stroke="#020203" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
+      <button class="pl-icon-btn pl-icon-btn--md pl-icon-btn--raised" id="btn-back-classpass" aria-label="Back">
+        <svg class="pl-icon" aria-hidden="true"><use href="#pl-back"></use></svg>
       </button>
     </div>
 
-    <!-- Scrollable content -->
-    <div class="cp-content">
-      <h1 class="cp-title">Sign in with ClassPass</h1>
-
-      <button class="btn btn-social">
-        <span class="social-icon"><img src="figma-screens/apple.svg" alt=""></span>
-        <span class="btn-social-label">Sign in with Apple</span>
-      </button>
-
-      <button class="btn btn-social">
-        <span class="social-icon"><img src="figma-screens/google.svg" alt=""></span>
-        <span class="btn-social-label">Sign in with Google</span>
-      </button>
-
-      <div class="divider">
-        <span class="divider-line"></span>
-        <span class="divider-label">or</span>
-        <span class="divider-line"></span>
+    <div class="continue-content">
+      <div class="continue-header">
+        <div class="continue-apps">
+          <img src="figma-screens/playlist_app.svg" alt="" width="40" height="40">
+          <img src="figma-screens/classpass_app.svg" alt="" width="40" height="40">
+        </div>
+        <div class="continue-copy">
+          <h1 class="pl-text-display-sm">Continue with Playlist or ClassPass</h1>
+          <p class="pl-text-body-sm-regular">Use your Playlist or ClassPass login credentials.</p>
+        </div>
       </div>
 
-      <div class="cp-form">
-        <div class="field-group">
-          <div class="input-field">
-            <input type="email" id="cp-email" placeholder="Email" autocomplete="email">
-          </div>
-          <div class="input-field">
-            <input type="password" id="cp-password" placeholder="Password" autocomplete="current-password">
-            <button class="visibility-toggle" data-target="cp-password" aria-label="Show password">
-              <img src="figma-screens/eye-off.svg" alt="">
+      <hr class="continue-rule" aria-hidden="true">
+
+      <div class="continue-body">
+        <p class="continue-legal pl-text-caption-lg">
+          By tapping any button below, you agree to the
+          <a href="#" class="legal-link">Terms of Use</a> and acknowledge the
+          <a href="#" class="legal-link">Privacy Policy</a>.
+        </p>
+
+        <div class="continue-actions">
+          <div class="continue-social">
+            <button type="button" class="pl-btn pl-btn--md pl-btn--outline pl-btn--pill pl-btn--full pl-btn--edges" id="btn-signin-apple">
+              <span class="pl-btn__icon" aria-hidden="true">
+                <svg class="pl-icon"><use href="#pl-apple-logo"></use></svg>
+              </span>
+              Sign in with Apple
+              <span class="pl-btn__icon" aria-hidden="true"></span>
+            </button>
+            <button type="button" class="pl-btn pl-btn--md pl-btn--outline pl-btn--pill pl-btn--full pl-btn--edges">
+              <span class="pl-btn__icon" aria-hidden="true">
+                <img src="figma-screens/google_icon.png" alt="" width="24" height="24">
+              </span>
+              Sign in with Google
+              <span class="pl-btn__icon" aria-hidden="true"></span>
             </button>
           </div>
-        </div>
 
-        <div class="cp-footer">
-          <a href="#" class="forgot-link" id="link-forgot">Forgot password?</a>
-          <p class="cp-legal">
-            By tapping any button on this screen, you agree to the
-            <a href="#" class="legal-link">Terms of Use</a> and acknowledge the
-            <a href="#" class="legal-link">Privacy Policy</a>. For ClassPass members, the
-            payment method on file will be used for purchases in Playlist. Update anytime
-            in Account Settings.
-          </p>
-          <button class="btn btn-primary btn-disabled" id="btn-cp-signin" disabled>Sign in</button>
+          <div class="divider">
+            <span class="divider-line"></span>
+            <span class="divider-label pl-text-body-md-medium">or</span>
+            <span class="divider-line"></span>
+          </div>
+
+          <div class="continue-form">
+            <div class="continue-fields">
+              <label class="pl-field">
+                <span class="pl-field__box">
+                  <input class="pl-field__input" type="email" id="cp-email" placeholder="Email" autocomplete="email">
+                </span>
+              </label>
+              <label class="pl-field pl-field--password">
+                <span class="pl-field__box">
+                  <input class="pl-field__input" type="password" id="cp-password" placeholder="Password" autocomplete="current-password">
+                  <button type="button" class="pl-field__icon js-password-toggle" aria-label="Show password">
+                    <svg class="pl-icon" aria-hidden="true"><use href="#pl-eye-slash"></use></svg>
+                  </button>
+                </span>
+              </label>
+            </div>
+
+            <div class="continue-submit">
+              <a href="#" class="forgot-link">Forgot password?</a>
+              <button type="button" class="pl-btn pl-btn--md pl-btn--primary pl-btn--pill pl-btn--full" id="btn-cp-signin" disabled>Sign in</button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -368,6 +384,59 @@
           </p>
           <button class="btn btn-primary btn-disabled" id="btn-lg-signin" disabled>Sign in</button>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Logged-in app (Home / Search / Bookings / Profile). Hidden until
+       Sign in with Apple completes; then sits above the auth stack. -->
+  <div class="app-tabs" id="app-tabs" aria-hidden="true">
+    <div class="tab-pane is-active" id="pane-home" role="tabpanel"></div>
+    <div class="tab-pane" id="pane-search" role="tabpanel"></div>
+    <div class="tab-pane" id="pane-bookings" role="tabpanel"></div>
+    <div class="tab-pane" id="pane-profile" role="tabpanel"></div>
+
+    <div class="tab-bar-blur" id="tab-bar-blur"></div>
+    <div class="pl-tab-bar app-tab-bar" id="app-tab-bar" role="tablist">
+      <button type="button" class="pl-tab is-selected" role="tab" aria-selected="true" data-tab="home">
+        <span class="pl-tab__icon"><svg class="pl-icon" aria-hidden="true"><use href="#pl-tab-home"></use></svg></span>Home
+      </button>
+      <button type="button" class="pl-tab" role="tab" aria-selected="false" data-tab="search">
+        <span class="pl-tab__icon"><svg class="pl-icon" aria-hidden="true"><use href="#pl-tab-search"></use></svg></span>Search
+      </button>
+      <button type="button" class="pl-tab" role="tab" aria-selected="false" data-tab="bookings">
+        <span class="pl-tab__icon"><svg class="pl-icon" aria-hidden="true"><use href="#pl-tab-bookings"></use></svg></span>Bookings
+      </button>
+      <button type="button" class="pl-tab" role="tab" aria-selected="false" data-tab="profile">
+        <span class="pl-tab__icon"><svg class="pl-icon" aria-hidden="true"><use href="#pl-tab-profile"></use></svg></span>Profile
+      </button>
+    </div>
+  </div>
+
+  <!-- iOS Sign in with Apple sheet (13012:392078) — sits above screens +
+       status bar so the inverse scrim dims the whole device. -->
+  <div class="siwa" id="siwa" aria-hidden="true">
+    <div class="siwa-scrim" id="siwa-scrim"></div>
+    <div class="siwa-sheet" role="dialog" aria-modal="true" aria-labelledby="siwa-title">
+      <header class="siwa-header">
+        <h2 class="siwa-title" id="siwa-title">Sign in with Apple</h2>
+        <button type="button" class="pl-icon-btn pl-icon-btn--md siwa-close" id="siwa-close" aria-label="Close">
+          <svg class="pl-icon" aria-hidden="true"><use href="#pl-close"></use></svg>
+        </button>
+      </header>
+      <div class="siwa-body">
+        <div class="siwa-app">
+          <img class="siwa-app-icon" src="figma-screens/siwa-playlist-icon.svg" alt="" width="53" height="53">
+          <p class="siwa-app-copy">Sign in to Playlist using your Apple Account.</p>
+        </div>
+        <div class="siwa-account">
+          <img class="siwa-avatar" src="figma-screens/siwa-avatar.jpg" alt="" width="35" height="35">
+          <div class="siwa-account-copy">
+            <span class="siwa-account-name">george otsubo</span>
+            <span class="siwa-account-meta">Your account</span>
+          </div>
+        </div>
+        <button type="button" class="siwa-signin" id="siwa-signin">Sign In</button>
       </div>
     </div>
   </div>

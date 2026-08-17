@@ -1,6 +1,12 @@
 * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
-html, body { -webkit-user-select: none; user-select: none; }
+html, body {
+  height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
 input, textarea { -webkit-user-select: text; user-select: text; }
 
 :root {
@@ -9,6 +15,7 @@ input, textarea { -webkit-user-select: text; user-select: text; }
   --border-default: #e4e5e7;
   --surface-white: #ffffff;
   --link-blue: #0032d7;
+  --link-on-photo: #2483ff;
   --brand-blue: #0055ff;
   --surface-subtle: #f1f2f3;
   --text-secondary: #43454c;
@@ -21,8 +28,7 @@ body {
   display: flex;
   justify-content: center;
   align-items: center;
-  min-height: 100vh;
-  overflow: hidden;
+  min-height: 100%;
 }
 
 /* iPhone frame for desktop */
@@ -114,6 +120,9 @@ body {
 .home-screen {
   z-index: 80;
   background: #000;
+  transition:
+    opacity 0.3s cubic-bezier(0.22, 0.61, 0.36, 1),
+    transform 0.42s cubic-bezier(0.22, 0.61, 0.36, 1);
 }
 /* Wallpaper and icon sheet are both 393x854 pinned to the top-left, matching
    how Figma places them — not scaled to fit, so the icon grid stays on grid. */
@@ -169,104 +178,122 @@ body {
   letter-spacing: 0.02em;
 }
 
-/* Springboard zooms in and fades as the app takes over, iOS-style */
+/* Springboard zooms as the app opens, but stays opaque until the white
+   tile has covered the frame — otherwise welcome shows through. */
 .home-screen.launching {
-  opacity: 0;
   transform: translateX(0) scale(1.12);
   pointer-events: none;
-  will-change: transform, opacity;
-  /* Same curve on both properties so the fade and the zoom read as one move */
-  transition: opacity 0.3s cubic-bezier(0.22, 0.61, 0.36, 1),
-              transform 0.42s cubic-bezier(0.22, 0.61, 0.36, 1);
 }
-/* Applied once the launch has settled — drop the GPU layer we no longer need */
+.home-screen.launching .home-app-icon,
+.home-screen.launching .home-app-label { opacity: 0; }
+.home-screen.launching.covered { opacity: 0; }
 .home-screen.launching.settled { will-change: auto; }
 
-/* App-launch tile. Sized to the frame and scaled down onto the icon, so the
-   whole launch runs on transform + opacity only — both GPU-composited.
-   (An earlier version animated clip-path, which repaints the clipped layer
-   every frame and went choppy once the prototype was inside the index iframe.)
-
-   It starts 5px INSIDE the icon rect so its square corners stay hidden behind
-   the icon's squircle; that removes any need to animate border-radius, which
-   would have put paint back on the main thread. The frame's own overflow clip
-   supplies the rounded corners at the end.
-   scaleX = 52.6/393, scaleY = 52.6/852. */
+/* White fill lives on .launch-fill so the expand can run on transform
+   (composite) instead of clip-path, which was snapping instead of
+   interpolating. Logo is a sibling so the non-uniform scale doesn't squash it. */
 .launch-tile {
   position: absolute;
-  left: 0;
-  top: 0;
-  width: 100%;
-  height: 100%;
+  inset: 0;
   z-index: 90;
-  /* Matches the icon's own gradient so the first frame of the launch is
-     indistinguishable from the icon it grows out of */
-  background: linear-gradient(180deg, #ff0000 0%, #d00000 100%);
-  opacity: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   pointer-events: none;
-  transform-origin: 0 0;
-  transform: translate(34px, 486px) scale(0.133842, 0.061737);
-}
-.launch-tile.running {
+  visibility: hidden;
   opacity: 1;
-  transform: translate(0, 0) scale(1, 1);
-  will-change: transform, opacity;
-  transition: transform 0.42s cubic-bezier(0.22, 0.61, 0.36, 1),
-              opacity 0.08s linear;
 }
+.launch-tile.running { visibility: visible; }
 .launch-tile.done {
   opacity: 0;
-  transition: opacity 0.22s ease-out;
+  transition: opacity 0.28s ease-out;
+}
+.launch-fill {
+  position: absolute;
+  inset: 0;
+  background: #fff;
+  transform-origin: 0 0;
+  /* Icon 62.6×62.6 at 29×481 inside 393×852. Radius is in pre-scale
+     space so 14px corners stay circular after the non-uniform scale:
+     14 / (62.6/393) ≈ 87.89, 14 / (62.6/852) ≈ 190.54. */
+  transform: translate(29px, 481px) scale(0.1592875, 0.0734742);
+  border-radius: 87.89px / 190.54px;
+  transition:
+    transform 0.42s cubic-bezier(0.22, 0.61, 0.36, 1),
+    border-radius 0.42s cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+.launch-tile.running .launch-fill { will-change: transform; }
+.launch-tile.expanding .launch-fill {
+  transform: translate(0, 0) scale(1);
+  border-radius: var(--frame-radius);
+}
+.launch-logo {
+  position: relative;
+  z-index: 1;
+  display: block;
+  width: 76px;
+  height: 61px;
+  opacity: 0;
+  transition: opacity 0.25s ease-out;
+}
+.launch-tile.show-mark .launch-logo { opacity: 1; }
+.launch-tile.done .launch-logo {
+  opacity: 0;
+  transition-delay: 0s;
+}
+
+/* Don't paint the welcome photo until the splash is covering the frame —
+   both screens start `.active`, so a transparent springboard would otherwise
+   flash the hero and buttons (the sequence in the recording). */
+#screen-welcome { visibility: hidden; }
+.device-frame.welcome-photo #screen-welcome { visibility: visible; }
+
+@media (prefers-reduced-motion: reduce) {
+  .home-screen.launching,
+  .home-screen.launching.covered,
+  .launch-tile,
+  .launch-tile.done,
+  .launch-fill,
+  .launch-tile.expanding .launch-fill,
+  .launch-logo,
+  .launch-tile.show-mark .launch-logo {
+    transition: none;
+    transition-delay: 0s;
+  }
 }
 
 /* ===== Welcome screen ===== */
 
-/* Photo collage — tiles are absolutely placed at their Figma offsets and
-   deliberately bleed past the left/right edges; .screen clips them. */
-.collage {
+.welcome-screen { background: #000; }
+
+/* Full-bleed hero. The leaf fills the screen box via object-fit:cover so the
+   2:3 source crops to the 393×852 frame the same way Figma's object-cover does. */
+.welcome-hero {
   position: absolute;
   inset: 0;
   overflow: hidden;
   pointer-events: none;
 }
-.collage-tile {
+.welcome-hero img {
   position: absolute;
-  overflow: hidden;
-}
-/* Default fill: image covers the tile exactly. Tiles whose Figma fill is
-   panned/zoomed override the img box below (percentages are Figma's, relative
-   to the tile) and let object-fit:cover keep the aspect honest. */
-.collage-tile img {
-  position: absolute;
-  display: block;
   left: 0;
   top: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
-}
-.tile-bottomleft { left: 42px;  top: 449px; width: 99px;    height: 119px;   border-radius: 18px; }
-.tile-left       { left: -34px; top: 278px; width: 124px;   height: 152px;   border-radius: 29.5px; }
-.tile-topleft    { left: 37px;  top: 112px; width: 123.7px; height: 146.9px; border-radius: 27px; }
-.tile-right      { left: 239px; top: 378px; width: 134px;   height: 164px;   border-radius: 27px; }
-.tile-topright   { left: 262px; top: 108px; width: 157px;   height: 185px;   border-radius: 24px; }
-.tile-center     { left: 114px; top: 232px; width: 180px;   height: 244px;   border-radius: 24.5px; }
-
-.tile-topleft  img { left: -41.37%; top: 0;        width: 225.93%; height: 100%; }
-.tile-right    img { left: -79.56%; top: -25.68%;  width: 247.26%; height: 134.76%; }
-.tile-topright img { left: 0;       top: -15.66%;  width: 100%;    height: 124.69%; }
-
-.brand-logo {
-  position: absolute;
-  top: 70px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 1;
-}
-.brand-logo img {
   display: block;
-  width: 166px;
-  height: auto;
+}
+.welcome-hero::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to bottom, rgba(0, 0, 0, 0) 35%, rgba(0, 0, 0, 0.66) 100%);
+}
+
+/* Dark photo: invert the shared black status-bar glyphs once the splash
+   has cleared and Welcome is on top. */
+.device-frame.welcome-photo:has(#screen-welcome.active) #global-status-bar img {
+  filter: invert(1);
 }
 
 .welcome-actions {
@@ -274,20 +301,15 @@ body {
   left: 0;
   right: 0;
   bottom: 0;
-  padding: 0 24px 24px;
+  padding: 24px;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 16px;
-  /* Opaque so the collage never bleeds into the copy on shorter viewports —
-     the tiles sit at fixed offsets and don't reflow with the frame. */
-  background: var(--surface-white);
 }
 
-/* Legal copy + divider are inset a further 16px from the button edges */
 .welcome-preamble {
   width: 100%;
-  padding: 0 16px;
   display: flex;
   flex-direction: column;
   gap: 16px;
@@ -296,16 +318,17 @@ body {
 /* "Use your Playlist or ClassPass login", separated by a hairline rule */
 .login-lockup {
   width: 100%;
-  border-top: 1px solid var(--border-default);
+  border-top: 1px solid rgba(255, 255, 255, 0.5);
   padding-top: 16px;
   display: flex;
   justify-content: center;
 }
 .login-lockup-label {
+  /* body/lg/medium — 16/24/500 */
   font-size: 16px;
   line-height: 24px;
-  font-weight: 600;
-  color: var(--text-primary);
+  font-weight: 500;
+  color: #fff;
   text-align: center;
 }
 
@@ -316,11 +339,19 @@ body {
   text-align: center;
   font-weight: 400;
 }
+.welcome-screen .legal-text {
+  font-size: 12px;
+  color: #fff;
+}
 .legal-link {
   color: var(--link-blue);
   font-weight: 700;
   text-decoration: underline;
   text-underline-position: from-font;
+}
+.welcome-screen .legal-link {
+  color: var(--link-on-photo);
+  font-weight: 400;
 }
 
 .button-group {
@@ -362,9 +393,6 @@ body {
 }
 .btn-neutral:active { filter: brightness(0.95); }
 
-/* Welcome CTAs use the semibold body style from the design system */
-.welcome-actions .btn { font-weight: 600; }
-
 /* ===== Sign in with ClassPass screen ===== */
 .toolbar {
   position: absolute;
@@ -391,6 +419,92 @@ body {
   transition: transform 0.15s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 .icon-btn:active { transform: scale(0.97); }
+
+/* ===== Continue with Playlist or ClassPass (12573:55135) ===== */
+.continue-content {
+  position: absolute;
+  top: 108px;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 16px 24px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+}
+.continue-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+}
+.continue-apps {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.continue-apps img {
+  display: block;
+  width: 40px;
+  height: 40px;
+}
+.continue-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  text-align: center;
+  color: var(--pl-text-primary);
+}
+.continue-copy h1,
+.continue-copy p { margin: 0; }
+.continue-copy .pl-text-body-sm-regular { color: var(--pl-text-secondary); }
+.continue-rule {
+  width: 100%;
+  margin: 0;
+  border: 0;
+  border-top: 1px solid var(--pl-border-default);
+}
+.continue-body {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  width: 100%;
+}
+.continue-legal {
+  margin: 0;
+  text-align: center;
+  color: var(--pl-text-primary);
+}
+.continue-actions,
+.continue-social,
+.continue-form,
+.continue-fields,
+.continue-submit {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+.continue-actions { gap: 16px; }
+.continue-social { gap: 16px; }
+.continue-form { gap: 20px; }
+.continue-fields { gap: 15px; }
+.continue-submit {
+  align-items: center;
+  gap: 20px;
+}
+.continue-submit .forgot-link { font-weight: 500; }
+/* Social marks are 24px; md buttons otherwise slot 16px icons. */
+.continue-social .pl-btn { --btn-icon: 24px; }
+.continue-screen .divider-label {
+  font-size: var(--pl-body-md-medium-size);
+  line-height: var(--pl-body-md-medium-lineheight);
+  font-weight: var(--pl-body-md-medium-weight);
+}
 
 .cp-content {
   position: absolute;
@@ -666,6 +780,214 @@ body {
 /* ===== Reset your password screen ===== */
 .reset-screen .btn-primary { width: 100%; }
 
+/* ===== Sign in with Apple sheet (13012:392078) =====
+   iOS system chrome, not Playlist DS — SF Pro, iOS greys, Apple blue.
+   Overlay uses --pl-bg-inverse at 30% to match the Figma scrim. */
+.siwa {
+  --siwa-out: 0.38s;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 110;
+  pointer-events: none;
+  visibility: hidden;
+  transition: visibility 0s linear var(--siwa-out);
+}
+.siwa.is-open {
+  pointer-events: auto;
+  visibility: visible;
+  transition: visibility 0s;
+}
+.siwa-scrim {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: var(--pl-bg-inverse, #161618);
+  opacity: 0;
+  cursor: pointer;
+  transition: opacity 0.25s ease;
+}
+.siwa.is-open .siwa-scrim { opacity: 0.3; }
+.siwa-sheet {
+  position: absolute;
+  left: 7px;
+  right: 7px;
+  bottom: 6px;
+  height: 328px;
+  display: flex;
+  flex-direction: column;
+  background: #ececec;
+  border-radius: 48px;
+  overflow: hidden;
+  transform: translateY(calc(100% + 12px));
+  transition: transform 0.38s cubic-bezier(0.32, 0.72, 0, 1);
+}
+.siwa.is-open .siwa-sheet {
+  transform: translateY(0);
+  will-change: transform;
+}
+
+.siwa-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 16px 8px 20px;
+  flex: none;
+}
+.siwa-title {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', sans-serif;
+  font-size: 22px;
+  line-height: 28px;
+  font-weight: 700;
+  letter-spacing: -0.44px;
+  color: #000;
+}
+.siwa-close {
+  --ibtn-bg: #e6e6e6;
+  --ibtn-fg: #000;
+  flex: none;
+}
+.siwa-close:hover { --ibtn-bg: #dedede; }
+.siwa-close:active { --ibtn-bg: #d4d4d4; }
+
+.siwa-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  padding: 8px 20px 24px;
+  flex: 1;
+}
+.siwa-app {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+}
+.siwa-app-icon {
+  flex: none;
+  display: block;
+  width: 53px;
+  height: 53px;
+}
+.siwa-app-copy {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif;
+  font-size: 15px;
+  line-height: 1.2;
+  font-weight: 500;
+  color: #000;
+}
+.siwa-account {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 12px;
+  background: #ddd;
+  border-radius: 40px;
+}
+.siwa-avatar {
+  flex: none;
+  display: block;
+  width: 35px;
+  height: 35px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+.siwa-account-copy {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.siwa-account-name {
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif;
+  font-size: 16px;
+  line-height: 1.2;
+  font-weight: 500;
+  color: #000;
+}
+.siwa-account-meta {
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif;
+  font-size: 13px;
+  line-height: 1.2;
+  font-weight: 400;
+  color: var(--pl-text-secondary, #43454c);
+}
+.siwa-signin {
+  flex: none;
+  width: 101px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: #0080fc;
+  color: #fff;
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif;
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: filter 0.15s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+.siwa-signin:active { filter: brightness(0.92); }
+
+/* ===== Logged-in app tabs ===== */
+.app-tabs {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 85;
+  display: none;
+  pointer-events: none;
+}
+.app-tabs.is-open {
+  display: block;
+  pointer-events: auto;
+}
+.tab-pane {
+  position: absolute;
+  inset: 0;
+  display: none;
+  flex-direction: column;
+  background: var(--pl-bg-default, #fff);
+  overflow: hidden;
+}
+.tab-pane.is-active { display: flex; }
+
+.tab-bar-blur {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 40px;
+  pointer-events: none;
+  z-index: 25;
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  -webkit-mask-image: linear-gradient(to top, #000 50%, transparent);
+  mask-image: linear-gradient(to top, #000 50%, transparent);
+}
+.app-tab-bar {
+  position: absolute;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 339px;
+  z-index: 30;
+}
+
 /* ===== Reduced motion =====
    Gentler, not zero: the crossfades that explain what happened are kept, all
    travel and zoom is dropped. Screens hide with opacity/visibility instead of
@@ -691,9 +1013,23 @@ body {
   .screen::after { display: none; }
 
   .launch-tile { display: none; }
-  .home-screen.launching {
+  .home-screen.launching,
+  .home-screen.launching.covered {
     transform: none;
     opacity: 0;
     transition: opacity 0.25s ease;
+  }
+
+  .siwa { --siwa-out: 0.2s; }
+  .siwa-scrim { transition: opacity 0.2s ease; }
+  .siwa-sheet {
+    transform: none;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+  }
+  .siwa.is-open .siwa-sheet {
+    transform: none;
+    opacity: 1;
+    will-change: auto;
   }
 }
