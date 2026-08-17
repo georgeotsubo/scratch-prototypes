@@ -9,7 +9,7 @@
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="tokens.css">
 <link rel="stylesheet" href="typography.css">
-<link rel="stylesheet" href="components.css?v=20260817packcard">
+<link rel="stylesheet" href="components.css?v=20260817successalign">
 <style>
   * { box-sizing: border-box; }
   html { scroll-behavior: smooth; }
@@ -814,12 +814,14 @@ Valid for all classes.</span>
     </section>
 
     <section id="c-checkoutcard">
-      <h2>Checkout card <span class="count">.pl-checkout-card · 2511:10595 · 2510:10502</span></h2>
+      <h2>Checkout card <span class="count">.pl-checkout-card · 2511:10595 · 2510:10502 · 12946:389454</span></h2>
       <p class="lede">Booking checkout summary — class details, selected payment line, and an
         optional promo row. Drop-in is product + qty/price; Pack swaps in remaining-count
         and expiry lines with <code>__product--pack</code>, <code>__details</code>, and
         <code>__row--pack</code>. Promo row is <code>12880:342437</code> — centered
-        tag + label, no chevron; icon is <code>#pl-tag</code> at 16px.</p>
+        tag + label, no chevron; icon is <code>#pl-tag</code> at 16px.
+        Pack redeem (<code>12946:389454</code>) uses <code>.pl-checkout-card--class-only</code>
+        plus a <code>.pl-pack-card</code> under a Reserve with heading — no payment.</p>
       <div class="stage" style="max-width:353px">
         <div class="pl-checkout-card" id="checkout-card">
           <div class="pl-checkout-card__class">
@@ -861,6 +863,32 @@ Valid for all classes.</span>
             <span class="pl-checkout-card__promo-icon" aria-hidden="true"><svg class="pl-icon"><use href="#pl-tag"></use></svg></span>
             <span class="pl-checkout-card__promo-text">Explore packs and memberships</span>
           </button>
+        </div>
+        <p class="label" style="margin:24px 0 4px;font-size:var(--pl-caption-lg-size);color:var(--pl-text-secondary)">Pack redeem · 12946:389454 — class card + owned pack, no payment</p>
+        <div style="display:flex;flex-direction:column;gap:16px;width:100%">
+          <div class="pl-checkout-card pl-checkout-card--class-only">
+            <div class="pl-checkout-card__class">
+              <div class="pl-checkout-card__title">Reformer Vitality</div>
+              <div class="pl-checkout-card__meta">Tue, Mar 3 · 2:00 PM</div>
+              <div class="pl-checkout-card__meta">Sue Dickey M.</div>
+              <div class="pl-checkout-card__meta">KIN Kollective - Nomad</div>
+            </div>
+            <div class="pl-checkout-card__payment">
+              <div class="pl-checkout-card__product">Hidden in class-only</div>
+            </div>
+          </div>
+          <div>
+            <h3 class="pl-text-title-md-medium" style="margin:0 0 8px">Reserve with</h3>
+            <div class="pl-pack-card">
+              <div class="pl-pack-card__copy">
+                <p class="pl-pack-card__title pl-text-title-lg-medium">10 class card (mat + towel)</p>
+                <p class="pl-pack-card__meta pl-text-body-md-regular">Expires Mar 9, 2027</p>
+              </div>
+              <div class="pl-pack-card__badge">
+                <p class="pl-pack-card__badge-text pl-text-body-md-medium">4 of 10 visits left</p>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </section>
@@ -1129,13 +1157,13 @@ Valid for all classes.</span>
                   <p class="pl-cancel-confirm-modal__headline pl-text-heading-h3">Reservation canceled</p>
                   <p class="pl-cancel-confirm-modal__message pl-text-body-md-medium">Your visit is back in your pack</p>
                 </div>
-                <div class="pl-cancel-confirm-modal__pack">
-                  <div class="pl-cancel-confirm-modal__pack-copy">
-                    <p class="pl-cancel-confirm-modal__pack-title pl-text-title-lg-medium">10 class card (mat + towel)</p>
-                    <p class="pl-cancel-confirm-modal__pack-meta pl-text-body-md-regular">Expires Mar 9, 2027</p>
+                <div class="pl-pack-card pl-cancel-confirm-modal__pack">
+                  <div class="pl-pack-card__copy pl-cancel-confirm-modal__pack-copy">
+                    <p class="pl-pack-card__title pl-cancel-confirm-modal__pack-title pl-text-title-lg-medium">10 class card (mat + towel)</p>
+                    <p class="pl-pack-card__meta pl-cancel-confirm-modal__pack-meta pl-text-body-md-regular">Expires Mar 9, 2027</p>
                   </div>
-                  <div class="pl-cancel-confirm-modal__pack-badge">
-                    <p class="pl-cancel-confirm-modal__pack-badge-text pl-text-body-md-medium">9 of 10 visits left</p>
+                  <div class="pl-pack-card__badge pl-cancel-confirm-modal__pack-badge">
+                    <p class="pl-pack-card__badge-text pl-cancel-confirm-modal__pack-badge-text pl-text-body-md-medium">9 of 10 visits left</p>
                   </div>
                 </div>
               </div>
@@ -1431,7 +1459,10 @@ Valid for all classes.</span>
       icons: [
         { name: 'google-icon', src: 'assets/google_icon.png', width: 24, height: 24 },
         { name: 'cp-logo', src: 'assets/CP_logo.svg', width: 24, height: 24 },
-        { name: 'playlist-logo', src: 'assets/playlist-logo.svg', width: 120, height: 16 }
+        { name: 'playlist-logo', src: 'assets/playlist-logo.svg', width: 120, height: 16 },
+        { name: 'playlist-logo-mark', src: 'assets/Playlist-logo-mark.svg', width: 76, height: 61 },
+        { name: 'playlist-app', src: 'assets/playlist_app.svg', width: 40, height: 40 },
+        { name: 'classpass-app', src: 'assets/classpass_app.svg', width: 40, height: 40 }
       ]
     }
   ];
