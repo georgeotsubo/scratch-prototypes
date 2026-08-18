@@ -6895,7 +6895,10 @@
     function cdScrollToOptionsSection(section) {
       var target = document.getElementById('cd-options-section-' + section);
       if (target && cdCheckoutOptionsScroll) {
-        cdCheckoutOptionsScroll.scrollTo({ top: target.offsetTop - 8, behavior: 'smooth' });
+        var top = target.getBoundingClientRect().top
+          - cdCheckoutOptionsScroll.getBoundingClientRect().top
+          + cdCheckoutOptionsScroll.scrollTop - 8;
+        cdCheckoutOptionsScroll.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
       }
       cdSetOptionsTab(section);
     }
@@ -7626,23 +7629,23 @@
       });
     }
 
-    // Sizes the currently active panel just-tall-enough so that scrollTop can
-    // reach __cdPinOffset (enabling sticky tab pin), but no taller — short
-    // schedules with only a few slots otherwise scroll into a lot of empty
-    // grey space below the last slot.
-    function fitCdActivePanelHeight() {
-      var active = classDetailEl.querySelector('.cd-panel.active');
-      if (!active) return;
-      active.style.minHeight = '';
+    // Sizes a panel so scrollTop can stay at `keepScroll` (or the tab pin)
+    // without the browser clamping. Never clears min-height first — that
+    // would collapse a short Schedule panel and yank the header back on
+    // screen. Hidden panels can drop their min-height safely.
+    function fitCdPanelHeight(panel, keepScroll) {
+      if (!panel) return;
       var pinOffset = window.__cdPinOffset || 0;
-      if (pinOffset <= 0) return;
       var ch = classDetailScroll.clientHeight;
+      var keep = Math.max(keepScroll || 0, pinOffset, 0);
+      var required = keep + ch;
       var sh = classDetailScroll.scrollHeight;
-      var required = pinOffset + ch;
-      if (sh < required) {
-        var currentH = active.getBoundingClientRect().height;
-        active.style.minHeight = Math.ceil(currentH + (required - sh)) + 'px';
-      }
+      if (sh >= required) return;
+      var currentH = panel.getBoundingClientRect().height;
+      panel.style.minHeight = Math.ceil(currentH + (required - sh)) + 'px';
+    }
+    function fitCdActivePanelHeight(keepScroll) {
+      fitCdPanelHeight(classDetailEl.querySelector('.cd-panel.active'), keepScroll);
     }
     window.__fitCdActivePanelHeight = fitCdActivePanelHeight;
 
@@ -7684,34 +7687,41 @@
     }
 
     function activateCdTab(tab) {
+      var startScroll = classDetailScroll.scrollTop;
+      var pinOffset = window.__cdPinOffset || 0;
+      var keepAt = Math.max(startScroll, pinOffset);
       setCdTabSelected(tab);
       var name = tab.dataset.cdtab;
-      cdPanels.forEach(function(p) { p.classList.toggle('active', p.dataset.cdpanel === name); });
-      // Land at the cached pin (top of the new tab's content). Behavior
-      // depends on where the user is:
-      //   - Above the pin (hero still visible): glide to pinOffset so the
-      //     sticky nav fades in alongside the scroll.
-      //   - At or past the pin (tabs already pinned): SNAP instantly to
-      //     pinOffset. The new tab's content should always start at the
-      //     top — but an animated scroll back to pinOffset from a deep
-      //     scroll position would feel like "scrolling to initial state".
-      //     Instant snap reads as "tabs pinned, content reset, ready".
-      // Deferred to next frame so the panel display: none → flex swap
-      // has committed layout before we fit the panel's min-height.
+      var incoming = null;
+      cdPanels.forEach(function(p) {
+        if (p.dataset.cdpanel === name) incoming = p;
+      });
+      // Pre-size the incoming panel *before* hiding Overview. Schedule is
+      // only a few slots tall; without this, scrollHeight collapses and
+      // the browser clamps scrollTop — the header drops back into view.
+      if (incoming) {
+        incoming.style.minHeight = Math.ceil(keepAt + classDetailScroll.clientHeight) + 'px';
+      }
+      cdPanels.forEach(function(p) {
+        var on = p.dataset.cdpanel === name;
+        if (!on) p.style.minHeight = '';
+        p.classList.toggle('active', on);
+      });
+      if (startScroll >= pinOffset - 24 && pinOffset > 0) {
+        classDetailScroll.scrollTop = startScroll;
+      }
       requestAnimationFrame(function() {
-        fitCdActivePanelHeight();
-        var pinOffset = window.__cdPinOffset || 0;
+        fitCdActivePanelHeight(keepAt);
         if (pinOffset <= 0) return;
-        var maxScroll = classDetailScroll.scrollHeight - classDetailScroll.clientHeight;
-        var target = Math.min(pinOffset, Math.max(0, maxScroll));
-        if (classDetailScroll.scrollTop < pinOffset - 4) {
+        var maxScroll = Math.max(0, classDetailScroll.scrollHeight - classDetailScroll.clientHeight);
+        var target = Math.min(pinOffset, maxScroll);
+        if (startScroll < pinOffset - 24) {
           smoothScrollCdTo(target, 360);
         } else {
           cancelCdTabScroll();
-          classDetailScroll.scrollTop = target;
+          classDetailScroll.scrollTop = Math.min(startScroll, maxScroll);
         }
       });
-      // Reset horizontal scroll on review carousels so each tab opens cleanly
       classDetailEl.querySelectorAll('.cd-review-cards').forEach(function(s) { s.scrollLeft = 0; });
     }
 
@@ -7945,6 +7955,10 @@
 
   // Class detail vertical scroll
   addVerticalDragScroll(classDetailScroll);
+
+  // Select-option packs / drop-ins list (Book → checkout)
+  var checkoutOptionsScroll = document.getElementById('cd-checkout-options-scroll');
+  if (checkoutOptionsScroll) addVerticalDragScroll(checkoutOptionsScroll);
 
   // Venue lists
   document.querySelectorAll('.venue-list').forEach(function(list) {

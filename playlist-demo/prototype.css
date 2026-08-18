@@ -3015,6 +3015,9 @@
     border-radius: var(--pl-radius-semantic-xl) var(--pl-radius-semantic-xl) 0 0;
     background: var(--pl-surface-default);
     box-shadow: 0 -2px 16px rgb(var(--pl-shadow-rgb) / 0.12);
+    /* #venue-detail is pointer-events:none; without this, wheel/drag on
+       Select option falls through to class detail underneath. */
+    pointer-events: auto;
   }
   /* Header, body, and footer fade in/out with the geometry morph. The CTA
      is NOT in this group — it morphs between Next-shape (closed) and the
@@ -3718,12 +3721,14 @@
     flex: 1 1 auto;
     min-height: 0;
     overflow-y: auto;
+    overscroll-behavior: contain;
     display: flex;
     flex-direction: column;
     gap: 24px;
     padding: 16px 20px 24px;
     box-sizing: border-box;
     -webkit-overflow-scrolling: touch;
+    touch-action: pan-y;
     scrollbar-width: none;
     -ms-overflow-style: none;
   }
