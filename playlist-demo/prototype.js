@@ -7689,37 +7689,36 @@
     function activateCdTab(tab) {
       var startScroll = classDetailScroll.scrollTop;
       var pinOffset = window.__cdPinOffset || 0;
-      var keepAt = Math.max(startScroll, pinOffset);
       setCdTabSelected(tab);
       var name = tab.dataset.cdtab;
       var incoming = null;
       cdPanels.forEach(function(p) {
         if (p.dataset.cdpanel === name) incoming = p;
       });
-      // Pre-size the incoming panel *before* hiding Overview. Schedule is
-      // only a few slots tall; without this, scrollHeight collapses and
-      // the browser clamps scrollTop — the header drops back into view.
+      // Pre-size the incoming panel *before* hiding Overview so a short
+      // Schedule list can't collapse scrollHeight and yank the header back
+      // while we reset to the pin (same snap as venue-detail tabs).
       if (incoming) {
-        incoming.style.minHeight = Math.ceil(keepAt + classDetailScroll.clientHeight) + 'px';
+        incoming.style.minHeight = Math.ceil(Math.max(startScroll, pinOffset) + classDetailScroll.clientHeight) + 'px';
       }
       cdPanels.forEach(function(p) {
         var on = p.dataset.cdpanel === name;
         if (!on) p.style.minHeight = '';
         p.classList.toggle('active', on);
       });
-      if (startScroll >= pinOffset - 24 && pinOffset > 0) {
+      if (startScroll >= pinOffset - 4 && pinOffset > 0) {
         classDetailScroll.scrollTop = startScroll;
       }
       requestAnimationFrame(function() {
-        fitCdActivePanelHeight(keepAt);
+        fitCdActivePanelHeight(pinOffset);
         if (pinOffset <= 0) return;
         var maxScroll = Math.max(0, classDetailScroll.scrollHeight - classDetailScroll.clientHeight);
         var target = Math.min(pinOffset, maxScroll);
-        if (startScroll < pinOffset - 24) {
+        if (startScroll < pinOffset - 4) {
           smoothScrollCdTo(target, 360);
         } else {
           cancelCdTabScroll();
-          classDetailScroll.scrollTop = Math.min(startScroll, maxScroll);
+          classDetailScroll.scrollTop = target;
         }
       });
       classDetailEl.querySelectorAll('.cd-review-cards').forEach(function(s) { s.scrollLeft = 0; });
