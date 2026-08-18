@@ -632,6 +632,7 @@
   let preserveMapContents = false; // skip pin/marker update when returning to map
   let returnScreen = null; // tracks which results screen to go back to when X is tapped
   let searchOpenedFromDefault = false; // true when search opened from map default (no fly needed on back)
+  let searchOpenedFromHome = false; // Home search bar — back returns Home, submit goes to Search
   let activeTab = 'search';
   let mapPanned = false; // true when user has dragged the map from its original position
   let venueDetailOpen = false;
@@ -1236,10 +1237,13 @@
 
   // Deterministic per-venue flag: roughly half of venues run an intro offer.
   // Hash by name so it stays stable across re-renders and sessions.
+  // Featured first card always has the offer; Equinox (second on default) does not.
   function hasVenueIntroOffer(pin) {
     if (!pin || !pin.name) return false;
     var key = (pin.name || '') + '|' + (pin.lat || '') + '|' + (pin.lng || '');
     if (window.__venueTrialPurchased && key && window.__venueTrialPurchased[key]) return false;
+    if (pin.name === 'JetSet Pilates') return true;
+    if (pin.name === 'Equinox Flatiron') return false;
     var h = 0;
     for (var i = 0; i < pin.name.length; i++) h = ((h << 5) - h) + pin.name.charCodeAt(i);
     return (Math.abs(h) % 2) === 0;
@@ -2118,6 +2122,143 @@
   // prompting the user for their current location.
 
   // ========== SCREEN MANAGEMENT ==========
+  var HOME_SEARCH_EASE = 'cubic-bezier(0.32, 0.72, 0, 1)';
+  var HOME_SEARCH_MS = 380;
+
+  function prefersReducedMotion() {
+    return window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  }
+
+  function clearHomeSearchMotion(searchEl, homeEl) {
+    var field = document.getElementById('unified-search-field');
+    if (field) {
+      field.style.transition = '';
+      field.style.transform = '';
+    }
+    if (searchEl) {
+      searchEl.classList.remove('from-home-search', 'is-home-search-in', 'from-home-search-exit');
+    }
+    if (homeEl) {
+      homeEl.classList.remove('home-search-leaving', 'home-search-arriving');
+    }
+    var homeBar = document.getElementById('home-search-bar');
+    if (homeBar) homeBar.style.visibility = '';
+  }
+
+  function homeSearchLiftDy() {
+    var homeBar = document.getElementById('home-search-bar');
+    var field = document.getElementById('unified-search-field');
+    if (!homeBar || !field) return 0;
+    return homeBar.getBoundingClientRect().top - field.getBoundingClientRect().top;
+  }
+
+  function playHomeToSearch(homeEl, searchEl) {
+    document.querySelectorAll('.screen').forEach(function(s) {
+      if (s !== homeEl && s !== searchEl) s.classList.remove('active', 'anim-fade-in', 'anim-fade-out', 'anim-fade-out-behind', 'anim-bg-fade-in', 'anim-bg-fade-out', 'anim-slide-up', 'anim-slide-down', 'anim-screen-fade-in');
+    });
+    searchEl.classList.add('active', 'from-home-search', 'anim-bg-fade-in');
+    var field = document.getElementById('unified-search-field');
+    var homeBar = document.getElementById('home-search-bar');
+    var kb = searchEl.querySelector('.keyboard');
+    if (prefersReducedMotion() || !field || !homeBar) {
+      homeEl.classList.remove('active');
+      if (kb) {
+        kb.classList.add('anim-kb-slide-up');
+        kb.addEventListener('animationend', function() { kb.classList.remove('anim-kb-slide-up'); }, { once: true });
+      }
+      return;
+    }
+    var dy = homeSearchLiftDy();
+    homeBar.style.visibility = 'hidden';
+    homeEl.classList.add('home-search-leaving');
+    field.style.transition = 'none';
+    field.style.transform = 'translateY(' + dy + 'px)';
+    void field.offsetHeight;
+    requestAnimationFrame(function() {
+      searchEl.classList.add('is-home-search-in');
+      field.style.transition = 'transform ' + HOME_SEARCH_MS + 'ms ' + HOME_SEARCH_EASE;
+      field.style.transform = 'translateY(0)';
+      if (kb) {
+        kb.classList.add('anim-kb-slide-up');
+        kb.addEventListener('animationend', function() { kb.classList.remove('anim-kb-slide-up'); }, { once: true });
+      }
+    });
+    var done = false;
+    function finish() {
+      if (done) return;
+      done = true;
+      homeEl.classList.remove('active', 'home-search-leaving');
+      if (homeBar) homeBar.style.visibility = '';
+      searchEl.classList.remove('from-home-search', 'is-home-search-in', 'anim-bg-fade-in');
+      field.style.transition = '';
+      field.style.transform = '';
+    }
+    field.addEventListener('transitionend', function handler(ev) {
+      if (ev.propertyName !== 'transform') return;
+      field.removeEventListener('transitionend', handler);
+      finish();
+    });
+    setTimeout(finish, HOME_SEARCH_MS + 80);
+  }
+
+  function snapTabBarVisible() {
+    var tabBarEl = document.getElementById('tab-bar-persistent');
+    var tabBarBlurEl = document.getElementById('tab-bar-blur');
+    [tabBarEl, tabBarBlurEl].forEach(function(el) {
+      if (!el) return;
+      el.style.transition = 'none';
+      el.classList.remove('hidden-down');
+      void el.offsetHeight;
+      el.style.transition = '';
+    });
+  }
+
+  function playSearchToHome(searchEl, homeEl) {
+    document.querySelectorAll('.screen').forEach(function(s) {
+      if (s !== homeEl && s !== searchEl) s.classList.remove('active', 'anim-fade-in', 'anim-fade-out', 'anim-fade-out-behind', 'anim-bg-fade-in', 'anim-bg-fade-out', 'anim-slide-up', 'anim-slide-down', 'anim-screen-fade-in');
+    });
+    snapTabBarVisible();
+    homeEl.classList.add('active', 'home-search-arriving');
+    var field = document.getElementById('unified-search-field');
+    var homeBar = document.getElementById('home-search-bar');
+    var kb = searchEl.querySelector('.keyboard');
+    if (kb) kb.classList.remove('anim-kb-slide-up', 'anim-kb-slide-down');
+    if (prefersReducedMotion() || !field || !homeBar) {
+      searchEl.classList.remove('active');
+      homeEl.classList.remove('home-search-arriving');
+      return;
+    }
+    homeBar.style.visibility = 'hidden';
+    var dy = homeSearchLiftDy();
+    searchEl.classList.add('from-home-search-exit', 'anim-bg-fade-out');
+    field.style.transition = 'none';
+    field.style.transform = 'translateY(0)';
+    void field.offsetHeight;
+    requestAnimationFrame(function() {
+      homeEl.classList.add('is-home-revealed');
+      field.style.transition = 'transform ' + HOME_SEARCH_MS + 'ms ' + HOME_SEARCH_EASE;
+      field.style.transform = 'translateY(' + dy + 'px)';
+    });
+    var done = false;
+    function finish() {
+      if (done) return;
+      done = true;
+      searchEl.classList.remove('active', 'from-home-search-exit', 'anim-bg-fade-out', 'from-home-search', 'is-home-search-in');
+      homeEl.classList.remove('home-search-arriving', 'is-home-revealed');
+      homeBar.style.visibility = '';
+      field.style.transition = '';
+      field.style.transform = '';
+      if (kb) kb.classList.remove('anim-kb-slide-up', 'anim-kb-slide-down');
+      clearHomeSearchMotion(searchEl, homeEl);
+    }
+    field.addEventListener('transitionend', function handler(ev) {
+      if (ev.propertyName !== 'transform') return;
+      field.removeEventListener('transitionend', handler);
+      finish();
+    });
+    setTimeout(finish, HOME_SEARCH_MS + 80);
+  }
+
   function showScreen(id, animation) {
     const ANIM_CLASSES = ['anim-fade-in', 'anim-fade-out', 'anim-fade-out-behind', 'anim-bg-fade-in', 'anim-bg-fade-out', 'anim-slide-up', 'anim-slide-down', 'anim-screen-fade-in'];
     const previousScreen = currentScreen;
@@ -2278,6 +2419,14 @@
         target.classList.add('anim-bg-fade-in');
         previousEl.classList.remove('active', ...ANIM_CLASSES);
       }
+    } else if (id === 'screen-search-focused' && previousScreen === 'screen-home-tab' && previousEl) {
+      playHomeToSearch(previousEl, target);
+      currentScreen = id;
+      return;
+    } else if (id === 'screen-home-tab' && previousScreen === 'screen-search-focused' && previousEl) {
+      playSearchToHome(previousEl, target);
+      currentScreen = id;
+      return;
     } else if (id === 'screen-search-focused' && isPrevMap) {
       // Search sheet fades in over the persistent #live-map (glass frost, not opaque).
       document.querySelectorAll('.screen').forEach(s => {
@@ -2443,6 +2592,11 @@
   }
 
   function submitSearch() {
+    if (searchOpenedFromHome) {
+      searchOpenedFromHome = false;
+      appEl.classList.remove('on-home-tab');
+      setBottomTab('Search');
+    }
     if (!searchTerm) {
       locationTerm = locationTerm || 'Current location';
     }
@@ -2487,6 +2641,17 @@
   });
 
   searchClose.addEventListener('click', () => {
+    if (searchOpenedFromHome) {
+      searchOpenedFromHome = false;
+      returnScreen = null;
+      searchOpenedFromDefault = false;
+      searchTerm = '';
+      searchInput.value = '';
+      updateSearchUI();
+      updateLocationUI();
+      openHomeTab();
+      return;
+    }
     const hasSearch = searchInput.value.trim().length > 0;
     const hasLocation = locationInput.value.trim().length > 0;
 
@@ -2716,6 +2881,11 @@
   });
 
   function selectLocation() {
+    if (searchOpenedFromHome) {
+      searchOpenedFromHome = false;
+      appEl.classList.remove('on-home-tab');
+      setBottomTab('Search');
+    }
     returnScreen = null;
     locationSearched = true;
     mapPanned = false;
@@ -4036,7 +4206,23 @@
   var homeSearchBar = document.getElementById('home-search-bar');
   if (homeSearchBar) {
     homeSearchBar.addEventListener('click', function () {
-      openSearchTab();
+      appEl.classList.remove('on-home-tab');
+      if (venueDetailOpen) closeVenueDetail();
+      returnScreen = null;
+      searchOpenedFromDefault = false;
+      searchOpenedFromHome = true;
+      searchTerm = '';
+      searchInput.value = '';
+      locationInput.value = (locationTerm && locationTerm !== 'Current location') ? locationTerm : '';
+      updateSearchUI();
+      updateLocationUI();
+      setActiveTab('search');
+      searchThisAreaBtn.classList.remove('visible');
+      showScreen('screen-search-focused', 'fade-in');
+      if (typeof map !== 'undefined' && map && map.resize) {
+        requestAnimationFrame(function () { map.resize(); });
+      }
+      setTimeout(function () { focusAtEnd(searchInput); }, HOME_SEARCH_MS);
     });
   }
 
@@ -7531,7 +7717,11 @@
         var clusterSheetParent = el.closest('.cluster-sheet');
         if (clusterSheetParent && !clusterSheetParent.classList.contains('is-expanded')) return;
       }
-      if (e.target.closest('button, a, .venue-action-btn, .vd-action-pill, .vd-slot-btn, .vd-quick-btn, .venue-detail-close, .vd-nav-back, .venue-detail-handle, .vd-sticky-nav, .vd-actions-pill, .pl-tab-nav__item, .cd-thumb')) return;
+      // Pack cards are <button>s, but they fill the Pricing (and checkout
+      // options) lists the way schedule cards fill theirs. Skipping every
+      // button here traps mouse-drag scroll on those tabs. Tap-to-buy is
+      // still gated by wasDragging on the click handler.
+      if (e.target.closest('button, a, .venue-action-btn, .vd-action-pill, .vd-slot-btn, .vd-quick-btn, .venue-detail-close, .vd-nav-back, .venue-detail-handle, .vd-sticky-nav, .vd-actions-pill, .pl-tab-nav__item, .cd-thumb') && !e.target.closest('.pl-pack')) return;
       var hscrollChild = e.target.closest('.vd-hscroll, .vd-date-picker, .cd-date-picker');
       if (hscrollChild) {
         pendingDrag = { el: el, x: e.clientX, y: e.clientY, scroll: el.scrollTop, time: Date.now(), hscroll: hscrollChild };
