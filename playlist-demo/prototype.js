@@ -730,8 +730,6 @@
     'box': ['Boxing'],
     'c': ['Cycling', 'CrossFit'],
     'cy': ['Cycling', 'Cycling HIIT'],
-    'd': ['Dance', 'Dance Cardio'],
-    'da': ['Dance', 'Dance Cardio'],
     'h': ['HIIT', 'Hot Yoga'],
     'hi': ['HIIT'],
     'm': ['Meditation', 'Martial Arts'],
@@ -739,8 +737,8 @@
     'ma': ['Martial Arts'],
     'r': ['Running', 'Reformer Pilates'],
     'ru': ['Running'],
-    's': ['Sports recovery', 'Stretching'],
-    'sp': ['Sports recovery', 'Spinning'],
+    's': ['Stretching', 'Spinning'],
+    'sp': ['Spinning'],
     'g': ['Gym time'],
     'gy': ['Gym time'],
     'o': ['Outdoors'],
@@ -1100,6 +1098,18 @@
       ['../images/gym/studio_3/image01.jpg', '../images/gym/studio_3/image02.jpg', '../images/gym/studio_3/image03.jpg'],
       ['../images/gym/studio_4/image01.jpg', '../images/gym/studio_4/image02.jpg', '../images/gym/studio_4/image03.jpg'],
     ],
+    'CrossFit': [
+      ['../images/crossfit/studio_1/image01.jpg', '../images/crossfit/studio_1/image02.jpg', '../images/crossfit/studio_1/image03.jpg'],
+      ['../images/crossfit/studio_2/image01.jpg', '../images/crossfit/studio_2/image02.jpg', '../images/crossfit/studio_2/image03.jpg'],
+      ['../images/crossfit/studio_3/image01.jpg', '../images/crossfit/studio_3/image02.jpg', '../images/crossfit/studio_3/image03.jpg'],
+      ['../images/crossfit/studio_4/image01.jpg', '../images/crossfit/studio_4/image02.jpg', '../images/crossfit/studio_4/image03.jpg'],
+    ],
+    'HIIT': [
+      ['../images/hiit/studio_1/image01.jpg', '../images/hiit/studio_1/image02.jpg', '../images/hiit/studio_1/image03.jpg'],
+      ['../images/hiit/studio_2/image01.jpg', '../images/hiit/studio_2/image02.jpg', '../images/hiit/studio_2/image03.jpg'],
+      ['../images/hiit/studio_3/image01.jpg', '../images/hiit/studio_3/image02.jpg', '../images/hiit/studio_3/image03.jpg'],
+      ['../images/hiit/studio_4/image01.jpg', '../images/hiit/studio_4/image02.jpg', '../images/hiit/studio_4/image03.jpg'],
+    ],
   };
 
   // Simple deterministic string hash (djb2-ish, 32-bit).
@@ -1145,6 +1155,14 @@
             || (searchHint && searchHint.toLowerCase().indexOf(kw) !== -1)) {
           category = keys[k];
           break;
+        }
+      }
+      // HIIT / CrossFit / Fitness don't have their own photo set — use gym.
+      if (!category && STUDIO_IMAGES['Gym']) {
+        var blob = ((rawCat || '') + ' ' + (name || '')).toLowerCase();
+        if (blob.indexOf('gym') !== -1 || blob.indexOf('fitness') !== -1
+            || blob.indexOf('bootcamp') !== -1) {
+          category = 'Gym';
         }
       }
       if (category) pin._resolvedImageCategory = category;
@@ -5021,7 +5039,7 @@
       "A high-energy class combining yoga fundamentals with bodyweight strength training. Expect to sweat, breathe, and build serious core stability over the course of 50 intense minutes. Modifications are offered, but expect to work hard from start to finish."
     ];
     var CD_PREP = "All classes are hot. Mats + towels are complimentary on your first visit and always available for a small rental fee after. Water + electrolytes are available for purchase at the front desk. Arrive 10 minutes early to check in and settle your mat.";
-    var CD_CANCEL = "You must cancel your reservation at least 12 hours prior to the class start time in order to return the credit to your account with no penalty. Late cancellations with less than 12 hours notice will be assessed a $10 charge to your card. The credit will be returned to your account.";
+    var CD_CANCEL = "Cancel at least 12 hours before class start to get the visit returned to your pack balance.";
     var CD_VENUE_NAMES = ['ID Hot Yoga', 'Sui Power Yoga', 'Heated Reformer Co.', 'Studio Sweat', 'Mindful Movement'];
     var CD_NEIGHBORHOODS = ['Lower East Side', 'East Village', 'SoHo', 'Williamsburg', 'West Village'];
     var CD_INSTRUCTORS = ['Sarah M.', 'Chauncie D.', 'Liz K.', 'Marcus J.', 'Priya S.', 'Jordan T.', 'Kai N.', 'Emma R.', 'David C.', 'Nina L.', 'Carolyn', 'Sarah Ghilardi', 'Marie Wolf'];
