@@ -19,9 +19,13 @@
     }
 
     .page {
+      position: relative;
+      z-index: 1;
       padding: 48px;
       padding-right: 40px;
       max-width: 480px;
+      min-height: 100%;
+      background: #fff;
     }
 
     .header {
@@ -139,19 +143,22 @@
       line-height: 1.5;
     }
 
-    /* Preview panel — fixed to the right, hidden until open */
-    /* Preview panel — fixed to the right, hidden until open */
+    /* Preview is a sized column to the right of the index. Scale comes from
+       that column (container query) so the phone shrinks instead of clipping. */
     .preview-panel {
+      --index-width: 480px;
       display: none;
       position: fixed;
       top: 0;
       right: 0;
       bottom: 0;
-      left: 0;
+      left: var(--index-width);
       align-items: center;
-      justify-content: flex-end;
+      justify-content: center;
       pointer-events: none;
       overflow: hidden;
+      padding: 24px 64px 24px 24px;
+      container-type: size;
     }
 
     .preview-panel.open {
@@ -159,19 +166,18 @@
     }
 
     .preview-panel-inner {
-      --device-scale: min(1, (100dvh - 48px) / 852px, (100vw - 560px) / 393px);
+      --device-scale: min(1, 100cqh / 852px, 100cqw / 393px);
       pointer-events: all;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 20px;
+      position: relative;
       width: calc(393px * var(--device-scale));
       height: calc(852px * var(--device-scale));
-      margin: auto calc(50vw - (196px * var(--device-scale)) - 80px) auto auto;
-      padding: 0;
+      flex: none;
     }
 
     .preview-panel iframe {
+      position: absolute;
+      top: 0;
+      left: 0;
       width: 393px;
       height: 852px;
       border: 1px solid #d1d5db;
@@ -179,7 +185,7 @@
       box-shadow: 0 12px 32px rgba(0, 0, 0, 0.08);
       background: #fff;
       transform: scale(var(--device-scale));
-      transform-origin: top left;
+      transform-origin: 0 0;
     }
 
     /* Close button */
