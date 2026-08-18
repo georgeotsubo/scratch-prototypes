@@ -1011,6 +1011,8 @@ button.pl-card { cursor: pointer; -webkit-tap-highlight-color: transparent; }
   height: 100%;
   display: block;
   object-fit: cover;
+  -webkit-user-drag: none;
+  user-select: none;
 }
 
 /* Native size of assets/map-card-pin-chrome.svg (93×84). Thumbnail is the
@@ -2517,9 +2519,10 @@ button.pl-venue-card { cursor: pointer; -webkit-tap-highlight-color: transparent
   flex: none;
 }
 
-/* --- Pack card — .pl-pack-card (12946:389175) -------------------------------
+/* --- Pack card — .pl-pack-card (13103:54862 / 12946:389175) -----------------
    Owned pack summary: title, expiry, visits-left pill. Used on cancel-confirm
-   and on pack-redeem checkout ("Reserve with"). */
+   and on pack-redeem checkout ("Reserve with"). Type: title/lg/medium +
+   body/sm/medium (expiry + visits pill). */
 
 .pl-pack-card,
 .pl-cancel-confirm-modal__pack {
@@ -2549,6 +2552,10 @@ button.pl-venue-card { cursor: pointer; -webkit-tap-highlight-color: transparent
 .pl-cancel-confirm-modal__pack-badge-text {
   margin: 0;
   color: var(--pl-text-primary);
+  font-family: var(--pl-body-sm-medium-font);
+  font-size: var(--pl-body-sm-medium-size);
+  line-height: var(--pl-body-sm-medium-lineheight);
+  font-weight: var(--pl-body-sm-medium-weight);
 }
 
 .pl-pack-card__copy,
@@ -2564,12 +2571,20 @@ button.pl-venue-card { cursor: pointer; -webkit-tap-highlight-color: transparent
 .pl-cancel-confirm-modal__pack-title {
   margin: 0;
   color: var(--pl-text-primary);
+  font-family: var(--pl-title-lg-medium-font);
+  font-size: var(--pl-title-lg-medium-size);
+  line-height: var(--pl-title-lg-medium-lineheight);
+  font-weight: var(--pl-title-lg-medium-weight);
 }
 
 .pl-pack-card__meta,
 .pl-cancel-confirm-modal__pack-meta {
   margin: 0;
   color: var(--pl-text-secondary);
+  font-family: var(--pl-body-sm-medium-font);
+  font-size: var(--pl-body-sm-medium-size);
+  line-height: var(--pl-body-sm-medium-lineheight);
+  font-weight: var(--pl-body-sm-medium-weight);
 }
 
 .pl-cancel-confirm-modal__footer {

@@ -4190,6 +4190,9 @@
   margin: var(--pl-space-xxl) var(--pl-space-xl) 0;
   width: auto;
   align-self: stretch;
+  flex-shrink: 0;
+  min-height: var(--pl-size-componentsize-48);
+  height: var(--pl-size-componentsize-48);
   cursor: pointer;
   text-align: left;
 }
@@ -4238,6 +4241,70 @@
 .home-tile--wide {
   width: 269px;
   height: 200px;
+}
+
+/* Home ↔ keyword search: lift the Home bar into the keyword field. */
+#screen-search-focused.from-home-search,
+#screen-search-focused.from-home-search-exit {
+  z-index: 5;
+}
+#screen-search-focused.from-home-search.anim-bg-fade-in > .search-bar-container,
+#screen-search-focused.from-home-search-exit.anim-bg-fade-out > .search-bar-container {
+  animation: none;
+}
+#screen-search-focused.from-home-search:not(.is-home-search-in) #unified-location-field,
+#screen-search-focused.from-home-search:not(.is-home-search-in) .close-btn {
+  opacity: 0;
+}
+#screen-search-focused.from-home-search.is-home-search-in #unified-location-field {
+  opacity: 1;
+  transition: opacity 0.24s ease 0.08s;
+}
+#screen-search-focused.from-home-search.is-home-search-in .close-btn {
+  opacity: 1;
+  transition: opacity 0.2s ease 0.12s;
+}
+#screen-search-focused.from-home-search-exit #unified-location-field,
+#screen-search-focused.from-home-search-exit .close-btn,
+#screen-search-focused.from-home-search-exit .content-area {
+  opacity: 0;
+  transition: opacity 0.18s ease;
+}
+/* Keep the tray off-screen for the whole pop — removing slide-down
+   mid-transition snaps it back and flashes over Home. */
+#screen-search-focused.from-home-search-exit .keyboard {
+  visibility: hidden;
+  pointer-events: none;
+  transform: translateY(100%);
+}
+#screen-home-tab.home-search-leaving .home-logo,
+#screen-home-tab.home-search-leaving .home-sections {
+  opacity: 0;
+  transform: translateY(-8px);
+  transition:
+    opacity 0.28s cubic-bezier(0.32, 0.72, 0, 1),
+    transform 0.28s cubic-bezier(0.32, 0.72, 0, 1);
+}
+#screen-home-tab.home-search-arriving .home-logo,
+#screen-home-tab.home-search-arriving .home-sections {
+  opacity: 0;
+  transform: translateY(-8px);
+}
+#screen-home-tab.home-search-arriving.is-home-revealed .home-logo,
+#screen-home-tab.home-search-arriving.is-home-revealed .home-sections {
+  opacity: 1;
+  transform: none;
+  transition:
+    opacity 0.28s cubic-bezier(0.32, 0.72, 0, 1),
+    transform 0.28s cubic-bezier(0.32, 0.72, 0, 1);
+}
+@media (prefers-reduced-motion: reduce) {
+  #screen-home-tab.home-search-leaving .home-logo,
+  #screen-home-tab.home-search-leaving .home-sections,
+  #screen-home-tab.home-search-arriving.is-home-revealed .home-logo,
+  #screen-home-tab.home-search-arriving.is-home-revealed .home-sections {
+    transform: none;
+  }
 }
 
 /* Screen container — transform-based push navigation.

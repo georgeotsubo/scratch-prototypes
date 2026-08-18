@@ -449,17 +449,17 @@ bottom sheet. Policy inset uses `surface/inset` for drop-in and `surface/subtle`
 </div>
 ```
 
-**`.pl-pack-card`** (`12946:389175`) — owned pack summary: title, expiry, visits-left pill.
-Used on cancel-confirm and pack-redeem checkout.
+**`.pl-pack-card`** (`13103:54862` / `12946:389175`) — owned pack summary: title, expiry, visits-left pill.
+Used on cancel-confirm and pack-redeem checkout. Type is title/lg/medium + body/sm/medium.
 
 ```html
 <div class="pl-pack-card">
   <div class="pl-pack-card__copy">
     <p class="pl-pack-card__title pl-text-title-lg-medium">10 class card (mat + towel)</p>
-    <p class="pl-pack-card__meta pl-text-body-md-regular">Expires Mar 9, 2027</p>
+    <p class="pl-pack-card__meta pl-text-body-sm-medium">Expires Mar 9, 2027</p>
   </div>
   <div class="pl-pack-card__badge">
-    <p class="pl-pack-card__badge-text pl-text-body-md-medium">4 of 10 visits left</p>
+    <p class="pl-pack-card__badge-text pl-text-body-sm-medium">4 of 10 visits left</p>
   </div>
 </div>
 ```
