@@ -3920,7 +3920,7 @@
   }
 
   function openBookingsTab() {
-    appEl.classList.remove('on-home-tab');
+    appEl.classList.remove('on-home-tab', 'on-profile-tab');
     if (venueDetailOpen) closeVenueDetail();
     resetBookingsSectionTabs();
     setBottomTab('Bookings');
@@ -3934,7 +3934,7 @@
   };
 
   function openSearchTab() {
-    appEl.classList.remove('on-home-tab');
+    appEl.classList.remove('on-home-tab', 'on-profile-tab');
     if (venueDetailOpen) closeVenueDetail();
     setBottomTab('Search');
     // From Home / Bookings (or any non-map screen) land on the Search tab's map.
@@ -3953,9 +3953,21 @@
     if (venueDetailOpen) closeVenueDetail();
     setBottomTab('Home');
     appEl.classList.add('on-home-tab');
+    appEl.classList.remove('on-profile-tab');
     var homeTab = document.getElementById('screen-home-tab');
     if (currentScreen !== 'screen-home-tab' || !homeTab.classList.contains('active')) {
       showScreen('screen-home-tab');
+    }
+  }
+
+  function openProfileTab() {
+    if (venueDetailOpen) closeVenueDetail();
+    setBottomTab('Profile');
+    appEl.classList.remove('on-home-tab');
+    appEl.classList.add('on-profile-tab');
+    var profileTab = document.getElementById('screen-profile-tab');
+    if (currentScreen !== 'screen-profile-tab' || !profileTab.classList.contains('active')) {
+      showScreen('screen-profile-tab');
     }
   }
 
@@ -3974,19 +3986,21 @@
       if (!item || !bar.contains(item)) return;
       var label = tabBarLabel(item);
       if (label === 'Bookings') {
-        appEl.classList.remove('on-home-tab');
+        appEl.classList.remove('on-home-tab', 'on-profile-tab');
         openBookingsTab();
       } else if (label === 'Search') {
-        appEl.classList.remove('on-home-tab');
+        appEl.classList.remove('on-home-tab', 'on-profile-tab');
         openSearchTab();
       } else if (label === 'Home') {
         openHomeTab();
+      } else if (label === 'Profile') {
+        openProfileTab();
       }
     });
   });
 
   document.getElementById('bookings-start-exploring').addEventListener('click', function () {
-    appEl.classList.remove('on-home-tab');
+    appEl.classList.remove('on-home-tab', 'on-profile-tab');
     openSearchTab();
   });
 

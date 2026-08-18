@@ -725,13 +725,13 @@ weighted heavier, so `#pl-calendar-small` (20px frame) reads bolder than
 | Contact & place | `#pl-location-pin` `#pl-location-pin-small` `#pl-person-small` `#pl-directions` `#pl-phone` `#pl-globe` `#pl-tag` `#pl-map-pin` |
 | Booking | `#pl-calendar-small` `#pl-calendar-add` `#pl-calendar-add-16` `#pl-calendar-large` `#pl-calendar-empty` `#pl-stack` |
 | Rating | `#pl-star-fill` `#pl-star-half` `#pl-star-outline` |
-| Auth & form | `#pl-apple-logo` `#pl-eye` `#pl-eye-slash` `#pl-small-info` |
+| Auth & form | `#pl-apple-logo` `#pl-eye` `#pl-eye-slash` `#pl-small-info` `#pl-ios-info` |
 | Tab bar | `#pl-tab-home` `#pl-tab-search` `#pl-tab-bookings` `#pl-tab-profile` (25px) |
 
 Exact asset files in `assets/` (referenced with `<img>`, not the sprite): `google_icon.png`,
 `CP_logo.svg`, `playlist-logo.svg`, `Playlist-logo-mark.svg`, `playlist_app.svg`,
 `classpass_app.svg`, plus other exact exports (`Visa.svg`, `check_success.svg`,
-`apple_logo.svg`, `eye.svg`, `eyeSlash.svg`, `small_info.svg`, `calendar_empty_state.svg`,
+`apple_logo.svg`, `eye.svg`, `eyeSlash.svg`, `small_info.svg`, `iOS_info.svg`, `calendar_empty_state.svg`,
 `map-card-pin.svg`, `calendar_add_16.svg`, `map_bookings.png`, `validation_default.svg`,
 `validation_error.svg`, `validation_indicator.svg`).
 

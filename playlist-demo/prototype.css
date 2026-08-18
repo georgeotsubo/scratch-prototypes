@@ -4064,7 +4064,8 @@
 }
 
 .device-frame:not(.in-app) #live-map,
-.device-frame.on-home-tab #live-map {
+.device-frame.on-home-tab #live-map,
+.device-frame.on-profile-tab #live-map {
   visibility: hidden;
 }
 
@@ -4075,14 +4076,17 @@
   opacity: 0;
 }
 
-#screen-home-tab {
+#screen-home-tab,
+#screen-profile-tab {
   background: var(--pl-bg-default);
 }
-.home-header {
+.home-header,
+.profile-header {
   flex-shrink: 0;
   padding: 0 22px;
 }
-.home-header .pl-page-title {
+.home-header .pl-page-title,
+.profile-header .pl-page-title {
   margin: 28px 0 0;
   color: var(--pl-text-primary);
 }

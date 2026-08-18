@@ -22,6 +22,8 @@
      `assets/calendar_empty_state.svg`)
    - share-small: exact copy of `assets/iOS_share_small.svg` (24×24, `currentColor`
      in icons/ for the sprite; baked `#020203` kept in assets/)
+   - ios-info: exact copy of `assets/iOS_info.svg` (20×20, `currentColor`
+     in icons/ for the sprite; baked `#020203` kept in assets/)
    - map-pin: exact copy of `assets/Map card pin.svg` (49×52, baked red/white
      plus its drop-shadow filter). IDs are kept so the filter url(#…) still
      resolves. A map marker shouldn't invert in dark mode.
@@ -46,7 +48,7 @@ const GROUPS = [
                        'directions', 'phone', 'globe', 'tag', 'map-pin']],
   ['Booking', ['calendar-small', 'calendar-add', 'calendar-add-16', 'calendar-large', 'calendar-empty', 'stack']],
   ['Rating', ['star-fill', 'star-half', 'star-outline']],
-  ['Auth & form', ['apple-logo', 'eye', 'eye-slash', 'small-info']],
+  ['Auth & form', ['apple-logo', 'eye', 'eye-slash', 'small-info', 'ios-info']],
   ['Tab bar', ['tab-home', 'tab-search', 'tab-bookings', 'tab-profile']],
 ];
 
