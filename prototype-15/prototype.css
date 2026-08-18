@@ -4722,7 +4722,7 @@
 }
 .cp-footer .btn-primary { width: 100%; }
 
-/* ===== Create an account (12901:344263) ===== */
+/* ===== Create an account (11155:7645) ===== */
 .signup-content {
   position: absolute;
   top: 108px;
@@ -4740,6 +4740,7 @@
 .signup-header,
 .signup-copy,
 .signup-body,
+.signup-actions,
 .signup-form,
 .signup-fields {
   display: flex;
@@ -4753,18 +4754,13 @@
   color: var(--pl-text-primary);
 }
 .signup-copy h1 { margin: 0; }
+.signup-actions { gap: 16px; }
 .signup-signin-row {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 4px;
   margin: 0;
-}
-.signup-signin-row .pl-btn {
-  font-family: var(--pl-label-lg-semibold-font);
-  font-size: var(--pl-label-lg-semibold-size);
-  line-height: var(--pl-label-lg-semibold-lineheight);
-  font-weight: var(--pl-label-lg-semibold-weight);
 }
 .signup-note {
   width: 100%;

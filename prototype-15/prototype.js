@@ -1071,6 +1071,12 @@
       ['../images/boxing/studio_2/image01.png', '../images/boxing/studio_2/image02.png', '../images/boxing/studio_2/image03.png'],
       ['../images/boxing/studio_3/image01.png', '../images/boxing/studio_3/image02.png', '../images/boxing/studio_3/image03.png'],
     ],
+    'Gym': [
+      ['../images/gym/studio_1/image01.jpg', '../images/gym/studio_1/image02.jpg', '../images/gym/studio_1/image03.jpg'],
+      ['../images/gym/studio_2/image01.jpg', '../images/gym/studio_2/image02.jpg', '../images/gym/studio_2/image03.jpg'],
+      ['../images/gym/studio_3/image01.jpg', '../images/gym/studio_3/image02.jpg', '../images/gym/studio_3/image03.jpg'],
+      ['../images/gym/studio_4/image01.jpg', '../images/gym/studio_4/image02.jpg', '../images/gym/studio_4/image03.jpg'],
+    ],
   };
 
   // Simple deterministic string hash (djb2-ish, 32-bit).

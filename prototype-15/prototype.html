@@ -198,10 +198,6 @@
       <div class="signup-header">
         <div class="signup-copy">
           <h1 class="pl-text-display-sm">Create an account</h1>
-          <p class="signup-signin-row">
-            <span class="pl-text-body-md-medium">Have a Playlist or ClassPass account?</span>
-            <button type="button" class="pl-btn pl-btn--sm pl-btn--link-accent" id="btn-signup-signin">Sign in</button>
-          </p>
         </div>
         <div class="pl-banner signup-note">
           <span class="pl-banner__icon" aria-hidden="true">
@@ -222,27 +218,34 @@
           <a href="#" class="legal-link">Privacy Policy</a>.
         </p>
 
-        <div class="signup-form">
-          <div class="signup-fields">
-            <div class="signup-names">
+        <div class="signup-actions">
+          <div class="signup-form">
+            <div class="signup-fields">
+              <div class="signup-names">
+                <label class="pl-field">
+                  <span class="pl-field__box">
+                    <input class="pl-field__input" type="text" id="su-first" placeholder="First name" autocomplete="off" autocorrect="off" data-1p-ignore data-lpignore="true" readonly>
+                  </span>
+                </label>
+                <label class="pl-field">
+                  <span class="pl-field__box">
+                    <input class="pl-field__input" type="text" id="su-last" placeholder="Last name" autocomplete="off" autocorrect="off" data-1p-ignore data-lpignore="true" readonly>
+                  </span>
+                </label>
+              </div>
               <label class="pl-field">
                 <span class="pl-field__box">
-                  <input class="pl-field__input" type="text" id="su-first" placeholder="First name" autocomplete="off" autocorrect="off" data-1p-ignore data-lpignore="true" readonly>
-                </span>
-              </label>
-              <label class="pl-field">
-                <span class="pl-field__box">
-                  <input class="pl-field__input" type="text" id="su-last" placeholder="Last name" autocomplete="off" autocorrect="off" data-1p-ignore data-lpignore="true" readonly>
+                  <input class="pl-field__input" type="email" id="su-email" placeholder="Email" autocomplete="off" autocorrect="off" spellcheck="false" data-1p-ignore data-lpignore="true" readonly>
                 </span>
               </label>
             </div>
-            <label class="pl-field">
-              <span class="pl-field__box">
-                <input class="pl-field__input" type="email" id="su-email" placeholder="Email" autocomplete="off" autocorrect="off" spellcheck="false" data-1p-ignore data-lpignore="true" readonly>
-              </span>
-            </label>
+            <button type="button" class="pl-btn pl-btn--md pl-btn--primary pl-btn--pill pl-btn--full" id="btn-su-submit" disabled>Sign up</button>
           </div>
-          <button type="button" class="pl-btn pl-btn--md pl-btn--primary pl-btn--pill pl-btn--full" id="btn-su-submit" disabled>Sign up</button>
+
+          <p class="signup-signin-row">
+            <span class="pl-text-body-md-medium">Have a Playlist or ClassPass account?</span>
+            <button type="button" class="pl-btn pl-btn--sm pl-btn--link-accent" id="btn-signup-signin">Sign in</button>
+          </p>
         </div>
       </div>
     </div>
