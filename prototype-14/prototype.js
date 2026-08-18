@@ -466,6 +466,24 @@
       ['../images/boxing/studio_2/image01.png', '../images/boxing/studio_2/image02.png', '../images/boxing/studio_2/image03.png'],
       ['../images/boxing/studio_3/image01.png', '../images/boxing/studio_3/image02.png', '../images/boxing/studio_3/image03.png'],
     ],
+    'Gym': [
+      ['../images/gym/studio_1/image01.jpg', '../images/gym/studio_1/image02.jpg', '../images/gym/studio_1/image03.jpg'],
+      ['../images/gym/studio_2/image01.jpg', '../images/gym/studio_2/image02.jpg', '../images/gym/studio_2/image03.jpg'],
+      ['../images/gym/studio_3/image01.jpg', '../images/gym/studio_3/image02.jpg', '../images/gym/studio_3/image03.jpg'],
+      ['../images/gym/studio_4/image01.jpg', '../images/gym/studio_4/image02.jpg', '../images/gym/studio_4/image03.jpg'],
+    ],
+    'CrossFit': [
+      ['../images/crossfit/studio_1/image01.jpg', '../images/crossfit/studio_1/image02.jpg', '../images/crossfit/studio_1/image03.jpg'],
+      ['../images/crossfit/studio_2/image01.jpg', '../images/crossfit/studio_2/image02.jpg', '../images/crossfit/studio_2/image03.jpg'],
+      ['../images/crossfit/studio_3/image01.jpg', '../images/crossfit/studio_3/image02.jpg', '../images/crossfit/studio_3/image03.jpg'],
+      ['../images/crossfit/studio_4/image01.jpg', '../images/crossfit/studio_4/image02.jpg', '../images/crossfit/studio_4/image03.jpg'],
+    ],
+    'HIIT': [
+      ['../images/hiit/studio_1/image01.jpg', '../images/hiit/studio_1/image02.jpg', '../images/hiit/studio_1/image03.jpg'],
+      ['../images/hiit/studio_2/image01.jpg', '../images/hiit/studio_2/image02.jpg', '../images/hiit/studio_2/image03.jpg'],
+      ['../images/hiit/studio_3/image01.jpg', '../images/hiit/studio_3/image02.jpg', '../images/hiit/studio_3/image03.jpg'],
+      ['../images/hiit/studio_4/image01.jpg', '../images/hiit/studio_4/image02.jpg', '../images/hiit/studio_4/image03.jpg'],
+    ],
   };
 
   // Simple deterministic string hash (djb2-ish, 32-bit).
@@ -511,6 +529,14 @@
             || (searchHint && searchHint.toLowerCase().indexOf(kw) !== -1)) {
           category = keys[k];
           break;
+        }
+      }
+      // HIIT / CrossFit / Fitness don't have their own photo set — use gym.
+      if (!category && STUDIO_IMAGES['Gym']) {
+        var blob = ((rawCat || '') + ' ' + (name || '')).toLowerCase();
+        if (blob.indexOf('gym') !== -1 || blob.indexOf('fitness') !== -1
+            || blob.indexOf('bootcamp') !== -1) {
+          category = 'Gym';
         }
       }
       if (category) pin._resolvedImageCategory = category;
