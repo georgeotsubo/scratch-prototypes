@@ -911,7 +911,10 @@
   // Hardcoded NYC studios so the sheet isn't empty while Foursquare loads,
   // or when the CORS proxy fails on a plain localhost server.
   function fallbackPlaces(lat, lng, search, locationLabel) {
-    return generatePins(search || '', locationLabel || 'nearby', { lat: lat, lng: lng }, 20).map(function(p, i) {
+    // Empty search (default map) uses the full studio catalog so the map
+    // looks dense without a Foursquare call. Category fallbacks stay at 20.
+    const count = search ? 20 : 50;
+    return generatePins(search || '', locationLabel || 'nearby', { lat: lat, lng: lng }, count).map(function(p, i) {
       return {
         name: p.name,
         lat: p.lat,
@@ -1404,8 +1407,24 @@
     return [Object.assign({}, JETSET_PILATES_PIN)].concat(list);
   }
 
+  function allFallbackStudios() {
+    const seen = {};
+    const list = [];
+    Object.keys(REAL_STUDIOS).forEach(function(key) {
+      REAL_STUDIOS[key].forEach(function(s) {
+        const k = (s.name || '').trim().toLowerCase();
+        if (!k || seen[k]) return;
+        seen[k] = true;
+        list.push(s);
+      });
+    });
+    return list;
+  }
+
   function generatePins(search, location, center, count) {
-    const studios = REAL_STUDIOS[search] || REAL_STUDIOS['_default'];
+    const studios = (search && REAL_STUDIOS[search])
+      ? REAL_STUDIOS[search]
+      : allFallbackStudios();
     const seed = simpleHash((search || '') + (location || ''));
     const rand = seededRandom(seed || 1);
     const shuffled = studios.slice().sort(() => rand() - 0.5);
