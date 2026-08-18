@@ -266,62 +266,99 @@
     </div>
   </div>
 
-  <!-- ===== SCREEN 5: Verify your number ===== -->
+  <!-- ===== SCREEN 5: Verify your number (12901:344313) ===== -->
   <div class="screen verify-screen" id="screen-verify" inert>
 
-    <!-- Toolbar / back -->
     <div class="toolbar">
-      <button class="icon-btn back-btn" id="btn-back-verify" aria-label="Back">
-        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M12.5 15.5L7 10L12.5 4.5" stroke="#020203" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
+      <button class="pl-icon-btn pl-icon-btn--md pl-icon-btn--raised" id="btn-back-verify" aria-label="Back">
+        <svg class="pl-icon" aria-hidden="true"><use href="#pl-back"></use></svg>
       </button>
     </div>
 
-    <div class="cp-content">
-      <div class="cp-heading">
-        <h1 class="cp-title">Verify your number</h1>
-        <p class="cp-subtitle">To finish setting up your account, we'll need to send you a confirmation code.</p>
+    <div class="verify-content">
+      <div class="verify-copy">
+        <h1 class="pl-text-display-sm">Verify your number</h1>
+        <p class="pl-text-body-md-regular">To finish setting up your account, we&rsquo;ll need to send you a confirmation code.</p>
       </div>
 
-      <div class="cp-form">
-        <div class="input-field phone-field">
-          <span class="phone-prefix">US +1</span>
-          <input type="tel" id="vn-phone" placeholder="Phone number" inputmode="tel" autocomplete="tel-national">
-        </div>
-
-        <button class="btn btn-primary btn-disabled" id="btn-vn-continue" disabled>Continue</button>
+      <div class="verify-form">
+        <label class="pl-field">
+          <span class="pl-field__box">
+            <input class="pl-field__input" type="tel" id="vn-phone" placeholder="US +1  Phone number" inputmode="tel" autocomplete="tel-national">
+          </span>
+        </label>
+        <button type="button" class="pl-btn pl-btn--md pl-btn--primary pl-btn--pill pl-btn--full" id="btn-vn-continue" disabled>Continue</button>
       </div>
     </div>
   </div>
 
-  <!-- ===== SCREEN 6: Enter the 4-digit code ===== -->
+  <!-- ===== SCREEN 6: Enter the 4-digit code (12901:344338) ===== -->
   <div class="screen code-screen" id="screen-code" inert>
 
-    <!-- Toolbar / back -->
     <div class="toolbar">
-      <button class="icon-btn back-btn" id="btn-back-code" aria-label="Back">
-        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M12.5 15.5L7 10L12.5 4.5" stroke="#020203" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
+      <button class="pl-icon-btn pl-icon-btn--md pl-icon-btn--raised" id="btn-back-code" aria-label="Back">
+        <svg class="pl-icon" aria-hidden="true"><use href="#pl-back"></use></svg>
       </button>
     </div>
 
-    <div class="cp-content">
-      <div class="cp-heading">
-        <h1 class="cp-title">Enter the 4-digit code</h1>
-        <p class="cp-subtitle" id="code-sent-to">Code sent to +1 347-582-0653.</p>
+    <div class="code-content">
+      <div class="code-copy">
+        <h1 class="pl-text-display-sm">Enter the 4-digit code</h1>
+        <p class="pl-text-body-md-regular" id="code-sent-to">Code sent to +1 347-582-0653.</p>
       </div>
 
-      <div class="cp-form">
+      <div class="code-form">
         <div class="code-inputs" id="code-inputs">
-          <input class="code-box" type="text" inputmode="numeric" maxlength="1" aria-label="Digit 1">
-          <input class="code-box" type="text" inputmode="numeric" maxlength="1" aria-label="Digit 2">
-          <input class="code-box" type="text" inputmode="numeric" maxlength="1" aria-label="Digit 3">
-          <input class="code-box" type="text" inputmode="numeric" maxlength="1" aria-label="Digit 4">
+          <label class="pl-field code-field">
+            <span class="pl-field__box">
+              <input class="pl-field__input code-box" type="text" inputmode="none" maxlength="1" aria-label="Digit 1" autocomplete="one-time-code">
+            </span>
+          </label>
+          <label class="pl-field code-field">
+            <span class="pl-field__box">
+              <input class="pl-field__input code-box" type="text" inputmode="none" maxlength="1" aria-label="Digit 2">
+            </span>
+          </label>
+          <label class="pl-field code-field">
+            <span class="pl-field__box">
+              <input class="pl-field__input code-box" type="text" inputmode="none" maxlength="1" aria-label="Digit 3">
+            </span>
+          </label>
+          <label class="pl-field code-field">
+            <span class="pl-field__box">
+              <input class="pl-field__input code-box" type="text" inputmode="none" maxlength="1" aria-label="Digit 4">
+            </span>
+          </label>
         </div>
+        <p class="code-resend pl-text-body-md-regular" id="resend-text">Resend code in 60s</p>
+      </div>
+    </div>
 
-        <p class="resend-text" id="resend-text">Resend code in 60s</p>
+    <div class="code-keyboard" id="code-keyboard" role="group" aria-label="Number pad">
+      <div class="code-keyboard__row">
+        <button type="button" class="code-keyboard__key" data-digit="1">1</button>
+        <button type="button" class="code-keyboard__key" data-digit="2">2</button>
+        <button type="button" class="code-keyboard__key" data-digit="3">3</button>
+      </div>
+      <div class="code-keyboard__row">
+        <button type="button" class="code-keyboard__key" data-digit="4">4</button>
+        <button type="button" class="code-keyboard__key" data-digit="5">5</button>
+        <button type="button" class="code-keyboard__key" data-digit="6">6</button>
+      </div>
+      <div class="code-keyboard__row">
+        <button type="button" class="code-keyboard__key" data-digit="7">7</button>
+        <button type="button" class="code-keyboard__key" data-digit="8">8</button>
+        <button type="button" class="code-keyboard__key" data-digit="9">9</button>
+      </div>
+      <div class="code-keyboard__row">
+        <span class="code-keyboard__spacer" aria-hidden="true"></span>
+        <button type="button" class="code-keyboard__key" data-digit="0">0</button>
+        <button type="button" class="code-keyboard__key code-keyboard__delete" data-delete aria-label="Delete">
+          <svg width="23" height="17" viewBox="0 0 23 17" fill="none" aria-hidden="true">
+            <path d="M7.35 1.25H20.25C21.22 1.25 22 2.03 22 3v11c0 .97-.78 1.75-1.75 1.75H7.35c-.52 0-1.02-.23-1.36-.63L1.4 9.62a1.2 1.2 0 0 1 0-1.54l4.59-5.2c.34-.4.84-.63 1.36-.63Z" stroke="currentColor" stroke-width="1.4"/>
+            <path d="M10.2 5.4 15.8 11M15.8 5.4 10.2 11" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+          </svg>
+        </button>
       </div>
     </div>
   </div>
@@ -601,6 +638,43 @@
       <div class="loc-actions">
         <button type="button" class="pl-btn pl-btn--md pl-btn--inverse pl-btn--pill pl-btn--full" id="loc-enable">Enable location</button>
         <button type="button" class="pl-btn pl-btn--md pl-btn--link" id="loc-later">Not now</button>
+      </div>
+    </div>
+
+    <!-- iOS location permission (12901:344459) — over the nearby modal after Enable location -->
+    <div class="loc-native-scrim" id="loc-native-scrim"></div>
+    <div class="loc-native" id="loc-native" role="dialog" aria-modal="true" aria-labelledby="loc-native-title" aria-describedby="loc-native-desc" aria-hidden="true">
+      <div class="loc-native-copy">
+        <div class="loc-native-icon" aria-hidden="true">
+          <img src="figma-screens/iOS_allow_visual.svg" alt="" width="73" height="69">
+        </div>
+        <div class="loc-native-text">
+          <h2 class="loc-native-title" id="loc-native-title">Allow &ldquo;Playlist&rdquo; to use your location?</h2>
+          <p class="loc-native-desc" id="loc-native-desc">Location is used to show you classes nearby, personalize your experience, and improve our service. See our Privacy Policy for more information.</p>
+        </div>
+      </div>
+      <div class="loc-native-map-wrap">
+        <img class="loc-native-map" src="figma-screens/precise_location.png" alt="" width="288" height="180">
+      </div>
+      <div class="loc-native-actions">
+        <button type="button" class="loc-native-btn" id="loc-allow-once">Allow Once</button>
+        <button type="button" class="loc-native-btn" id="loc-allow-while">Allow While Using App</button>
+        <button type="button" class="loc-native-btn" id="loc-dont-allow">Don&rsquo;t Allow</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sign out confirm (11381:41894) — back from Verify your number -->
+  <div class="signout" id="signout" aria-hidden="true">
+    <div class="signout-scrim" id="signout-scrim"></div>
+    <div class="signout-alert" role="dialog" aria-modal="true" aria-labelledby="signout-title" aria-describedby="signout-desc">
+      <div class="signout-copy">
+        <h2 class="signout-title" id="signout-title">Sign out?</h2>
+        <p class="signout-desc" id="signout-desc">You&rsquo;ll have to enter your email and password to access your account.</p>
+      </div>
+      <div class="signout-actions">
+        <button type="button" class="signout-btn" id="signout-cancel">Cancel</button>
+        <button type="button" class="signout-btn signout-btn--danger" id="signout-confirm">Sign out</button>
       </div>
     </div>
   </div>
