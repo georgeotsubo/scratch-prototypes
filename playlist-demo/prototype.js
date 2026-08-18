@@ -4302,6 +4302,7 @@
   var bookingsList = document.getElementById('bookings-list');
   if (bookingsList) {
     bookingsList.addEventListener('click', function (e) {
+      if (wasDragging) return;
       if (e.target.closest('.pl-booking-card__actions')) return;
       var card = e.target.closest('.pl-booking-card');
       if (!card) return;
@@ -7721,7 +7722,7 @@
       // options) lists the way schedule cards fill theirs. Skipping every
       // button here traps mouse-drag scroll on those tabs. Tap-to-buy is
       // still gated by wasDragging on the click handler.
-      if (e.target.closest('button, a, .venue-action-btn, .vd-action-pill, .vd-slot-btn, .vd-quick-btn, .venue-detail-close, .vd-nav-back, .venue-detail-handle, .vd-sticky-nav, .vd-actions-pill, .pl-tab-nav__item, .cd-thumb') && !e.target.closest('.pl-pack')) return;
+      if (e.target.closest('button, a, .venue-action-btn, .vd-action-pill, .vd-slot-btn, .vd-quick-btn, .venue-detail-close, .vd-nav-back, .venue-detail-handle, .vd-sticky-nav, .vd-actions-pill, .pl-tab-nav__item, .cd-thumb') && !e.target.closest('.pl-pack, .pl-booking-card')) return;
       var hscrollChild = e.target.closest('.vd-hscroll, .vd-date-picker, .cd-date-picker');
       if (hscrollChild) {
         pendingDrag = { el: el, x: e.clientX, y: e.clientY, scroll: el.scrollTop, time: Date.now(), hscroll: hscrollChild };
@@ -7840,6 +7841,9 @@
 
   var homeBody = document.querySelector('#screen-home-tab .home-body');
   if (homeBody) addVerticalDragScroll(homeBody);
+
+  var bookingsBody = document.querySelector('#screen-bookings .bookings-body');
+  if (bookingsBody) addVerticalDragScroll(bookingsBody);
 
   // Venue detail vertical scroll
   addVerticalDragScroll(venueDetailScroll);
