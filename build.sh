@@ -1,6 +1,6 @@
 #!/bin/bash
 # Generate config.js for all prototype directories from environment variables
-for dir in prototype-*/; do
+for dir in prototype-*/ playlist-demo/; do
   if [ -f "$dir/config.example.js" ]; then
     cat > "$dir/config.js" <<JSEOF
 window.MAPBOX_TOKEN = '${MAPBOX_TOKEN}';

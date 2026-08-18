@@ -1,0 +1,6102 @@
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  /* Disable text selection globally — prototype taps/swipes shouldn't trigger
+     selection UI. Re-enabled on form inputs below so search/location fields
+     still work. */
+  html, body { -webkit-user-select: none; user-select: none; }
+  input, textarea { -webkit-user-select: text; user-select: text; }
+
+
+  body {
+    font-family: var(--pl-type-font-primary);
+    background: var(--pl-surface-default);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    overflow: hidden;
+  }
+
+  /* iPhone frame for desktop. Stronger border + soft shadow so the device
+     reads as a distinct surface against a white page; the previous 1px
+     #e4e5e7 against #fff body was effectively invisible (especially on
+     high-DPI displays where 1px sub-pixels). */
+  /* Layout box matches the visual (scaled) phone so the page can center it.
+     The frame itself stays 393×852 — Mapbox measures clientWidth, and CSS
+     zoom was shrinking that, which left a gap on the right of the map. */
+  .device-scale {
+    --device-scale: min(1, 100dvh / 852px, 100vw / 393px);
+    width: calc(393px * var(--device-scale));
+    height: calc(852px * var(--device-scale));
+    flex-shrink: 0;
+  }
+
+  html.is-standalone .device-scale {
+    --device-scale: min(1, (100dvh - 24px) / 852px, (100vw - 24px) / 393px);
+  }
+
+  .device-frame {
+    width: 393px;
+    height: 852px;
+    background: var(--pl-surface-default);
+    border: 1px solid var(--pl-border-default);
+    /* Device chrome, not app UI — the iPhone corner radius is a physical
+       dimension and deliberately stays off the radius scale. */
+    border-radius: 40px;
+    overflow: hidden;
+    position: relative;
+    box-shadow: var(--pl-elevation-overlay);
+    transform: scale(var(--device-scale));
+    transform-origin: top left;
+  }
+
+  /* On mobile, go full screen */
+  @media (max-width: 430px) {
+    body { background: var(--pl-surface-default); align-items: flex-start; }
+    .device-scale {
+      --device-scale: 1;
+      width: 100vw;
+      height: 100vh;
+      height: 100dvh;
+    }
+    .device-frame {
+      --frame-radius: 0px;
+      transform: none;
+      width: 100vw;
+      height: 100vh;
+      height: 100dvh;
+      border: none;
+      border-radius: 0;
+      box-shadow: none;
+    }
+  }
+
+  /* Desktop hover on a phone-frame prototype reads as a stuck hover. Keep
+     press (:active) so taps still dim; skip the hovered fill. */
+  .pl-btn--primary:hover {
+    --btn-bg: var(--pl-accent-default);
+  }
+
+  /* Persistent map backdrop */
+  #live-map {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    z-index: 0;
+    background: var(--pl-surface-inset);
+    filter: none;
+  }
+
+  /* Screen container */
+  .screen {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    width: 100%;
+    height: 100%;
+    display: none;
+    flex-direction: column;
+    background: var(--pl-surface-default);
+    overflow: hidden;
+    z-index: 1;
+  }
+  .screen.active {
+    display: flex;
+  }
+  /* Map screens are transparent — the map shows through from behind */
+  .screen.map-screen {
+    background: transparent;
+    pointer-events: none;
+  }
+  /* Re-enable pointer events on interactive children within map screens */
+  .screen.map-screen > * {
+    pointer-events: auto;
+  }
+
+  /* Transitions */
+  .screen.anim-fade-in {
+    animation: fadeIn 0.25s ease-in;
+  }
+  .screen.anim-fade-out {
+    animation: fadeOut 0.35s ease-out forwards;
+    z-index: 5;
+  }
+  .screen.anim-fade-out-behind {
+    animation: fadeOut 0.2s ease-in forwards;
+  }
+  .screen.anim-bg-fade-in {
+    background: transparent;
+    animation: fadeIn 0.2s ease-in backwards;
+  }
+  /* Search sheet background — a solid layer over #live-map (glassmorphism
+     frost removed). Stops above the keyboard so keys stay on a solid tray.
+     anim-bg-fade-in/out only animate opacity. */
+  .input-screen.active::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: var(--pl-prototype-keyboard-height, 282px);
+    z-index: 0;
+    pointer-events: none;
+    background: var(--pl-bg-default);
+  }
+  .input-screen.anim-bg-fade-in::before {
+    animation: fadeIn 0.2s ease-in forwards;
+  }
+  .input-screen.anim-bg-fade-in > *:not(.search-bar-container):not(.status-bar):not(.keyboard):not(.map-overlay-bar) {
+    animation: fadeIn 0.2s ease-in backwards;
+  }
+  .input-screen.anim-bg-fade-in > .search-bar-container {
+    animation: fadeIn 0.2s ease-in backwards;
+  }
+  .screen.anim-bg-fade-out {
+    background: transparent;
+    z-index: 5;
+  }
+  .input-screen.anim-bg-fade-out::before {
+    animation: fadeOut 0.2s ease-in forwards;
+  }
+  .input-screen.anim-bg-fade-out > *:not(.status-bar):not(.keyboard) {
+    animation: fadeOut 0.2s ease-in forwards;
+  }
+  .screen.anim-slide-up {
+    animation: slideUp 0.3s ease-out;
+    z-index: 5;
+  }
+
+  .screen.anim-screen-fade-in {
+    animation: fadeIn 0.25s ease-in forwards;
+    z-index: 5;
+  }
+
+  .screen.anim-slide-down {
+    animation: slideDown 0.25s ease-in forwards;
+    z-index: 5;
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; } to { opacity: 1; }
+  }
+  @keyframes fadeOut {
+    from { opacity: 1; } to { opacity: 0; }
+  }
+  @keyframes bgFadeIn {
+    from { background-color: transparent; } to { background-color: var(--pl-surface-inset); }
+  }
+  @keyframes bgFadeOut {
+    from { background-color: var(--pl-surface-inset); } to { background-color: transparent; }
+  }
+  @keyframes slideUp {
+    from { transform: translateY(100%); } to { transform: translateY(0); }
+  }
+  @keyframes slideDown {
+    from { transform: translateY(0); } to { transform: translateY(100%); }
+  }
+  @keyframes kbSlideUp {
+    from { transform: translateY(100%); } to { transform: translateY(0); }
+  }
+  .keyboard.anim-kb-slide-up {
+    animation: kbSlideUp 0.3s ease-out;
+  }
+  @keyframes kbSlideDown {
+    from { transform: translateY(0); } to { transform: translateY(100%); }
+  }
+  .keyboard.anim-kb-slide-down {
+    animation: kbSlideDown 0.3s ease-in forwards;
+  }
+  @keyframes closeBtnSlideIn {
+    from { margin-left: -52px; opacity: 0; transform: translateX(52px); }
+    to   { margin-left: 0;    opacity: 1; transform: translateX(0); }
+  }
+  @keyframes closeBtnSlideOut {
+    from { margin-left: 0;    opacity: 1; transform: translateX(0); }
+    to   { margin-left: -52px; opacity: 0; transform: translateX(52px); }
+  }
+  .search-bar-container.anim-search-enter .close-btn {
+    animation: none;
+  }
+  .search-bar-container.anim-search-exit .close-btn {
+    animation: none;
+  }
+
+  /* Status bar */
+  .status-bar {
+    flex-shrink: 0;
+    z-index: 10;
+    width: 100%;
+    transition: opacity 0.15s ease-out;
+  }
+  .status-bar img {
+    width: 100%;
+    height: auto;
+    display: block;
+    object-fit: contain;
+  }
+
+  /* ========== MAP SCREEN (image-based) ========== */
+  .map-screen {
+    position: relative;
+  }
+  .map-screen > img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: top;
+  }
+  .map-search-hotspot {
+    position: absolute;
+    top: 26px;
+    left: 8px;
+    right: 8px;
+    height: 62px;
+    cursor: pointer;
+    z-index: 20;
+    border-radius: var(--pl-radius-semantic-md);
+  }
+  .map-x-hotspot {
+    position: absolute;
+    top: 26px;
+    right: 8px;
+    width: 52px;
+    height: 62px;
+    cursor: pointer;
+    z-index: 21;
+  }
+
+  /* Dynamic search bar overlay on map result screens */
+  .map-overlay-bar {
+    position: absolute;
+    top: 62px;
+    left: 0;
+    right: 0;
+    z-index: 20;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 24px;
+  }
+  /* Map term pill — PLSearchBar. Leading icon omitted (a supported DS config:
+     the Figma boolean defaults on, but the term needs the full width), clear
+     button in the DS trailing slot. Shape, fill, stroke, padding and label
+     type all come from .pl-search-bar; the shadow is the one deliberate delta,
+     since the DS component has no elevated variant and these float over the
+     map. Radius/Semantic/xxl is 24 = a pill at 48 tall, so nothing moves. */
+  .map-search-pill {
+    flex: 1;
+    cursor: pointer;
+    box-shadow: var(--pl-elevation-xs);
+  }
+  .map-search-pill .pill-text {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* PLSearchBar's label is body/md/regular (14). The two real fields can't
+     honour that: the iOS zoom guard in prototype.js force-sets every <input>
+     to 16px inline, which beats the class. These pill labels are spans, so
+     they WOULD land on 14 and read a size off from the field they morph into.
+     Held at 16 to match. To go DS-faithful instead, delete this rule and the
+     guard at prototype.js:5528 — accepting zoom-on-focus on real iOS. */
+  .map-search-pill .pl-search-bar__input,
+  .map-search-pill-default .pl-search-bar__input {
+    font-size: var(--pl-body-lg-regular-size);
+  }
+  .map-close-pill {
+    width: 44px;
+    height: 44px;
+    background: var(--pl-surface-default);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    flex-shrink: 0;
+    box-shadow: var(--pl-elevation-xs);
+  }
+  .map-close-pill svg { width: 20px; height: 20px; color: var(--pl-text-primary); }
+
+  /* ========== SEARCH / INPUT SCREENS ========== */
+  .input-screen {
+    background: transparent;
+  }
+  /* Lift interactive layers above the frost ::before (z-index:0). */
+  .input-screen > * {
+    position: relative;
+    z-index: 1;
+  }
+
+  /* Search bar area — two stacked fields */
+  .search-bar-container {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 8px 24px 16px;
+    flex-shrink: 0;
+    background: transparent;
+  }
+  /* No focus ring — keep border/default even when a field is active. */
+  .pl-search-bar:focus-within {
+    border-color: var(--pl-border-default);
+  }
+  .pl-search-bar__input:focus {
+    outline: none;
+  }
+
+  /* Search + location fields — PLSearchBar (.pl-search-bar, 1832:2160).
+     The shell is entirely the DS component now: 48 tall, Radius/Semantic/xxl
+     (24 — a full pill at this height, so the shape is unchanged),
+     surface/default on a 1px border/default stroke, 12px gap, 16px padding-x,
+     body/md/regular label.
+
+     That stroke is what gives the two fields an edge against the
+     color/bg/default screen, so neither needs the surface/subtle fill they
+     were carrying — the DS component solves it the way the design system
+     intends. Only the prototype-specific bits are left below.
+
+     The leading slot is a boolean in Figma, so each field just puts its own
+     glyph in it: back chevron for search, location pin for location. The
+     trailing clear slot is the DS one — the old grey-circle-with-white-X was
+     a prototype invention and is gone. */
+  .back-btn { cursor: pointer; }
+
+  /* Current location link — Figma: neutral hover pill, 8px gap, left-aligned */
+  .location-section {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 12px 24px 24px;
+    flex-shrink: 0;
+  }
+  .location-section-heading {
+    font-size: var(--pl-heading-h3-size);
+    font-weight: var(--pl-heading-h3-weight);
+    color: var(--pl-text-primary);
+    line-height: var(--pl-heading-h3-lineheight);
+    font-family: var(--pl-heading-h3-font);
+  }
+  .current-location {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 16px;
+    background: var(--pl-surface-default);
+    border-radius: var(--pl-radius-semantic-xl);
+    cursor: pointer;
+  }
+  .current-location:active {
+    background: var(--pl-neutral-100);
+  }
+  .current-location .loc-arrow-icon {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+  }
+  .current-location .loc-arrow-icon img {
+    width: 16px;
+    height: 16px;
+  }
+  .current-location .loc-label {
+    flex: 1;
+    font-size: var(--pl-body-lg-regular-size);
+    font-weight: var(--pl-body-lg-regular-weight);
+    color: var(--pl-text-primary);
+    font-family: var(--pl-body-lg-regular-font);
+  }
+  .current-location .loc-chevron {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .current-location .loc-chevron svg {
+    width: 8px;
+    height: 13px;
+    color: var(--pl-neutral-500);
+  }
+
+  /* Content area — light scrim so chips/autocomplete stay readable on the map. */
+  .content-area {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 20px;
+    scrollbar-width: thin;
+    scrollbar-color: transparent transparent;
+    transition: scrollbar-color 0.25s ease;
+  }
+  .input-screen .content-area {
+    background: rgba(255, 255, 255, 0.28);
+  }
+  .content-area.is-scrolling {
+    scrollbar-color: rgba(0, 0, 0, 0.28) transparent;
+  }
+  .content-area::-webkit-scrollbar { width: 4px; }
+  .content-area::-webkit-scrollbar-track { background: transparent; }
+  .content-area::-webkit-scrollbar-thumb {
+    background-color: transparent;
+    border-radius: var(--pl-radius-primitives-2);
+    transition: background-color 0.25s ease;
+  }
+  .content-area.is-scrolling::-webkit-scrollbar-thumb {
+    background-color: rgba(0, 0, 0, 0.28);
+  }
+
+  /* Section heading — Figma heading/h3: 20px, black */
+  .section-heading {
+    font-family: var(--pl-heading-h3-font);
+    font-size: var(--pl-heading-h3-size);
+    font-weight: var(--pl-heading-h3-weight);
+    padding: 12px 20px 4px;
+    color: var(--pl-text-primary);
+    line-height: var(--pl-heading-h3-lineheight);
+  }
+  .section-heading-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 20px 4px;
+  }
+  .section-heading-row h2 {
+    font-family: var(--pl-heading-h3-font);
+    font-size: var(--pl-heading-h3-size);
+    font-weight: var(--pl-heading-h3-weight);
+    color: var(--pl-text-primary);
+    line-height: var(--pl-heading-h3-lineheight);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .section-heading-row h2 .chevron {
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+  }
+  .section-heading-row h2 .chevron svg {
+    width: 10px;
+    height: 16px;
+    color: var(--pl-neutral-500);
+  }
+  .section-heading-row .clear-link {
+    font-size: var(--pl-body-md-regular-size);
+    color: var(--pl-neutral-600);
+    cursor: pointer;
+  }
+
+  /* Category chips — Figma: white card 24px radius, chip pill 64px radius, 14px semibold */
+  .chips-container {
+    padding: 4px 20px;
+  }
+  /* Stays surface/default. It now matches the color/bg/default screen, so the
+     panel reads as no panel at all — but that's the right trade: the chips
+     inside are PLChip Neutral (neutral-200), so tinting this panel subtle
+     would make them disappear into it. */
+  .chips-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    border-radius: var(--pl-radius-component-card-default);
+  }
+  /* Category / recents chips — PLChip Neutral (44px tall, per the Figma
+     component; the bespoke chip this replaces was 36px). */
+  .chip:active { --chip-bg: var(--pl-button-neutral-bg-pressed); }
+
+  /* Recents chips */
+  .recents-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    background: var(--pl-surface-default);
+    border-radius: var(--pl-radius-semantic-lg);
+    padding: 16px 0;
+    margin: 4px 20px 0;
+  }
+
+  /* Current location CTA */
+  .current-location-cta {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 24px;
+    cursor: pointer;
+  }
+  .current-location-cta:active {
+    opacity: 0.6;
+  }
+  .cta-icon-pill {
+    width: 36px;
+    height: 36px;
+    background: var(--pl-button-neutral-bg-default);
+    border-radius: var(--pl-radius-primitives-8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .cta-label {
+    font-size: var(--pl-body-lg-medium-size);
+    font-weight: var(--pl-body-lg-medium-weight);
+    color: var(--pl-text-primary);
+  }
+
+  /* Autocomplete results */
+  .autocomplete-list {
+    margin: 0;
+    background: var(--pl-surface-default);
+    overflow: hidden;
+  }
+  .autocomplete-item {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 24px;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .autocomplete-item:active { background: var(--pl-surface-inset); }
+  .autocomplete-item + .autocomplete-item {
+    border-top: none;
+  }
+  .autocomplete-item .ac-icon {
+    width: 36px;
+    height: 36px;
+    background: var(--pl-surface-inset);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .autocomplete-item .ac-icon svg { width: 16px; height: 16px; color: var(--pl-neutral-600); }
+  .autocomplete-item .ac-text {
+    font-size: var(--pl-body-lg-regular-size);
+    color: var(--pl-text-primary);
+    font-family: var(--pl-body-lg-regular-font);
+  }
+  .autocomplete-item .ac-text strong { font-weight: 500; }
+
+  /* Location autocomplete */
+  .loc-autocomplete-item {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 24px;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .loc-autocomplete-item:active { background: var(--pl-surface-inset); }
+  .loc-autocomplete-item + .loc-autocomplete-item {
+    border-top: none;
+  }
+  .loc-autocomplete-item .loc-ac-icon {
+    width: 36px;
+    height: 36px;
+    background: var(--pl-button-neutral-bg-default);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .loc-autocomplete-item .loc-ac-icon svg { width: 24px; height: 24px; color: var(--pl-neutral-600); }
+  .loc-autocomplete-item .loc-ac-info { display: flex; flex-direction: column; gap: 2px; }
+  .loc-autocomplete-item .loc-ac-name { font-size: var(--pl-body-lg-regular-size); color: var(--pl-text-primary); font-weight: var(--pl-body-lg-medium-weight); }
+  .loc-autocomplete-item .loc-ac-name strong { font-weight: 500; }
+  .loc-autocomplete-item .loc-ac-sub { font-size: var(--pl-body-sm-regular-size); color: var(--pl-neutral-600); font-weight: var(--pl-body-sm-regular-weight); }
+
+  /* Keyboard — solid tray; sits below the glass frost layer. */
+  .keyboard {
+    background: #e1e4e7;
+    padding: 12px 0 10px;
+    border-radius: 28px 28px 0 0;
+    flex-shrink: 0;
+    z-index: 2;
+  }
+  .keyboard-keys {
+    display: flex;
+    flex-direction: column;
+    gap: 11px;
+    padding: 12px 8.5px 0;
+  }
+  .keyboard-row {
+    display: flex;
+    justify-content: center;
+    gap: 6px;
+  }
+  .keyboard-row.row-2 { padding: 0 20px; }
+  .keyboard-row.row-3 { gap: 14.25px; }
+  .row-3-letters { display: flex; flex: 1; gap: 6px; height: 45px; }
+  .key {
+    flex: 1;
+    height: 45px;
+    background: #fff;
+    border-radius: 8.5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: -apple-system, 'SF Pro', 'SF Compact', 'Helvetica Neue', sans-serif;
+    font-size: 25px;
+    font-weight: 400;
+    color: #595959;
+    box-shadow: none;
+    cursor: pointer;
+    user-select: none;
+  }
+  .key:active { background: #cdd0d6; }
+  .key.shift {
+    flex: 0 0 44.667px;
+  }
+  .key.shift, .key.backspace { display: flex; align-items: center; justify-content: center; }
+  .key.shift img, .key.backspace img, .key.shift svg, .key.backspace svg { width: 23px; height: 20px; }
+  .key.backspace {
+    flex: 0 0 45px;
+  }
+  .key.space { flex: 1; }
+  .key.search-key {
+    flex: 0 0 92px;
+    background: #007AFF;   /* iOS system blue for the return/search key */
+    border-radius: 8.5px;
+    color: #fff;
+  }
+  .key.search-key { display: flex; align-items: center; justify-content: center; }
+  .key.search-key img { width: 100%; height: 100%; object-fit: contain; border-radius: 8.5px; }
+  .key.num { flex: 0 0 45px; font-size: 18px; font-family: -apple-system, 'SF Compact Rounded', 'SF Pro Rounded', sans-serif; }
+  .key.emoji { flex: 0 0 45px; font-size: 24px; }
+  .keyboard-bottom {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    height: 70px;
+    padding: 27px 39px 15px 36px;
+  }
+  .keyboard-bottom img.kb-globe { width: 26px; height: 26px; }
+  .keyboard-bottom img.kb-mic { width: 19px; height: 28px; }
+
+  /* Explore cards (for screen 09 variant) */
+  .explore-cards {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    padding: 0 20px;
+  }
+  .explore-card {
+    background: var(--pl-surface-inset);
+    border-radius: var(--pl-radius-semantic-md);
+    padding: 14px;
+    height: 80px;
+    display: flex;
+    align-items: flex-end;
+    font-size: var(--pl-label-md-semibold-size);
+    font-weight: var(--pl-label-md-semibold-weight);
+    color: var(--pl-text-primary);
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+  }
+  .explore-card::after {
+    content: '';
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 50px;
+    height: 50px;
+    background: var(--pl-neutral-400);
+    border-radius: var(--pl-radius-semantic-sm);
+    transform: rotate(12deg);
+  }
+
+  /* Tab icons now sit in a real `.pl-tab__icon` slot, so the DS sizes them. */
+
+  /* Helper */
+  .hidden { display: none !important; }
+
+  /* Prototype hint overlay */
+  .hint-overlay {
+    position: absolute;
+    bottom: 114px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0,0,0,0.7);
+    color: var(--pl-text-inverse);
+    padding: 10px 20px;
+    border-radius: var(--pl-radius-semantic-pill);
+    font-size: var(--pl-body-sm-medium-size);
+    font-weight: var(--pl-body-sm-medium-weight);
+    z-index: 100;
+    pointer-events: none;
+    opacity: 1;
+    transition: opacity 0.5s;
+    white-space: nowrap;
+  }
+  .hint-overlay.fade-out { opacity: 0; }
+
+  /* ========== INTERACTIVE MAP ========== */
+  .mapboxgl-canvas {
+    filter: none;
+  }
+  .mapboxgl-ctrl-attrib,
+  .mapboxgl-ctrl-logo,
+  .mapboxgl-ctrl { display: none !important; }
+  .playlist-pin {
+    background: none !important;
+    border: none !important;
+    /* No explicit size — the child element (SVG <img> for venue pins,
+       .user-location-dot for the blue dot, inline SVG for location pin)
+       supplies its own intrinsic dimensions. The default pin SVG is 37×48
+       with its tip at y≈28 (rest is drop shadow). Mapbox markers default
+       to a center anchor, so the tip lands a few pixels below the actual
+       lng/lat — intentional, makes the pin look like it "rests on" the
+       location with its shadow on the ground. */
+    cursor: pointer;
+    line-height: 0; /* prevent inline-image whitespace from inflating the box */
+  }
+  .playlist-pin img {
+    display: block;
+    pointer-events: none; /* clicks bubble up to .playlist-pin's click handler */
+    -webkit-user-drag: none;
+    user-select: none;
+  }
+  /* ========== HTML CLUSTER MARKER ==========
+     Replaces the old Mapbox cluster symbol + text layers so the count
+     can render in DM Sans (Mapbox glyph fonts don't include our app
+     fonts) and the bubble can scale up on tap via CSS.
+
+     Structure: .cluster-pin (Mapbox positions this) → .cluster-pin-inner
+     (gets the scale transform on tap, isolated from Mapbox's translate
+     on the outer element) → SVG <img> + count <span>. */
+  .cluster-pin {
+    line-height: 0;
+    /* The marker box is 80×80 (room for the drop shadow) but the visible
+       bubble is only ~28px wide, so adjacent markers' boxes overlap. Make the
+       box itself non-clickable and limit the hit area to the bubble (::after
+       below) — otherwise a neighbouring cluster's box steals the tap and the
+       wrong cluster scales up. Clicks on the bubble still bubble to this
+       element's listener despite pointer-events:none here. !important beats
+       the inline `pointer-events: auto` Mapbox sets on every marker element;
+       pointer-events is inherited, so the inner box goes none too and only the
+       ::after (explicit auto) stays hittable. */
+    pointer-events: none !important;
+  }
+  /* Clickable hit target limited to the visible red bubble (centered at
+     ~40,26 in the 80×80 canvas, radius ~14) so overlapping marker boxes can't
+     capture each other's taps. */
+  .cluster-pin-inner::after {
+    content: '';
+    position: absolute;
+    top: 26px;
+    left: 50%;
+    width: 32px;
+    height: 32px;
+    transform: translate(-50%, -50%);
+    border-radius: 50%;
+    pointer-events: auto;
+    cursor: pointer;
+  }
+  .cluster-pin-inner {
+    position: relative;
+    transform: scale(1);
+    /* Anchor at the teardrop's bottom tip (~y=43 in the 80px SVG) so the pin
+       grows UPWARD on tap, keeping the point planted at the map location.
+       One gentle overshoot via the easing's >1 control point (1.3) — both
+       the pop-up and the release back to scale(1) share this transition. */
+    transform-origin: 50% 43px;
+    transition: transform 0.3s cubic-bezier(.34, 1.3, .64, 1);
+  }
+  .cluster-pin.is-tapped .cluster-pin-inner {
+    transform: scale(1.6);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .cluster-pin-inner { transition: none; }
+  }
+  .cluster-pin img {
+    display: block;
+    pointer-events: none;
+    -webkit-user-drag: none;
+    user-select: none;
+  }
+  /* Count text sits on the red bubble. pin-cluster.svg has its bubble
+     centered at (40.375, 26) in the 80×80 canvas — so the count's
+     center lands at (50%, 26). */
+  .cluster-count {
+    position: absolute;
+    top: 26px;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    line-height: 1;
+    color: var(--pl-text-inverse);
+    pointer-events: none;
+    user-select: none;
+    -webkit-font-smoothing: antialiased;
+  }
+  .pin-dot-numbered {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: linear-gradient(to bottom, var(--pl-red-500), var(--pl-red-700));
+    border: 3px solid var(--pl-border-white);
+    box-shadow: 0 3px 3px rgba(0,0,0,0.25);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: var(--pl-label-md-semibold-size);
+    font-weight: var(--pl-label-md-semibold-weight);
+    color: var(--pl-text-inverse);
+    font-family: var(--pl-label-md-semibold-font);
+  }
+  .user-location-wrapper {
+    position: relative;
+    width: 22px;
+    height: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: visible;
+  }
+  .user-location-dot {
+    position: relative;
+    z-index: 1;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: var(--pl-surface-default);
+    box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .user-location-dot::after {
+    content: '';
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #0569FF;
+    animation: location-pulse 2.5s ease-in-out infinite;
+  }
+  @keyframes location-pulse {
+    0%, 100% { transform: scale(0.9); }
+    50%      { transform: scale(1.05); }
+  }
+
+  /* Visible search pill on default map screen */
+  /* Default map pill — PLSearchBar with the leading icon slot filled. Only the
+     map-overlay concerns are kept: absolute placement, stacking, cursor, and
+     the shadow (same delta as .map-search-pill). The 89%-white fill is gone —
+     the DS component is surface/default on a border/default stroke, and the
+     stroke reads over the map better than the translucency did. */
+  .map-search-pill-default {
+    position: absolute;
+    top: 62px;
+    left: 24px;
+    right: 24px;
+    /* DS .pl-search-bar is width:100%. Combined with left:24px that ignores
+       `right` and hangs 24px off the frame. Auto lets the insets win. */
+    width: auto;
+    box-shadow: var(--pl-elevation-sm);
+    z-index: 20;
+    cursor: pointer;
+  }
+  /* It's a tap target into the search screen, not an input, so the label is a
+     span — colour it like a placeholder by hand since ::placeholder can't. */
+  .map-search-pill-default .pl-search-bar__input { color: var(--pl-text-secondary); }
+  /* Search glyph is drawn with padding in a 24 viewBox, then the DS sizes the
+     svg to Symbol/size/lg (18) — it reads tiny in the 48-tall pill. Fill the
+     24 slot so the glass matches the label. */
+  .map-search-pill-default .pl-search-bar__icon > .pl-icon {
+    width: var(--pl-symbol-size-xxl);
+    height: var(--pl-symbol-size-xxl);
+  }
+
+  /* Search this area button — PLButton Inverse / Small / Pill.
+     Fill, radius, padding and label type come from `.pl-btn`. */
+  .search-this-area-btn {
+    position: absolute;
+    top: 122px; /* 62px pill top + 48px pill height + 12px gap */
+    left: 50%;
+    transform: translateX(-50%);
+    box-shadow: var(--pl-elevation-sm);
+    z-index: 25;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease, transform 0.12s cubic-bezier(.25,.46,.45,.94);
+  }
+  .search-this-area-btn:active {
+    /* Preserve the centering translate, just add the press scale on top. */
+    transform: translateX(-50%) scale(0.96);
+  }
+  .search-this-area-btn.visible {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  /* Current location / navigate button on map */
+  /* PLIconButton Raised / Medium — 44px, the nearest size on the scale to
+     the bespoke 48px circle this replaces. */
+  .map-nav-btn {
+    position: absolute;
+    right: 16px;
+    z-index: 9;
+    --ibtn-shadow: var(--pl-elevation-md);
+    transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .map-nav-btn.collapsed {
+    transform: translateY(291px);
+  }
+  .map-nav-btn img { width: var(--pl-symbol-size-xl); height: var(--pl-symbol-size-xl); }
+  .map-nav-btn.active svg path {
+    fill: #0569FF;
+  }
+
+  /* Tab bar — the pill, its fill, radius, shadow, tab layout, selected inset
+     and label type all come from `.pl-tab-bar` / `.pl-tab` in components.css.
+     Only the prototype's placement inside the device frame lives here. The
+     translucent-glass version this replaces was a p10 experiment; the Figma
+     component is a solid surface/default pill. */
+  .tab-bar {
+    position: absolute;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 339px;
+    z-index: 25;
+  }
+  .tab-item { cursor: pointer; }
+
+  /* ========== BOTTOM SHEET ========== */
+  .results-sheet {
+    position: absolute;
+    bottom: -266px; /* overflow so translateY(-266) still reaches screen bottom */
+    left: 0;
+    right: 0;
+    height: 726px; /* 460px visible + 266px overflow to cover full screen when dragged up */
+    background: var(--pl-bg-default);
+    border-radius: var(--pl-radius-component-modal-sheet) var(--pl-radius-component-modal-sheet) 0 0;
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    user-select: none;
+  }
+  .results-sheet.collapsed {
+    transform: translateY(291px); /* sheet top lands at ~683px from screen top */
+  }
+  .results-sheet.expanded {
+    transform: translateY(-266px); /* sheet top lands at ~126px = 16px below search bar */
+  }
+  .sheet-handle {
+    width: 49px;
+    height: 6px;
+    background: rgb(var(--pl-shadow-rgb) / 0.3);
+    border-radius: var(--pl-radius-semantic-pill);
+    margin: 8px auto 0;
+    flex-shrink: 0;
+  }
+
+  /* Cluster venues sheet — same geometry as .results-sheet (bottom:-266,
+     height 726) so translateY(0) lands at the default ~half-open position
+     and translateY(-266) reaches 16px below the search bar. Transform is
+     driven entirely from JS (inline style); classes here only control
+     visibility + the expanded-state list scroll. z-index 31 sits above the
+     tab bar (30), its blur (25), and the "Search this area" button (25) so
+     the open sheet covers them, but BELOW #venue-detail (32) so tapping a
+     venue card opens its detail on top of (not behind) this sheet — the sheet
+     stays put and is revealed again when the detail closes. Stays at
+     device-frame level (NOT re-parented into a screen, whose z-index:1 context
+     would trap it below the tab bar). */
+  .cluster-sheet {
+    position: absolute;
+    bottom: -266px;
+    left: 0;
+    right: 0;
+    height: 726px;
+    background: var(--pl-surface-default);
+    border-radius: var(--pl-radius-component-modal-sheet) var(--pl-radius-component-modal-sheet) 0 0;
+    z-index: 31;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    transform: translateY(760px);
+    visibility: hidden;
+    transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    user-select: none;
+  }
+  .cluster-sheet.is-open {
+    visibility: visible;
+  }
+  /* The header now covers from the sheet top (to kill the seam), so lift the
+     handle above it (header is z-index:2) to keep it visible. */
+  .cluster-sheet .sheet-handle {
+    position: relative;
+    z-index: 3;
+  }
+  /* Header is lifted OUT of flow and overlaid on top of the list (which is
+     padded to rest below it). Solid surface-default behind the title, fading to
+     transparent over the lower ~half, so venue cards dissolve into the sheet
+     as they scroll up underneath it. pointer-events:none lets scroll/drag
+     pass through to the cards (the close button re-enables its own). */
+  .cluster-sheet-header {
+    position: absolute;
+    top: 0;               /* cover from the very top of the sheet so the solid
+                             region overlaps the list's overflow-clip boundary
+                             (~14px) with margin — otherwise a sub-pixel seam at
+                             that boundary lets a 1px line of the card behind
+                             peek through below the handle. The drag handle is
+                             raised above this via z-index. */
+    left: 0;
+    right: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px 20px 38px;   /* 24px top keeps the title where it was after
+                                  moving top 14px→0; header is ~86px tall */
+    /* Solid down past the title (~64%) so scrolling cards are hidden behind a
+       clean buffer below the title, then a gradual fade over the lower third so
+       cards dissolve softly into the sheet (not a hard grey block). The list's
+       padding-top is matched to the fade's end so the first card rests just
+       clear of it. */
+    background: linear-gradient(180deg, var(--pl-surface-default) 0%, var(--pl-surface-default) 24%, transparent 100%);
+    z-index: 2;
+    pointer-events: none;
+  }
+  /* PLIconButton Raised / Medium. */
+  .cluster-sheet-close {
+    position: absolute;
+    left: 20px;
+    top: 36px;            /* aligned to the title row (was 22px; +14 to track the
+                             header's top moving 14px→0) */
+    transform: translateY(-50%);
+    pointer-events: auto;   /* header is pointer-events:none; re-enable the button */
+    z-index: 1;
+  }
+  .cluster-sheet-title {
+    margin: 0;
+    font-family: var(--pl-title-md-bold-font);
+    font-size: var(--pl-title-md-bold-size);
+    font-weight: var(--pl-title-md-bold-weight);
+    line-height: var(--pl-title-md-bold-lineheight);
+    color: var(--pl-text-primary);
+  }
+  /* Default (half-open) keeps the list non-scrollable so a drag anywhere
+     expands the sheet; once expanded the list scrolls under the header. */
+  /* padding-top drops the first card clear of the overlaid header so it isn't
+     covered (cards still scroll up under the header's fade). The selector
+     includes .venue-list to out-specify the `.venue-list` shorthand `padding`
+     declared further down — otherwise that shorthand resets padding-top to 4px. */
+  .cluster-sheet-list.venue-list { overflow-y: hidden; padding-top: 72px; }
+  .cluster-sheet.is-expanded .cluster-sheet-list { overflow-y: auto; }
+
+  /* Filter bar */
+  .filter-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 14px 20px 10px;
+    flex-shrink: 0;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .filter-bar::-webkit-scrollbar { display: none; }
+
+  /* Track pulls the same token as the adjacent chip dropdowns so the two read
+     as one row; the raw neutral-300 it used before sat a step darker. */
+  .filter-toggle {
+    display: flex;
+    background: var(--pl-button-neutral-bg-default);
+    border-radius: var(--pl-radius-semantic-pill);
+    padding: 4px;
+    flex-shrink: 0;
+  }
+  .filter-toggle .toggle-opt {
+    padding: 8px 16px;
+    border-radius: var(--pl-radius-semantic-pill);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .filter-toggle .toggle-opt.active {
+    background: var(--pl-surface-default);
+  }
+  .filter-toggle .toggle-opt svg, .filter-toggle .toggle-opt img { width: 20px; height: 20px; }
+
+  /* Filter bar — PLChip Neutral with the tighter Chip filter gap. Neutral (not
+     Neutral Solid) since the sheet went to color/bg/default: solid is white and
+     would vanish against it. */
+  /* Chip dropdown — the chevron now sits in the DS `.pl-chip__icon` slot,
+     which sizes it; the old 10px override would shrink it back. */
+  .filter-chip { flex-shrink: 0; }
+
+  /* Venue list */
+  .venue-list {
+    flex: 1;
+    overflow-y: hidden;
+    padding: 4px 20px 100px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    -webkit-overflow-scrolling: touch;
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .results-sheet.expanded .venue-list {
+    overflow-y: auto;
+  }
+  .venue-list::-webkit-scrollbar { display: none; }
+
+  /* The list is a flex column with its own scroll, so the cards must opt out
+     of shrinking. The DS image is an aspect-ratio square with no intrinsic
+     size, so it contributes nothing to min-content and a shrinking card
+     collapses to its text height. */
+  .venue-list > .venue-card { flex: none; }
+
+  /* Venue card — the DS component (1456:15761) supplies the shell, the
+     square image, the info column, and every text style. The intro-offer
+     badge below is a prototype addition; Figma's component has no slot for
+     it, so it sits between the header and the description as a third child
+     of the card's 12px column. */
+  .venue-intro-badge {
+    align-self: flex-start;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    /* The tag icon is currentColor, so it picks up the label's green here. */
+    color: var(--pl-text-price-discount);
+  }
+  .venue-intro-badge svg { display: block; flex-shrink: 0; }
+  .venue-intro-badge-label {
+    font-family: var(--pl-title-sm-semibold-font);
+    font-size: var(--pl-title-sm-semibold-size);
+    font-weight: var(--pl-title-sm-semibold-weight);
+    line-height: var(--pl-title-sm-semibold-lineheight);
+    color: var(--pl-text-status-success);
+  }
+  /* Figma's default venue-card image is a 108×108 square (64px text block +
+     8px gap + 36px button). The DS grid stretches the image with the info
+     column; with a 2-line title that makes thumbnails taller than 1-line cards. */
+  .pl-venue-card__image,
+  .venue-image {
+    align-self: start;
+    width: 108px;
+    height: 108px;
+    flex-shrink: 0;
+  }
+  /* "Book now" — PLButton Neutral / Small / Pill. The 8px above it is the
+     venue card's own `__info` gap, so no margin here. */
+  .venue-action-btn {
+    align-self: flex-start;
+  }
+
+  /* ========== SEARCH TAB TOGGLE ========== */
+  .search-toggle-wrapper {
+    padding: 8px 24px 12px;
+    flex-shrink: 0;
+  }
+  .search-toggle {
+    position: relative;
+    display: flex;
+    align-items: center;
+    background: var(--pl-surface-default);
+    border-radius: var(--pl-radius-semantic-xl);
+    padding: 4px;
+    gap: 12px;
+  }
+  .search-toggle::before {
+    content: '';
+    position: absolute;
+    top: 4px;
+    bottom: 4px;
+    left: 4px;
+    width: calc(50% - 10px);
+    background: var(--pl-surface-inset);
+    border-radius: var(--pl-radius-semantic-pill);
+    transition: left 0.2s ease;
+    pointer-events: none;
+  }
+  .search-toggle.tab-location::before {
+    left: calc(50% + 6px);
+  }
+  .search-toggle-opt {
+    flex: 1;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 12px;
+    border-radius: var(--pl-radius-semantic-pill);
+    font-size: var(--pl-body-lg-medium-size);
+    font-weight: var(--pl-body-lg-medium-weight);
+    color: var(--pl-text-primary);
+    font-family: var(--pl-body-lg-medium-font);
+    cursor: pointer;
+    text-align: center;
+    white-space: nowrap;
+  }
+
+  /* ========== VENUE DETAIL MODAL ========== */
+  #venue-detail {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    /* Above the persistent tab bar (z:30) and the cluster sheet (z:31) so a
+       venue opened from a cluster sheet sits in front of it. The class
+       detail's booking bar (z:35) and checkout sheet (z:36) still sit above
+       this so their docked card pokes above the venue sheet. */
+    z-index: 32;
+    pointer-events: none;
+    transition: background 0.35s ease;
+  }
+  /* No default overlay dim — the venue sheet itself provides the visual.
+     From Bookings, class detail is a modal over the tab, so dim like checkout. */
+  #venue-detail.venue-detail-visible .venue-detail-sheet {
+    pointer-events: auto;
+  }
+  #venue-detail.venue-detail-visible.from-bookings {
+    background: rgba(0, 0, 0, 0.32);
+    pointer-events: auto;
+  }
+
+  .venue-detail-sheet {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: calc(100% - 54px);
+    background: var(--pl-surface-default);
+    border-radius: var(--pl-radius-component-modal-sheet) var(--pl-radius-component-modal-sheet) 0 0;
+    overflow: hidden;
+    transform: translateY(100%);
+    transform-origin: top center;
+    will-change: transform, border-radius, filter;
+    visibility: hidden;
+  }
+  #venue-detail.venue-detail-visible .venue-detail-sheet {
+    visibility: visible;
+  }
+  /* iOS-style stacked-sheet effect — applied while class detail is on top.
+     translateY(0) keeps the venue's top edge at the status bar bottom (54px),
+     and the class detail sits 70px from top → 16px visible peek. */
+  .venue-detail-sheet.stacked {
+    transform: scale(0.95) translateY(0px);
+    border-radius: var(--pl-radius-semantic-pill) var(--pl-radius-semantic-pill) 0 0;
+    filter: brightness(0.92);
+    transition: transform 0.35s cubic-bezier(.25,.46,.45,.94),
+                border-radius 0.35s ease,
+                filter 0.35s ease;
+  }
+  .venue-detail-sheet.unstacking {
+    transition: transform 0.35s cubic-bezier(.25,.46,.45,.94),
+                border-radius 0.35s ease,
+                filter 0.35s ease;
+  }
+  /* Hide venue's drag handle while stacked — class detail's handle takes over.
+     Fade back in immediately when unstacking so there's no perceived lag
+     between the sheet scaling back and the handle reappearing. */
+  .venue-detail-sheet.stacked .venue-detail-handle {
+    opacity: 0;
+    transition: opacity 0.2s ease;
+  }
+  .venue-detail-sheet .venue-detail-handle {
+    transition: opacity 0.2s ease;
+  }
+
+  /* Blurred wash behind the persistent tab bar. Fades from opaque at the
+     bottom to transparent at the top so scrolling content dissolves into it. */
+  .tab-bar-blur {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 40px;
+    pointer-events: none;
+    z-index: 25;
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
+    -webkit-mask-image: linear-gradient(to top, #000 50%, transparent);
+    mask-image: linear-gradient(to top, #000 50%, transparent);
+    transition: opacity 0.3s ease;
+  }
+  .tab-bar-blur.hidden-down { opacity: 0; }
+
+  /* Persistent tab bar that floats above venue detail — same DS pill as
+     `.tab-bar`, only placement and the slide-away transition are local. */
+  .tab-bar-persistent {
+    position: absolute;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 339px;
+    z-index: 30;
+    pointer-events: auto;
+    transition: transform 0.3s cubic-bezier(.25,.46,.45,.94), opacity 0.3s ease;
+  }
+  /* Hidden state: tab bar slides down off-screen when class detail content is scrolled */
+  .tab-bar-persistent.hidden-down {
+    transform: translateX(-50%) translateY(120px);
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .venue-detail-handle {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 6;
+    padding: 10px 0 8px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: grab;
+    touch-action: none;
+    pointer-events: auto;
+  }
+  .venue-detail-handle::before {
+    content: '';
+    width: 56px;
+    height: 5px;
+    background: var(--pl-text-primary);
+    opacity: 0.3;
+    border-radius: var(--pl-radius-semantic-pill);
+  }
+
+  /* Top bar: close/back left, title center, share right */
+  .vd-top-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    padding: 0 20px;
+    gap: 12px;
+    position: relative;
+  }
+  /* Left-side icon stack: holds the venue close (X) and class back (<) which
+     occupy the same slot and crossfade based on which pane is active. */
+  .vd-nav-left {
+    position: relative;
+    width: 44px;
+    height: 44px;
+    flex-shrink: 0;
+  }
+  .venue-detail-close,
+  .vd-nav-back {
+    position: absolute;
+    inset: 0;
+    transition: opacity 0.25s ease;
+  }
+  /* Default state: X visible, back hidden. Class-active state inverts. */
+  .vd-nav-back {
+    opacity: 0;
+    pointer-events: none;
+  }
+  .venue-detail-sheet.show-class .venue-detail-close {
+    opacity: 0;
+    pointer-events: none;
+  }
+  .venue-detail-sheet.show-class .vd-nav-back {
+    opacity: 1;
+    pointer-events: auto;
+  }
+  /* Opened from Bookings: class detail is the modal, so keep the X and
+     hide back. Schedule is a venue-discovery tab — Overview / Reviews only. */
+  .venue-detail-sheet.from-bookings.show-class .venue-detail-close {
+    opacity: 1;
+    pointer-events: auto;
+  }
+  .venue-detail-sheet.from-bookings.show-class .vd-nav-back {
+    opacity: 0;
+    pointer-events: none;
+  }
+  .venue-detail-sheet.from-bookings .cd-tabs [data-cdtab="schedule"] {
+    display: none;
+  }
+  .vd-actions-pill { flex-shrink: 0; }
+
+  /* Shared sticky nav: stationary overlay above the pane stack. Spans from
+     top:0 of the sheet so its solid bg (added on .scrolled) also covers the
+     strip behind the drag handle. The padding-top reserves room for the
+     drag handle area, so the 44px icon row sits with breathing room below
+     it. Total nav height: 28 + 44 + 8 = 80px. */
+  .vd-sticky-nav {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 5;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 28px 0 8px;
+    /* Shared nav is now permanently transparent — the grey wash lives inside
+       each pane (.vd-pane-nav-bg) so it slides horizontally with its pane.
+       This nav only carries the icons + titles, which stay fixed. */
+    background: transparent;
+    pointer-events: none;
+  }
+  /* Re-enable pointer-events on the interactive controls inside the nav.
+     IMPORTANT: do NOT include .vd-nav-back here — its pointer-events are
+     toggled explicitly by show-class state below, and adding it here would
+     out-specificity the default `pointer-events: none` and let the
+     invisible back arrow eat clicks on top of the X. */
+  .vd-sticky-nav .vd-top-bar,
+  .vd-sticky-nav .vd-nav-left,
+  .vd-sticky-nav .venue-detail-close,
+  .vd-sticky-nav .vd-actions-pill {
+    pointer-events: auto;
+  }
+  /* Per-pane grey nav backdrop. Lives inside each pane's scroll container
+     and pinned with `position: sticky; top: 0` so it stays anchored to the
+     top of its pane visually while translating with the pane during the
+     class-detail slide. Negative margin pulls the next sibling up so the
+     bg overlays the top 80px of pane content (transparent until scrolled
+     past the title). z-index keeps it above pane content but below the
+     shared nav (z:5). */
+  .vd-pane-nav-bg {
+    position: sticky;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 80px;
+    margin-bottom: -80px;
+    background: transparent;
+    transition: background 0.18s ease;
+    /* Must outrank .cd-content which is z-index:1 — otherwise the description
+       and other pane content render on top of the sticky bg and the grey
+       wash never appears at the top once scrolled. Still below the shared
+       nav (z:5) so the icons + title remain on top. */
+    z-index: 3;
+    pointer-events: none;
+  }
+  .vd-pane-nav-bg.scrolled {
+    background: var(--pl-surface-default);
+  }
+  /* Title wrap: holds the venue title and class title overlapping in the same
+     slot so they can crossfade based on the active pane. */
+  .vd-sticky-title-wrap {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: calc(100% - 160px);
+    height: 44px;
+    pointer-events: none;
+  }
+  .vd-sticky-title {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%) translateY(6px);
+    font-family: var(--pl-body-md-semibold-font);
+    font-size: var(--pl-body-md-semibold-size);
+    font-weight: var(--pl-body-md-semibold-weight);
+    line-height: var(--pl-body-md-semibold-lineheight);
+    color: var(--pl-text-primary);
+    opacity: 0;
+    text-align: center;
+    pointer-events: none;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    transition: opacity 0.25s ease, transform 0.25s ease, font-size 0.15s ease, line-height 0.15s ease;
+  }
+  /* iOS-style shrink: long titles that would overflow at 17px get bumped
+     down to 14px so they can fit on two lines. JS toggles this class. */
+  .vd-sticky-title.is-compact {
+    font-size: 14px;
+    line-height: 18px;
+  }
+  /* Venue title — visible only when the venue pane is active (i.e. the sheet
+     does NOT have .show-class) AND the nav is .scrolled. Excluded the
+     class-variant via :not() so the two titles never both fade in at once. */
+  .vd-sticky-nav.scrolled .vd-sticky-title:not(.vd-sticky-title--class) {
+    opacity: 1;
+    transform: translateY(-50%) translateY(0);
+  }
+  .venue-detail-sheet.show-class .vd-sticky-nav .vd-sticky-title:not(.vd-sticky-title--class) {
+    opacity: 0;
+    transform: translateY(-50%) translateY(6px);
+  }
+  /* Class title — only when class pane is active AND the nav is .scrolled. */
+  .venue-detail-sheet.show-class .vd-sticky-nav.scrolled .vd-sticky-title.vd-sticky-title--class {
+    opacity: 1;
+    transform: translateY(-50%) translateY(0);
+  }
+
+  /* Pane stack: spans the entire sheet so the class-pane hero can extend up
+     behind the drag handle and the shared sticky nav. Both panes are
+     absolutely positioned siblings that translate horizontally. */
+  .vd-pane-stack {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+  }
+  .vd-pane-stack > .venue-detail-scroll,
+  .vd-pane-stack > .class-detail-scroll {
+    position: absolute;
+    inset: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-x: contain;
+    will-change: transform;
+    transition: transform 0.5s cubic-bezier(0.32, 0.72, 0, 1);
+  }
+  .vd-pane-stack > .venue-detail-scroll::-webkit-scrollbar,
+  .vd-pane-stack > .class-detail-scroll::-webkit-scrollbar { display: none; }
+
+  /* Class pane: parked off-screen to the right, slides in when the sheet
+     gets .show-class. Solid bg matches the sheet so the venue pane (drifted
+     left) doesn't bleed through when an active hero slide is faded out
+     during a lightbox open. */
+  .vd-pane-stack > .class-detail-scroll {
+    transform: translateX(100%);
+    pointer-events: none;
+    background: var(--pl-surface-default);
+  }
+  .venue-detail-sheet.show-class .vd-pane-stack > .class-detail-scroll {
+    transform: translateX(0);
+    pointer-events: auto;
+  }
+  /* Venue pane drifts a quarter-screen left underneath the class pane (iOS
+     push pattern). It keeps its solid sheet bg so it doesn't bleed through. */
+  .venue-detail-sheet.show-class .vd-pane-stack > .venue-detail-scroll {
+    transform: translateX(-25%);
+  }
+  /* From Bookings the class pane is already the modal — skip the iOS push
+     so the sheet rises with class detail in place. Keep the venue pane
+     hidden only while class is showing; the venue link pops it back. */
+  .venue-detail-sheet.from-bookings.show-class .vd-pane-stack > .venue-detail-scroll,
+  .venue-detail-sheet.from-bookings.show-class .vd-pane-stack > .class-detail-scroll {
+    transition: none;
+  }
+  .venue-detail-sheet.from-bookings.show-class .vd-pane-stack > .venue-detail-scroll {
+    visibility: hidden;
+  }
+
+  /* Fallback for any .venue-detail-scroll that is NOT inside a pane stack
+     (kept for robustness — currently unused). */
+  .venue-detail-scroll {
+    position: relative;
+    flex: 1;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-x: contain;
+  }
+  .venue-detail-scroll::-webkit-scrollbar { display: none; }
+
+  .venue-detail-content {
+    /* Top padding clears the 80px shared sticky nav (which sits over the
+       venue scroll). Bottom padding is just breathing room — the venue
+       sheet now sits in front of the persistent tab bar so we no longer
+       need to clear it. */
+    padding: 84px 20px 32px;
+    display: flex;
+    flex-direction: column;
+    gap: 40px;
+    margin-top: 0;
+    box-sizing: border-box;
+    /* 353px carousel slides are wider than the padded column; allow the
+       flex item to shrink so they don't blow out horizontal scroll. */
+    min-width: 0;
+  }
+  .vd-header-group {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    min-width: 0;
+    /* Tighten the gap below the carousel from the parent's 40px down to
+       24px (40 + (-16)). Works whether tabs or the promo card follows. */
+    margin-bottom: -16px;
+  }
+
+  /* Header — no fixed height; column stacks h1 → meta → tags */
+  .vd-header#vd-section-header {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+    height: fit-content;
+    min-height: 0;
+    flex-shrink: 0;
+  }
+  /* Header */
+  .vd-name {
+    font-family: var(--pl-heading-h1-font);
+    font-size: var(--pl-heading-h1-size);
+    font-weight: var(--pl-heading-h1-weight);
+    line-height: var(--pl-heading-h1-lineheight);
+    color: var(--pl-text-primary);
+    margin: 0;
+    overflow-wrap: anywhere;
+  }
+  .vd-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-top: 4px;
+  }
+  #vd-section-header > .vd-meta {
+    margin-top: 4px;
+  }
+  .vd-tags {
+    font-family: var(--pl-body-lg-medium-font);
+    font-size: var(--pl-body-lg-medium-size);
+    font-weight: var(--pl-body-lg-medium-weight);
+    line-height: var(--pl-body-lg-medium-lineheight);
+    color: var(--pl-text-secondary);
+  }
+  .vd-meta {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px;
+  }
+  .vd-rating-num {
+    font-family: var(--pl-body-md-medium-font);
+    font-size: var(--pl-body-md-medium-size);
+    font-weight: var(--pl-body-md-medium-weight);
+    line-height: var(--pl-body-md-medium-lineheight);
+    color: var(--pl-text-primary);
+    flex-shrink: 0;
+  }
+  .vd-rating-meta {
+    font-family: var(--pl-body-md-medium-font);
+    font-size: var(--pl-body-md-medium-size);
+    font-weight: var(--pl-body-md-medium-weight);
+    line-height: var(--pl-body-md-medium-lineheight);
+    color: var(--pl-text-secondary);
+    flex: 1 1 0;
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+
+  /* Shared: full-bleed horizontal scroll (breaks out of content padding) */
+  .vd-hscroll {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    margin-left: -20px;
+    margin-right: -20px;
+    padding-left: 20px;
+    padding-right: 20px;
+    scroll-snap-type: x proximity;
+    min-width: 0;
+  }
+  .vd-hscroll::-webkit-scrollbar { display: none; }
+
+  /* Venue detail image carousel — same .vd-hscroll gutters as
+     .vd-reviews-scroll (no extra offsets, no snap). Figma 353×240,
+     Radius/Semantic/lg (16px). */
+  .vd-image-placeholder {
+    width: 353px;
+    height: 240px;
+    background: var(--pl-neutral-400);
+    border-radius: var(--pl-radius-semantic-lg);
+    flex-shrink: 0;
+  }
+
+  /* Venue detail tabs — .pl-tab-nav (1192:843) with sticky placement only.
+     Shape, type, gaps and the per-tab indicator come from the DS component. */
+  .vd-tabs.pl-tab-nav {
+    position: sticky;
+    /* Pin flush below the 80px shared sticky nav. */
+    top: 80px;
+    z-index: 3;
+    background: var(--pl-surface-default);
+    margin-left: -20px;
+    margin-right: -20px;
+    padding-left: 20px;
+    padding-right: 20px;
+  }
+
+  /* Tab panels */
+  .vd-panel {
+    display: none;
+    flex-direction: column;
+    gap: 40px;
+    /* Trim 20px off the 40px venue-detail-content flex gap so the visual
+       gap from the sticky tabs to the active panel's first card lands at
+       20px (matches the class-detail tabs→intro card spacing). */
+    margin-top: -20px;
+  }
+  /* Overview ends with the map card; pad below it so the absolutely-positioned
+     floating "See full schedule" button (52px tall + 40px bottom offset = 92px
+     from the sheet bottom) doesn't cover it at max scroll. The
+     .venue-detail-content already adds 32px below, so 80px here gives ~20px
+     breathing room above the floating button. */
+  .vd-panel-overview {
+    padding-bottom: 80px;
+  }
+  .vd-panel-schedule {
+    gap: 0;
+  }
+  .vd-panel-classes {
+    gap: 12px;
+  }
+  .vd-panel.active {
+    display: flex;
+    /* Content is intentionally NOT animated on tab switch — only the
+       scroll position glides (see `smoothScrollVdTo` in activateTab).
+       The view appears to glide to the pin while the new tab's contents
+       are simply already there. Matches the class-detail behavior; see
+       [[feedback-tab-switch-polish]] in memory for the why. */
+  }
+
+  /* ===== SCHEDULE PANEL ===== */
+  .vd-date-picker {
+    display: flex;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-x: contain;
+    position: sticky;
+    /* Pin flush below the sticky vd-tabs (top:80 + 41px tab nav). */
+    top: 121px;
+    z-index: 2;
+    background: var(--pl-surface-default);
+    /* Cancels the effective 20px tabs→panel gap (40px venue-detail-content
+       flex gap minus the -20px margin-top on .vd-panel) so the picker sits
+       flush below the tab bar from the start. */
+    margin-top: -20px;
+    margin-left: -20px;
+    margin-right: -20px;
+    padding-top: 16px;
+    padding-bottom: 16px;
+  }
+  .vd-date-picker::-webkit-scrollbar { display: none; }
+  .vd-week {
+    flex: 0 0 100%;
+    width: 100%;
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    padding: 0 20px;
+    box-sizing: border-box;
+  }
+  .vd-date-cell {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    cursor: pointer;
+    padding-top: 4px;
+  }
+  .vd-date-letter {
+    font-family: var(--pl-caption-sm-font);
+    font-size: var(--pl-caption-sm-size);
+    font-weight: var(--pl-caption-sm-weight);
+    line-height: var(--pl-caption-sm-lineheight);
+    color: var(--pl-text-primary);
+  }
+  .vd-date-day {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--pl-body-lg-medium-font);
+    font-size: var(--pl-body-lg-medium-size);
+    font-weight: var(--pl-body-lg-medium-weight);
+    line-height: var(--pl-body-lg-medium-lineheight);
+    color: var(--pl-text-primary);
+    transition: background 0.2s ease, color 0.2s ease;
+  }
+  .vd-date-cell.past .vd-date-day { color: var(--pl-text-disabled); }
+  /* Today is highlighted with an inset circle when not the selected date. */
+  .vd-date-cell.today .vd-date-day {
+    background: var(--pl-surface-inset);
+    color: var(--pl-text-primary);
+  }
+  /* Selected date overrides today with the dark pill */
+  .vd-date-cell.selected .vd-date-day {
+    background: var(--pl-button-inverse-bg-default);
+    color: var(--pl-text-inverse);
+  }
+
+  .vd-schedule-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  /* Shell, type, price and sold-out/reserved status come from
+     `.pl-card.pl-schedule-card`. Local class is only a click/state hook. */
+  .vd-schedule-card { cursor: pointer; }
+  .vd-schedule-card.disabled { cursor: default; }
+  /* .pl-price sets display:inline-flex, which beats the UA [hidden] rule.
+     Hide drop-in prices on reserved cards, and on every class card / footer
+     while THIS venue still has unused pack visits. */
+  .pl-price[hidden],
+  .pl-card.is-reserved .pl-price,
+  #venue-detail.has-active-pack .pl-price {
+    display: none !important;
+  }
+  #cd-booking-bar.has-active-pack .cd-booking-price,
+  #cd-booking-bar.has-active-pack .cd-booking-price-sep,
+  #cd-checkout-sheet.has-active-pack .cd-mini-price,
+  #cd-checkout-sheet.has-active-pack .cd-mini-price-sep {
+    display: none !important;
+  }
+
+  /* ===== CLASSES PANEL ===== */
+  .vd-class-summary-card {
+    background: var(--pl-surface-default);
+    border-radius: var(--pl-radius-component-card-default);
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  .vd-class-summary-text {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+    width: 100%;
+  }
+  .vd-class-summary-title {
+    font-family: var(--pl-title-md-bold-font);
+    font-size: var(--pl-title-md-bold-size);
+    font-weight: var(--pl-title-md-bold-weight);
+    line-height: var(--pl-title-md-bold-lineheight);
+    color: var(--pl-text-primary);
+  }
+  .vd-class-summary-desc {
+    font-family: var(--pl-body-md-medium-font);
+    font-size: var(--pl-body-md-medium-size);
+    font-weight: var(--pl-body-md-medium-weight);
+    line-height: var(--pl-body-md-medium-lineheight);
+    color: var(--pl-text-primary);
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .vd-class-summary-seemore {
+    font-family: var(--pl-title-sm-bold-font);
+    font-size: var(--pl-title-sm-bold-size);
+    font-weight: var(--pl-title-sm-bold-weight);
+    line-height: var(--pl-title-sm-bold-lineheight);
+    color: var(--pl-text-primary);
+    cursor: pointer;
+  }
+  /* "View class" — PLButton Outline / Small / Pill (all styling from .pl-btn). */
+
+  /* ===== REVIEWS PANEL ===== */
+  .vd-panel-reviews { gap: 16px; }
+  /* Pushes the "Class reviews" title 16px further from the summary so the
+     gap between them is 32px while other .vd-panel-reviews gaps stay 16px. */
+  .vd-panel-reviews .vd-rev-summary + .vd-section-title { margin-top: 16px; }
+
+  /* Rating summary — sits directly on the panel's gray background;
+     distribution card + AI summary follow below. */
+  .vd-rev-summary {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+
+  /* AI summary */
+  .vd-rev-ai-summary {
+    font-family: var(--pl-body-md-regular-font);
+    font-size: var(--pl-body-md-regular-size);
+    font-weight: var(--pl-body-md-regular-weight);
+    line-height: var(--pl-body-md-regular-lineheight);
+    color: var(--pl-text-primary);
+  }
+
+  /* Individual review cards — design-system .pl-review-card in a vertical list. */
+  .vd-rev-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .vd-rev-list .pl-review-card { width: 100%; }
+
+  /* Promo banner — markup now uses the design-system .pl-promo-banner
+     (2488:7845, see components.css). Only the local placement tweak stays
+     here: tighten the gap below the banner from the parent's 40px down to
+     24px (40 + (-16)), matching the image-carousel→banner spacing above. */
+  #vd-section-promo {
+    margin-bottom: -16px;
+  }
+
+  /* Section titles */
+  .vd-section {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  #vd-section-reviews {
+    gap: 16px;
+  }
+  .vd-reviews-group {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .vd-amenities {
+    font-family: var(--pl-body-lg-regular-font);
+    font-size: var(--pl-body-lg-regular-size);
+    font-weight: var(--pl-body-lg-regular-weight);
+    line-height: var(--pl-body-lg-regular-lineheight);
+    color: var(--pl-text-primary);
+  }
+  /* "·" separator between amenity spans, drawn from an ASCII-safe CSS escape
+     so it survives Vercel serving/encoding (a literal "·" in JS shipped as
+     "MatsTowelsShowers"). Applies to both the venue + class detail lists. */
+  .vd-amenities .amenity-item + .amenity-item::before,
+  .cd-amenities .amenity-item + .amenity-item::before {
+    content: "\00B7";
+    margin: 0 6px;
+  }
+  /* Available today preview — sits between the carousel and the tabs. */
+  .vd-available-today {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  /* PLButton Primary / Medium / Pill / Full. Fill, radius, padding and label
+     type come from `.pl-btn`; only the floating placement is local. */
+  .vd-see-schedule-btn {
+    /* Absolutely positioned at the bottom of the venue-detail sheet so it
+       stays "fixed" as the user scrolls. .vd-pane-stack is the containing
+       block. Full width with 20px gutters. Hidden on non-overview tabs and
+       while the class-detail pane is showing (rules below). */
+    position: absolute;
+    left: 20px;
+    right: 20px;
+    bottom: 32px;
+    z-index: 5;
+    width: auto;
+    cursor: pointer;
+    transition: transform 0.12s cubic-bezier(.25,.46,.45,.94),
+                opacity 0.2s ease;
+  }
+  /* `.pl-btn--primary:active` already supplies accent/pressed; only the
+     press scale is local. */
+  .vd-see-schedule-btn:active {
+    transform: scale(0.96);
+  }
+  /* Blurred wash that sits behind the floating CTA — fades smoothly from
+     opaque at the bottom to transparent at the top. Multi-stop ease-out
+     mask keeps the top edge of the blur from reading as a hard line; the
+     wash itself is also softened with `filter: blur` so the masked edge
+     dissolves rather than terminating sharply. */
+  /* Blurred wash behind the floating CTA — copy of the search view's
+     `.tab-bar-blur` (height 40px, blur 12px, linear-gradient mask). */
+  .vd-see-schedule-blur {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 40px;
+    pointer-events: none;
+    z-index: 4;
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
+    -webkit-mask-image: linear-gradient(to top, #000 50%, transparent);
+    mask-image: linear-gradient(to top, #000 50%, transparent);
+    transition: opacity 0.3s ease;
+  }
+  /* Hide the floating CTA + its blur wash on non-overview tabs (JS toggles
+     `vd-tab-overview` on the sheet) and while the class-detail pane is up.
+     Both elements are siblings of the sheet now, so we target them via
+     subsequent-sibling combinators. */
+  .venue-detail-sheet:not(.vd-tab-overview) ~ .vd-see-schedule-blur,
+  .venue-detail-sheet:not(.vd-tab-overview) ~ .vd-see-schedule-btn,
+  .venue-detail-sheet.show-class ~ .vd-see-schedule-blur,
+  .venue-detail-sheet.show-class ~ .vd-see-schedule-btn {
+    opacity: 0;
+    pointer-events: none;
+  }
+  /* Hidden by default until #venue-detail becomes visible (siblings of the
+     sheet don't inherit its `visibility: hidden`, so they need their own
+     gate). */
+  #venue-detail:not(.venue-detail-visible) .vd-see-schedule-blur,
+  #venue-detail:not(.venue-detail-visible) .vd-see-schedule-btn {
+    opacity: 0;
+    pointer-events: none;
+  }
+  /* `#venue-detail` itself is `pointer-events: none` (so the area around
+     the sheet doesn't block map clicks). Sheet descendants get re-enabled
+     by `#venue-detail.venue-detail-visible .venue-detail-sheet`, but the
+     floating button is a SIBLING of the sheet — re-enable it explicitly
+     when the venue is visible, on the overview tab, and class detail
+     isn't on top. */
+  #venue-detail.venue-detail-visible .venue-detail-sheet.vd-tab-overview:not(.show-class) ~ .vd-see-schedule-btn {
+    pointer-events: auto;
+  }
+
+  /* Static "See full schedule" CTA — sits at the very bottom of the
+     Available today preview, in natural flow. Matches the floating CTA. */
+  /* PLButton Neutral / Medium / Pill / Full. */
+  .vd-see-schedule-btn-static {
+    transition: transform 0.12s cubic-bezier(.25,.46,.45,.94);
+  }
+  .vd-see-schedule-btn-static:active {
+    transform: scale(0.96);
+  }
+  .vd-section-title {
+    font-family: var(--pl-heading-h3-font);
+    font-size: var(--pl-heading-h3-size);
+    font-weight: var(--pl-heading-h3-weight);
+    line-height: var(--pl-heading-h3-lineheight);
+    color: var(--pl-text-primary);
+    margin: 0;
+  }
+  .vd-section-header {
+    display: flex;
+    align-items: center;
+    gap: 0px;
+  }
+
+  /* Classes scroll */
+  .vd-class-card {
+    flex-shrink: 0;
+    background: var(--pl-surface-default);
+    border-radius: var(--pl-radius-component-card-default);
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 240px;
+  }
+  .vd-class-name {
+    font-family: var(--pl-title-md-bold-font);
+    font-size: var(--pl-title-md-bold-size);
+    font-weight: var(--pl-title-md-bold-weight);
+    line-height: var(--pl-title-md-bold-lineheight);
+    color: var(--pl-text-primary);
+  }
+  .vd-class-instructor {
+    font-family: var(--pl-body-md-medium-font);
+    font-size: var(--pl-body-md-medium-size);
+    font-weight: var(--pl-body-md-medium-weight);
+    line-height: var(--pl-body-md-medium-lineheight);
+    color: var(--pl-text-secondary);
+  }
+  .vd-class-time {
+    font-family: var(--pl-body-lg-medium-font);
+    font-size: var(--pl-body-lg-medium-size);
+    font-weight: var(--pl-body-lg-medium-weight);
+    line-height: var(--pl-body-lg-medium-lineheight);
+    color: var(--pl-text-secondary);
+    margin-top: 4px;
+  }
+  .vd-class-slots {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .vd-slot-btn {
+    padding: 8px 12px;
+    border: 1px solid var(--pl-border-default);
+    border-radius: var(--pl-radius-semantic-pill);
+    font-family: var(--pl-label-md-semibold-font);
+    font-size: var(--pl-label-md-semibold-size);
+    font-weight: var(--pl-label-md-semibold-weight);
+    line-height: var(--pl-label-md-semibold-lineheight);
+    color: var(--pl-text-primary);
+    white-space: nowrap;
+    cursor: pointer;
+  }
+  .vd-see-all-card {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-width: auto;
+    padding: 12px 16px;
+    background: var(--pl-surface-default);
+    border-radius: var(--pl-radius-component-card-default);
+    font-family: var(--pl-body-lg-medium-font);
+    font-size: var(--pl-body-lg-medium-size);
+    font-weight: var(--pl-body-lg-medium-weight);
+    color: var(--pl-text-primary);
+    cursor: pointer;
+    white-space: nowrap;
+  }
+
+  /* Map card: map image stacked on an address footer */
+  /* Map card — geometry, 168px map slot, centred pin and footer type all
+     come from `.pl-map-card`. */
+
+
+  /* Description */
+  .vd-description {
+    font-family: var(--pl-body-lg-regular-font);
+    font-size: var(--pl-body-lg-regular-size);
+    font-weight: var(--pl-body-lg-regular-weight);
+    line-height: var(--pl-body-lg-regular-lineheight);
+    color: var(--pl-text-primary);
+  }
+
+  /* Overview preview — carousel cards use the design-system review card. */
+  .vd-review-card-carousel {
+    flex-shrink: 0;
+    width: 311px;
+  }
+  .vd-review-card-carousel .pl-review-card__text {
+    display: -webkit-box;
+    -webkit-line-clamp: 4;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  /* "See all" card at the end of the reviews carousel */
+  /* "See all" — the DS See all card; it sets no height so it stretches to
+     match its neighbours in the carousel row. */
+  .vd-review-see-all { flex-shrink: 0; align-self: stretch; }
+
+  /* About block wraps the clamped text + "see more" in a tight column (4px gap). */
+  .vd-about-block {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    border-radius: var(--pl-radius-component-card-default);
+    background-color: var(--pl-surface-default);
+    /* Trim 20px off the 40px venue-detail-content flex gap so the visual
+       gap from the sticky tabs to this intro card lands at 20px, matching
+       the class-detail tabs→intro card spacing. */
+    margin-top: -20px;
+  }
+  .vd-about-block[hidden] { display: none; }
+
+  /* About — clamped to 3 lines by default. JS unhides the adjacent
+     "see more" span only when the text actually overflows; tapping it
+     toggles .expanded to reveal the full copy. */
+  .vd-about-text {
+    font-family: var(--pl-body-md-regular-font);
+    font-size: var(--pl-body-md-regular-size);
+    font-weight: var(--pl-body-md-regular-weight);
+    line-height: var(--pl-body-md-regular-lineheight);
+    color: var(--pl-text-primary);
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .vd-about-text.expanded {
+    display: block;
+    -webkit-line-clamp: unset;
+    overflow: visible;
+  }
+  .vd-see-more {
+    font-family: var(--pl-label-sm-semibold-font);
+    font-size: var(--pl-label-sm-semibold-size);
+    font-weight: var(--pl-label-sm-semibold-weight);
+    line-height: var(--pl-label-sm-semibold-lineheight);
+    color: var(--pl-text-primary);
+    text-decoration: underline;
+    cursor: pointer;
+    display: block;
+  }
+
+  /* Quick actions: horizontal pill row above the image carousel */
+  .vd-quick-actions {
+    display: flex;
+    gap: 8px;
+    align-items: flex-start;
+  }
+  /* Directions / Call / Website — PLButton Neutral / Medium / Pill. */
+  .vd-quick-btn { flex-shrink: 0; }
+
+  /* ========== CLASS DETAIL MODAL ========== */
+  #class-detail {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    z-index: 25;
+    pointer-events: none;
+    transition: background 0.3s ease;
+  }
+  #class-detail.class-detail-visible {
+    background: rgba(0,0,0,0.15);
+  }
+  #class-detail.class-detail-visible .class-detail-sheet {
+    pointer-events: auto;
+    visibility: visible;
+  }
+
+  .class-detail-sheet {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: calc(100% - 70px);
+    background: var(--pl-surface-default);
+    border-radius: var(--pl-radius-component-modal-sheet) var(--pl-radius-component-modal-sheet) 0 0;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    transform: translateY(100%);
+    transform-origin: top center;
+    will-change: transform;
+    visibility: hidden;
+  }
+
+  /* Handle floats absolutely at the top of the sheet so the scroll content
+     (including the hero image) can scroll behind it. */
+  .class-detail-handle {
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    z-index: 6;
+    padding: 10px 0 4px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: grab;
+    touch-action: none;
+    pointer-events: auto;
+  }
+  .class-detail-handle::before {
+    content: '';
+    width: 56px;
+    height: 5px;
+    background: var(--pl-text-primary);
+    opacity: 0.3;
+    border-radius: var(--pl-radius-semantic-pill);
+  }
+
+  /* Scroll container fills the entire sheet. Content starts below the
+     shared 80px nav — there is no full-bleed hero behind the handle. */
+  .class-detail-scroll {
+    position: absolute;
+    inset: 0;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-x: contain;
+  }
+  .class-detail-scroll::-webkit-scrollbar { display: none; }
+
+  /* Sticky nav: back arrow left, fade-in title center, share right.
+     Top padding matches .vd-sticky-nav so the icon doesn't jump vertically
+     when sliding between the venue and class panes. */
+  .cd-sticky-nav {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 20px 8px;
+    background: transparent;
+    gap: 12px;
+    transition: background 0.25s ease;
+  }
+  .cd-sticky-nav.scrolled {
+    background: var(--pl-surface-default);
+  }
+  .cd-sticky-title {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%) translateY(6px);
+    font-family: var(--pl-title-md-bold-font);
+    font-size: var(--pl-title-md-bold-size);
+    font-weight: var(--pl-title-md-bold-weight);
+    color: var(--pl-text-primary);
+    opacity: 0;
+    transition: opacity 0.25s ease, transform 0.25s ease;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: calc(100% - 260px);
+    pointer-events: none;
+  }
+  .cd-sticky-nav.scrolled .cd-sticky-title {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+  .cd-icon-btn,
+  .cd-actions-pill {
+    --ibtn-bg: rgba(255, 255, 255, 0.55);
+    -webkit-backdrop-filter: blur(14px);
+    backdrop-filter: blur(14px);
+    overflow: hidden;
+    flex-shrink: 0;
+    transition: background 0.25s ease, box-shadow 0.25s ease;
+  }
+  .cd-sticky-nav.scrolled .cd-icon-btn,
+  .cd-sticky-nav.scrolled .cd-actions-pill {
+    --ibtn-bg: var(--pl-button-neutralsolid-bg-default);
+    --ibtn-shadow: var(--pl-elevation-sm);
+  }
+  .cd-action-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    cursor: pointer;
+  }
+  .cd-action-icon > .pl-icon { width: var(--pl-symbol-size-xl); height: var(--pl-symbol-size-xl); }
+
+  /* Bookmark toggle states (shared selectors for venue + class detail) */
+  .vd-bookmark-btn.bookmarked svg path,
+  .cd-bookmark-btn.bookmarked svg path {
+    fill: var(--pl-text-primary);
+    stroke: var(--pl-text-primary);
+  }
+
+  /* Hidden lightbox photo set — kept in the DOM so openLightbox can page
+     through the venue's 3 photos. The visible header uses .cd-thumb. */
+  .cd-hero {
+    position: absolute;
+    width: 0;
+    height: 0;
+    overflow: hidden;
+    pointer-events: none;
+  }
+  .cd-hero-track,
+  .cd-hero-slide {
+    width: 80px;
+    height: 80px;
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+  }
+
+  /* Content starts below the 80px shared nav + 8px (Figma space/xs). */
+  .cd-content {
+    position: relative;
+    z-index: 1;
+    margin-top: 0;
+    padding: 88px 20px 0;
+    background: var(--pl-surface-default);
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+
+  /* Compact header: 80×80 thumb + title / rating / venue, then meta rows. */
+  .cd-header-block {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+  }
+  .cd-header-row {
+    display: flex;
+    align-items: center;
+    gap: var(--pl-space-4);
+    width: 100%;
+  }
+  .cd-thumb {
+    appearance: none;
+    width: 80px;
+    height: 80px;
+    flex: none;
+    padding: 0;
+    border: 0;
+    border-radius: var(--pl-radius-semantic-lg);
+    background-color: var(--pl-neutral-400);
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    cursor: pointer;
+    overflow: hidden;
+  }
+  .cd-header-text {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .cd-title {
+    font-family: var(--pl-title-lg-medium-font);
+    font-size: var(--pl-title-lg-medium-size);
+    font-weight: var(--pl-title-lg-medium-weight);
+    line-height: var(--pl-title-lg-medium-lineheight);
+    color: var(--pl-text-primary);
+    margin: 0;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .cd-header-rating {
+    display: flex;
+    align-items: center;
+    gap: var(--pl-space-1);
+  }
+  .cd-header-rating-num {
+    font-family: var(--pl-body-md-semibold-font);
+    font-size: var(--pl-body-md-semibold-size);
+    font-weight: var(--pl-body-md-semibold-weight);
+    line-height: var(--pl-body-md-medium-lineheight);
+    color: var(--pl-text-primary);
+  }
+  .cd-header-rating-count {
+    font-family: var(--pl-body-md-medium-font);
+    font-size: var(--pl-body-md-medium-size);
+    font-weight: var(--pl-body-md-medium-weight);
+    line-height: var(--pl-body-md-medium-lineheight);
+    color: var(--pl-text-primary);
+  }
+  .cd-venue-link {
+    appearance: none;
+    background: none;
+    border: 0;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    font-family: var(--pl-body-md-medium-font);
+    font-size: var(--pl-body-md-medium-size);
+    font-weight: var(--pl-body-md-medium-weight);
+    line-height: var(--pl-body-md-medium-lineheight);
+    color: var(--pl-button-ghost-fg-default);
+    cursor: pointer;
+    min-width: 0;
+    max-width: 100%;
+    text-align: left;
+  }
+  .cd-venue-link > span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 0;
+    text-decoration: underline;
+    text-decoration-thickness: from-font;
+    text-underline-offset: 2px;
+  }
+  .cd-meta {
+    display: flex;
+    flex-direction: column;
+    gap: var(--pl-space-2);
+    padding-top: var(--pl-space-6);
+    width: 100%;
+  }
+  .cd-meta-row {
+    display: flex;
+    align-items: center;
+    gap: var(--pl-space-2);
+  }
+  .cd-meta-icon {
+    width: var(--pl-icon-lg);
+    height: var(--pl-icon-lg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+    color: var(--pl-icon-default);
+  }
+  .cd-meta-icon .pl-icon {
+    width: var(--pl-icon-md);
+    height: var(--pl-icon-md);
+  }
+  .cd-meta-text {
+    font-family: var(--pl-body-md-regular-font);
+    font-size: var(--pl-body-md-regular-size);
+    font-weight: var(--pl-body-md-regular-weight);
+    line-height: var(--pl-body-md-regular-lineheight);
+    color: var(--pl-text-primary);
+  }
+
+  /* Wraps date picker + time slots so spacing between them is one knob (gap).
+     `flex: 1` lets the stack fill the panel's full height (panel has
+     min-height: 800), which extends the sticky context for `.cd-date-picker`
+     — without this the stack is only as tall as the picker + a few time
+     slots, and the picker un-sticks when scrolled to the bottom of the
+     stack instead of staying pinned. */
+  .cd-schedule-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    flex: 1;
+  }
+
+  /* Date picker — horizontally paginated by week (carousel).
+     Native scroll-snap is disabled because we drive the snap with a JS
+     ease-out animation in prototype.js for a slower, more deliberate
+     carousel feel. Pinned flush below the sticky cd-tabs (top:80 + 41px tab
+     nav) at top:121. Negative top margin cancels the effective tabs→panel
+     effective tabs→panel gap (20px, after the -4px margin on .cd-panel)
+     so the picker sits flush below the tabs from the start. */
+  .cd-date-picker {
+    display: flex;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-x: contain;
+    margin-left: -20px;
+    margin-right: -20px;
+    margin-top: 0;
+    position: sticky;
+    top: 121px;
+    z-index: 2;
+    background: var(--pl-surface-default);
+  }
+  .cd-date-picker::-webkit-scrollbar { display: none; }
+  .cd-week {
+    flex: 0 0 100%;
+    width: 100%;
+    display: flex;
+    gap: 12px;
+    padding: 8px 20px 12px 20px;
+    box-sizing: border-box;
+    scroll-snap-align: start;
+  }
+  .cd-date-cell {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    padding-top: 4px;
+    cursor: pointer;
+  }
+  .cd-date-letter {
+    font-family: var(--pl-caption-sm-font);
+    font-size: var(--pl-caption-sm-size);
+    font-weight: var(--pl-caption-sm-weight);
+    line-height: var(--pl-caption-sm-lineheight);
+    color: var(--pl-text-primary);
+  }
+  .cd-date-day {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--pl-body-lg-medium-font);
+    font-size: var(--pl-body-lg-medium-size);
+    font-weight: var(--pl-body-lg-medium-weight);
+    line-height: var(--pl-body-lg-medium-lineheight);
+    color: var(--pl-text-primary);
+    transition: background 0.2s ease, color 0.2s ease;
+  }
+  .cd-date-cell.past .cd-date-day { color: var(--pl-text-disabled); }
+  /* Today is highlighted with an inset circle when not the selected date. */
+  .cd-date-cell.today .cd-date-day {
+    background: var(--pl-surface-inset);
+    color: var(--pl-text-primary);
+  }
+  /* Selected date overrides today with the dark pill */
+  .cd-date-cell.selected .cd-date-day {
+    background: var(--pl-button-inverse-bg-default);
+    color: var(--pl-text-inverse);
+  }
+
+  /* Time slot list — vertical stack of cards. Padding-top creates the 16px
+     gap below the date picker; 4px bottom matches the tabs gap below. */
+  .cd-time-slots {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 16px 0 4px;
+  }
+  /* Shell, type, selected stroke and reserved/sold-out status come from
+     `.pl-card.pl-class-card`. Local class is only a click/state hook. */
+  .cd-time-slot { cursor: pointer; }
+
+  /* Class detail tabs — .pl-tab-nav (1192:843) with sticky placement only.
+     20px above matches Figma space/lg between meta and tabs. */
+  .cd-tabs.pl-tab-nav {
+    position: sticky;
+    top: 80px;
+    z-index: 3;
+    background: var(--pl-surface-default);
+    margin-top: var(--pl-space-5);
+    margin-left: -20px;
+    margin-right: -20px;
+    padding-left: 20px;
+    padding-right: 20px;
+  }
+
+  /* Panels */
+  .cd-panel {
+    display: none;
+    margin-top: 0;
+  }
+  .cd-panel.active {
+    display: flex;
+    flex-direction: column;
+    gap: var(--pl-space-xxl);
+  }
+  .cd-panel[data-cdpanel="overview"].active {
+    padding-top: var(--pl-space-6);
+  }
+  .cd-panel[data-cdpanel="reviews"].active {
+    padding-top: var(--pl-space-6);
+    /* Min-height is set dynamically in JS (`fitCdActivePanelHeight`) — just
+       enough to allow the tab-pin scroll to land but not so much that the
+       user can scroll into empty space below a short time-slot list. */
+    /* Content is intentionally NOT animated on tab switch — only the scroll
+       position animates (see `smoothScrollCdTo` in activateCdTab). The user
+       perception is "the view glides to the pin" while the new panel's
+       contents are simply already there. */
+  }
+  @keyframes cd-panel-fade {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  /* Description — body/md/regular intro card (12588:59185). */
+  .cd-description {
+    font-family: var(--pl-body-md-regular-font);
+    font-size: var(--pl-body-md-regular-size);
+    font-weight: var(--pl-body-md-regular-weight);
+    line-height: var(--pl-body-md-regular-lineheight);
+    color: var(--pl-text-primary);
+    margin: 0;
+  }
+  #cd-description-collapsible {
+    border-radius: var(--pl-radius-component-card-default);
+    background-color: var(--pl-surface-default);
+  }
+  /* Collapsible text sections (description, prep, cancellation) */
+  .cd-collapsible p {
+    overflow: hidden;
+    transition: max-height 0.3s ease;
+  }
+  .cd-collapsible.collapsed p {
+    max-height: 60px; /* ~3 lines at body/md/regular 14/20 */
+  }
+  .cd-collapsible.expanded p {
+    max-height: 600px;
+  }
+  .cd-see-more {
+    display: inline-block;
+    font-family: var(--pl-body-md-medium-font);
+    font-size: var(--pl-body-md-medium-size);
+    font-weight: var(--pl-body-md-medium-weight);
+    line-height: var(--pl-body-md-medium-lineheight);
+    color: var(--pl-button-ghost-fg-default);
+    text-decoration: underline;
+    text-decoration-thickness: from-font;
+    text-underline-offset: 2px;
+    cursor: pointer;
+    margin-top: 0;
+  }
+
+  /* Sections */
+  .cd-section {
+    display: flex;
+    flex-direction: column;
+    gap: var(--pl-space-4);
+  }
+  .cd-section.cd-section-reviews {
+    gap: var(--pl-space-2);
+    padding-top: var(--pl-space-6);
+    border-top: 1px solid var(--pl-border-default);
+  }
+  .cd-section-heading-group {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .cd-reviews-group {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .cd-amenities,
+  .cd-highlights {
+    font-family: var(--pl-body-md-regular-font);
+    font-size: var(--pl-body-md-regular-size);
+    font-weight: var(--pl-body-md-regular-weight);
+    line-height: var(--pl-body-md-regular-lineheight);
+    color: var(--pl-text-primary);
+    margin: 0;
+  }
+
+
+  .cd-section-heading-group .cd-section-subtitle {
+    margin: 0;
+  }
+  .cd-section-header {
+    display: flex;
+    align-items: center;
+    gap: 0px;
+  }
+  .cd-section-title {
+    font-family: var(--pl-heading-h3-font);
+    font-size: var(--pl-heading-h3-size);
+    font-weight: var(--pl-heading-h3-weight);
+    line-height: var(--pl-heading-h3-lineheight);
+    color: var(--pl-text-primary);
+  }
+  .cd-section-chevron {
+    width: var(--pl-symbol-size-md);
+    height: var(--pl-symbol-size-md);
+    color: var(--pl-icon-default);
+    flex-shrink: 0;
+  }
+  .cd-section-body {
+    font-family: var(--pl-body-md-regular-font);
+    font-size: var(--pl-body-md-regular-size);
+    font-weight: var(--pl-body-md-regular-weight);
+    line-height: var(--pl-body-md-regular-lineheight);
+    color: var(--pl-text-primary);
+    margin: 0;
+  }
+  .cd-section-subtitle {
+    font-family: var(--pl-body-sm-regular-font);
+    font-size: var(--pl-body-sm-regular-size);
+    font-weight: var(--pl-body-sm-regular-weight);
+    line-height: var(--pl-body-sm-regular-lineheight);
+    color: var(--pl-text-secondary);
+    margin: 0;
+  }
+  #cd-reviews-subtitle {
+    font-size: var(--pl-body-sm-regular-size);
+    line-height: var(--pl-body-sm-regular-lineheight);
+  }
+
+  /* Ratings & Reviews — design-system summary + distribution. */
+  .cd-reviews-summary {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+  #cd-rating-card-reviews { gap: 24px; }
+  .cd-rating-ai-summary {
+    font-family: var(--pl-body-md-regular-font);
+    font-size: var(--pl-body-md-regular-size);
+    font-weight: var(--pl-body-md-regular-weight);
+    line-height: var(--pl-body-md-regular-lineheight);
+    color: var(--pl-text-primary);
+    margin: 0;
+  }
+  .cd-review-cards {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    margin: 0 -20px;
+    padding: 0 20px;
+    scroll-padding-left: 20px;
+    scroll-snap-type: x proximity;
+  }
+  .cd-review-cards::-webkit-scrollbar { display: none; }
+  .cd-review-card.pl-review-card {
+    flex-shrink: 0;
+    width: 311px;
+  }
+  .cd-review-cards .cd-review-card-body {
+    display: -webkit-box;
+    -webkit-line-clamp: 4;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .cd-review-cards .cd-review-card-body.expanded {
+    display: block;
+    -webkit-line-clamp: unset;
+    overflow: visible;
+  }
+  .cd-review-card-seemore {
+    font-family: var(--pl-title-sm-bold-font);
+    font-size: var(--pl-title-sm-bold-size);
+    font-weight: var(--pl-title-sm-bold-weight);
+    line-height: var(--pl-title-sm-bold-lineheight);
+    color: var(--pl-text-primary);
+    cursor: pointer;
+  }
+  /* Without this, the span's default `display` would override the UA
+     [hidden] rule, making the link visible even when JS left hidden=true. */
+  .cd-review-card-seemore[hidden] { display: none; }
+  .cd-review-card-list .pl-review-card__text { margin-top: -8px; }
+  .cd-review-see-all { flex-shrink: 0; align-self: stretch; }
+
+  /* Reviews panel list */
+  .cd-reviews-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .cd-reviews-list .cd-review-card.pl-review-card { width: 100%; }
+
+  /* Fixed booking footer: pinned to the device frame so it can sit above the
+     persistent tab bar. Hidden offscreen by default; `.cd-booking-visible`
+     adds the reveal transform so JS can animate it in when class detail opens. */
+  /* Slide + visibility flip are driven by Motion in JS. CSS only defines the
+     hidden resting state so first paint (before JS hydrates) doesn't flash
+     the bar onscreen. The `.cd-booking-visible` class is a state marker only
+     — no CSS rules tied to it beyond pointer-events. */
+  .cd-booking-bar {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: var(--pl-surface-default);
+    border-radius: 0;
+    /* Vertical padding asymmetric: more bottom space (32px) for breathing
+       room from the device bottom edge. Matches the sheet's Book CTA
+       `bottom: 32`, so the morph and hand-off keep the button's y stable. */
+    padding: 16px 20px 32px;
+    box-shadow: 0 -2px 16px rgb(var(--pl-shadow-rgb) / 0.12);
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    z-index: 35;
+    pointer-events: none;
+    visibility: hidden;
+    transform: translateY(calc(100% + 24px));
+    will-change: transform;
+  }
+  .cd-booking-bar.cd-booking-visible {
+    pointer-events: auto;
+  }
+  .cd-booking-info {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+    min-width: 0;
+    gap: 0;
+  }
+  /* Figma 13041:393398 — two-row footer: datetime (primary) over
+     price · instructor (secondary), both body/md/medium. Booking bar AND
+     checkout-sheet mini-summary share the same rules so the morph endpoint
+     matches the bar pixel-for-pixel. */
+  .cd-booking-datetime,
+  .cd-mini-meta {
+    font-family: var(--pl-body-md-medium-font);
+    font-size: var(--pl-body-md-medium-size);
+    font-weight: var(--pl-body-md-medium-weight);
+    line-height: var(--pl-body-md-medium-lineheight);
+    color: var(--pl-text-primary);
+    white-space: nowrap;
+  }
+  .cd-booking-price-row,
+  .cd-mini-price-row {
+    display: flex;
+    align-items: center;
+    gap: var(--pl-space-1);
+    max-width: 100%;
+    overflow: hidden;
+  }
+  .cd-booking-price,
+  .cd-mini-price,
+  .cd-booking-price-sep,
+  .cd-mini-price-sep,
+  .cd-booking-instructor,
+  .cd-mini-instructor {
+    font-family: var(--pl-body-md-medium-font);
+    font-size: var(--pl-body-md-medium-size);
+    font-weight: var(--pl-body-md-medium-weight);
+    line-height: var(--pl-body-md-medium-lineheight);
+    color: var(--pl-text-secondary);
+    white-space: nowrap;
+  }
+  .cd-booking-price,
+  .cd-mini-price {
+    display: flex;
+    align-items: baseline;
+    gap: var(--pl-space-1);
+  }
+  .cd-booking-price-strike {
+    color: var(--pl-text-secondary);
+    text-decoration: line-through;
+    font-weight: 400;
+  }
+  /* Discount price (intro offer) stays brand green; plain price matches
+     the Figma footer secondary row. */
+  .cd-booking-price-final {
+    color: var(--pl-text-price-discount);
+  }
+  .cd-booking-price-plain {
+    color: var(--pl-text-secondary);
+  }
+  /* PLButton Primary / Medium / Pill. */
+  .cd-booking-cta {
+    flex-shrink: 0;
+    width: 100px;
+    transition: transform 0.12s cubic-bezier(.25,.46,.45,.94),
+                background-color 0.15s ease, color 0.15s ease;
+  }
+  .cd-booking-cta:active {
+    transform: scale(0.96);
+  }
+  /* Reserved state: after a successful booking the bar CTA becomes a
+     black "Cancel" pill — i.e. it flips to PLButton Inverse. Driving the
+     component's own custom properties (rather than `background`) keeps the
+     hover/pressed matrix intact. */
+  .cd-booking-cta.is-reserved {
+    --btn-bg: var(--pl-button-inverse-bg-default);
+    --btn-fg: var(--pl-button-inverse-fg-default);
+  }
+  .cd-booking-cta.is-reserved:active {
+    --btn-bg: var(--pl-button-inverse-bg-hovered);
+  }
+
+  /* Checkout: morph-in-place from the booking bar. Shares the same
+     bottom/left/right/border-radius geometry as .cd-booking-bar so the
+     seam is invisible when the sheet first appears; then grows upward
+     while its background transitions from glass → solid white. */
+  .cd-checkout-scrim {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.32);
+    opacity: 0;
+    pointer-events: none;
+    z-index: 35;
+    transition: opacity 0.25s ease;
+  }
+  .cd-checkout-scrim.is-visible {
+    opacity: 1;
+    pointer-events: auto;
+  }
+  .cd-checkout-sheet {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    /* Height is controlled by JS; CSS default keeps it invisible offscreen. */
+    height: 130px;
+    border-radius: 0;
+    /* Padding is shared with .is-open so it doesn't transition during the
+       morph. Earlier this animated 16 → 24, which shifted the header (and
+       its close button) by 8px during close — visible as jitter while the
+       content was still partially opaque. CTA-reserved space lives on
+       .cd-checkout-body (padding-bottom 72) instead of here so the sheet's
+       own padding-bottom is small enough to fit inside its closed height
+       (~96px) without forcing the box taller than `style.height` lets it. */
+    padding: 24px 24px 24px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    overflow: hidden;
+    visibility: hidden;
+    z-index: 36;
+    /* Closed state — matches .cd-booking-bar exactly (solid white + shadow). */
+    background: var(--pl-surface-default);
+    box-shadow: 0 -2px 16px rgb(var(--pl-shadow-rgb) / 0.12);
+    transition:
+      background 0.44s cubic-bezier(.32,.72,0,1),
+      box-shadow 0.44s cubic-bezier(.32,.72,0,1),
+      left 0.44s cubic-bezier(.32,.72,0,1),
+      right 0.44s cubic-bezier(.32,.72,0,1),
+      bottom 0.44s cubic-bezier(.32,.72,0,1),
+      border-radius 0.44s cubic-bezier(.32,.72,0,1),
+      height 0.44s cubic-bezier(.32,.72,0,1);
+  }
+  .cd-checkout-sheet.is-open {
+    left: 0;
+    right: 0;
+    bottom: 0;
+    /* Horizontal padding lives on header/body/footer children so the
+       footer dock can span the full sheet width edge-to-edge. */
+    padding: 16px 0 0;
+    border-radius: var(--pl-radius-semantic-xl) var(--pl-radius-semantic-xl) 0 0;
+    background: var(--pl-surface-default);
+    box-shadow: 0 -2px 16px rgb(var(--pl-shadow-rgb) / 0.12);
+  }
+  /* Header, body, and footer fade in/out with the geometry morph. The CTA
+     is NOT in this group — it morphs between Next-shape (closed) and the
+     full-width modal CTA (open). */
+  .cd-checkout-sheet .cd-checkout-header,
+  .cd-checkout-sheet .cd-checkout-pane-stack {
+    opacity: 0;
+    transition:
+      opacity 0.28s cubic-bezier(0.32, 0.72, 0, 1),
+      transform 0.36s cubic-bezier(0.32, 0.72, 0, 1);
+  }
+  .cd-checkout-sheet.is-open .cd-checkout-header,
+  .cd-checkout-sheet.is-open .cd-checkout-pane-stack {
+    opacity: 1;
+    transition:
+      opacity 0.28s cubic-bezier(0.32, 0.72, 0, 1) 0.18s,
+      transform 0.36s cubic-bezier(0.32, 0.72, 0, 1) 0.18s;
+  }
+  .cd-checkout-header {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    height: 44px;
+    flex-shrink: 0;
+    padding: 0 20px;
+    box-sizing: border-box;
+  }
+  /* Left slot: back arrow fades in when the options pane is active. */
+  .cd-checkout-nav-left {
+    position: relative;
+    width: 44px;
+    height: 44px;
+    flex-shrink: 0;
+  }
+  .cd-checkout-options-back {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s ease;
+  }
+  .cd-checkout-sheet.is-options-open .cd-checkout-options-back {
+    opacity: 1;
+    pointer-events: auto;
+  }
+  /* Flow B checkout (after Continue) can go back to Select option. */
+  .cd-checkout-sheet.is-flow-b:not(.is-options-open):not(.is-cancel-mode) .cd-checkout-options-back {
+    opacity: 1;
+    pointer-events: auto;
+  }
+  /* Flow B entry opens on Select option — X only, no back. */
+  .cd-checkout-sheet.is-options-entry .cd-checkout-options-back {
+    opacity: 0;
+    pointer-events: none;
+  }
+  /* Skip the iOS push when Book opens directly onto the options pane. */
+  .cd-checkout-sheet.is-options-instant .cd-checkout-pane--main,
+  .cd-checkout-sheet.is-options-instant .cd-checkout-pane--options {
+    transition: none;
+  }
+  .cd-checkout-title-wrap {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: calc(100% - 128px);
+    height: 44px;
+    pointer-events: none;
+  }
+  .cd-checkout-title {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    margin: 0;
+    font-family: var(--pl-body-md-semibold-font);
+    font-size: var(--pl-body-md-semibold-size);
+    font-weight: var(--pl-body-md-semibold-weight);
+    line-height: var(--pl-body-md-semibold-lineheight);
+    color: var(--pl-text-primary);
+    white-space: nowrap;
+    text-align: center;
+    opacity: 1;
+    transition: opacity 0.25s ease;
+  }
+  .cd-checkout-title--options {
+    opacity: 0;
+  }
+  .cd-checkout-sheet.is-options-open .cd-checkout-title:not(.cd-checkout-title--options) {
+    opacity: 0;
+  }
+  .cd-checkout-sheet.is-options-open .cd-checkout-title--options {
+    opacity: 1;
+  }
+  .cd-checkout-close {
+    flex-shrink: 0;
+  }
+  /* Pane stack — iOS push: main drifts left, options slides in from right.
+     Main pane stays in flow so open-height measurement includes body content;
+     options pane is an absolute overlay within the stack. */
+  .cd-checkout-pane-stack {
+    position: relative;
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+  .cd-checkout-pane--main {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: hidden;
+    background: var(--pl-surface-default);
+    will-change: transform;
+    transition: transform 0.5s cubic-bezier(0.32, 0.72, 0, 1);
+    transform: translateX(0);
+  }
+  .cd-checkout-pane--options {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    overflow: hidden;
+    background: var(--pl-surface-default);
+    will-change: transform;
+    transition: transform 0.5s cubic-bezier(0.32, 0.72, 0, 1);
+    transform: translateX(100%);
+    pointer-events: none;
+  }
+  .cd-checkout-sheet.is-options-open .cd-checkout-pane--main {
+    transform: translateX(-25%);
+  }
+  .cd-checkout-sheet.is-options-open .cd-checkout-pane--options {
+    transform: translateX(0);
+    pointer-events: auto;
+  }
+  /* Flow B entry: checkout waits off-screen right so Continue can push it
+     in the same direction as Flow A's options pane. */
+  .cd-checkout-sheet.is-options-entry .cd-checkout-pane--main {
+    transform: translateX(100%);
+  }
+  .cd-checkout-sheet.is-options-entry .cd-checkout-pane--options {
+    transform: translateX(0);
+    pointer-events: auto;
+  }
+  /* Continue: checkout slides in from the right; Select option drifts left.
+     Stays on after the push so packs remain parked underneath for a back pop. */
+  .cd-checkout-sheet.is-pushing-checkout .cd-checkout-pane--main {
+    transform: translateX(0);
+    z-index: 3;
+  }
+  .cd-checkout-sheet.is-pushing-checkout .cd-checkout-pane--options {
+    transform: translateX(-25%);
+    pointer-events: none;
+  }
+  /* Flow B green banner / back: checkout exits right, packs come from the left. */
+  .cd-checkout-sheet.is-popping-to-options .cd-checkout-pane--main {
+    transform: translateX(100%);
+    z-index: 3;
+  }
+  .cd-checkout-sheet.is-popping-to-options .cd-checkout-pane--options {
+    transform: translateX(0);
+    pointer-events: auto;
+  }
+  .cd-checkout-body {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    flex: 1 1 auto;
+    overflow: hidden;
+    min-height: 0;
+    padding-bottom: 0;
+    transition: opacity 0.18s ease;
+  }
+  .cd-checkout-sheet.is-open .cd-checkout-body {
+    overflow-y: auto;
+    box-sizing: border-box;
+    padding-left: 20px;
+    padding-right: 20px;
+    /* Reserve space for the footer dock + CTA below the scroll area. */
+    padding-bottom: 16px;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .cd-checkout-sheet.is-open .cd-checkout-body::-webkit-scrollbar {
+    display: none;
+  }
+  /* Nested DS cancel modal: sheet already provides chrome, so drop the
+     standalone-sheet max-width / radius / fill. */
+  .cd-checkout-sheet .cd-cancel-modal {
+    max-width: none;
+    background: transparent;
+    border-radius: 0;
+    overflow: visible;
+    gap: 16px;
+  }
+  /* Success / cancel-confirm — crossfade checkout chrome into the overlay. */
+  .cd-checkout-sheet.is-open .cd-checkout-cta {
+    transition:
+      left 0.44s cubic-bezier(.32,.72,0,1),
+      right 0.44s cubic-bezier(.32,.72,0,1),
+      transform 0.12s cubic-bezier(.25,.46,.45,.94),
+      background-color 0.22s ease,
+      color 0.22s ease,
+      opacity 0.24s ease,
+      visibility 0s linear 0.24s;
+  }
+  .cd-checkout-sheet.is-success .cd-checkout-header,
+  .cd-checkout-sheet.is-success .cd-checkout-pane-stack,
+  .cd-checkout-sheet.is-success .cd-checkout-cta {
+    position: absolute;
+    left: 0;
+    right: 0;
+    opacity: 0;
+    pointer-events: none;
+    transition:
+      opacity 0.28s cubic-bezier(0.32, 0.72, 0, 1),
+      transform 0.36s cubic-bezier(0.32, 0.72, 0, 1);
+  }
+  .cd-checkout-sheet.is-success .cd-checkout-header {
+    top: 0;
+    z-index: 4;
+    transform: translateY(-10px);
+  }
+  .cd-checkout-sheet.is-success .cd-checkout-pane-stack {
+    top: 0;
+    bottom: 0;
+    z-index: 3;
+    background: var(--pl-surface-default);
+    transform: translateY(-10px);
+  }
+  .cd-checkout-sheet.is-success .cd-checkout-cta {
+    bottom: 16px;
+    z-index: 5;
+    visibility: hidden;
+  }
+  /* Cancel confirm: leave the cancel sheet in place and fade a full-size
+     overlay on top. Pulling chrome out of flow (the booking-success
+     pattern) is what made the policy + class card jump upward. */
+  .cd-checkout-sheet.is-cancel-confirmed .cd-checkout-header,
+  .cd-checkout-sheet.is-cancel-confirmed .cd-checkout-pane-stack,
+  .cd-checkout-sheet.is-cancel-confirmed .cd-checkout-cta {
+    opacity: 0;
+    pointer-events: none;
+    transform: none;
+    transition: opacity 0.28s ease;
+  }
+  .cd-checkout-sheet.is-cancel-confirmed .cd-checkout-cta {
+    visibility: hidden;
+  }
+  .cd-checkout-success-modal,
+  .cd-checkout-cancel-confirm {
+    position: absolute;
+    left: 0;
+    right: 0;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    flex: none;
+    width: 100%;
+    max-width: none;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transform: translateY(16px);
+    background: var(--pl-surface-default);
+    border-radius: var(--pl-radius-semantic-xl) var(--pl-radius-semantic-xl) 0 0;
+    overflow: hidden;
+    transition:
+      opacity 0.38s cubic-bezier(0.22, 1, 0.36, 1),
+      transform 0.44s cubic-bezier(0.32, 0.72, 0, 1),
+      visibility 0s linear 0.38s;
+  }
+  .cd-checkout-sheet.is-success .cd-checkout-success-modal {
+    position: relative;
+    inset: auto;
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    transform: translateY(0);
+    transition:
+      opacity 0.38s cubic-bezier(0.22, 1, 0.36, 1) 0.1s,
+      transform 0.44s cubic-bezier(0.32, 0.72, 0, 1) 0.1s,
+      visibility 0s linear 0s;
+  }
+  /* Cancel confirm: fade only — no slide-up from the cancel sheet. */
+  .cd-checkout-cancel-confirm {
+    top: 0;
+    bottom: 0;
+    transform: none;
+    transition:
+      opacity 0.28s ease,
+      visibility 0s linear 0.28s;
+  }
+  .cd-checkout-sheet.is-cancel-confirmed .cd-checkout-cancel-confirm {
+    position: absolute;
+    inset: 0;
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    transform: none;
+    transition:
+      opacity 0.28s ease,
+      visibility 0s linear 0s;
+  }
+  .cd-checkout-success-modal .pl-success-modal__header {
+    opacity: 0;
+    transition: opacity 0.28s ease 0.08s;
+  }
+  .cd-checkout-cancel-confirm .pl-cancel-confirm-modal__header,
+  .cd-checkout-cancel-confirm .pl-cancel-confirm-modal__body,
+  .cd-checkout-cancel-confirm .pl-cancel-confirm-modal__footer {
+    opacity: 1;
+    transform: none;
+  }
+  .cd-checkout-success-modal .pl-success-modal__content,
+  .cd-checkout-success-modal .pl-success-modal__footer {
+    opacity: 0;
+    transform: translateY(10px);
+    transition:
+      opacity 0.32s cubic-bezier(0.22, 1, 0.36, 1) 0.14s,
+      transform 0.38s cubic-bezier(0.32, 0.72, 0, 1) 0.14s;
+  }
+  .cd-checkout-success-modal .pl-success-modal__footer {
+    transition-delay: 0.2s, 0.2s;
+  }
+  .cd-checkout-sheet.is-success .cd-checkout-success-modal .pl-success-modal__header,
+  .cd-checkout-sheet.is-success .cd-checkout-success-modal .pl-success-modal__content,
+  .cd-checkout-sheet.is-success .cd-checkout-success-modal .pl-success-modal__footer {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  .cd-checkout-success-modal .pl-success-modal__check {
+    transform: scale(0.88);
+    transition: transform 0.45s cubic-bezier(0.22, 1, 0.36, 1) 0.22s;
+  }
+  .cd-checkout-sheet.is-success .cd-checkout-success-modal .pl-success-modal__check {
+    transform: scale(1);
+  }
+  .cd-checkout-sheet.is-collapsing .cd-checkout-success-modal,
+  .cd-checkout-sheet.is-collapsing .cd-checkout-cancel-confirm {
+    opacity: 0;
+    pointer-events: none;
+    transition:
+      opacity 0.22s ease,
+      transform 0.28s cubic-bezier(0.32, 0.72, 0, 1);
+  }
+  .cd-checkout-sheet.is-collapsing .cd-checkout-cancel-confirm {
+    transform: none;
+    transition: opacity 0.22s ease;
+  }
+  .pl-cancel-confirm-modal--pack .pl-cancel-confirm-modal__find {
+    display: none;
+  }
+  .pl-cancel-confirm-modal:not(.pl-cancel-confirm-modal--pack) .pl-cancel-confirm-modal__pack {
+    display: none;
+  }
+  /* Confirm overlay fills the locked cancel-modal height. Body grows so
+     Done stays docked; drop-in copy is vertically centered in the gap. */
+  .cd-checkout-sheet.is-cancel-confirmed .cd-checkout-cancel-confirm .pl-cancel-confirm-modal__body {
+    flex: 1 1 auto;
+  }
+  .cd-checkout-sheet.is-cancel-confirmed .cd-checkout-cancel-confirm:not(.pl-cancel-confirm-modal--pack) .pl-cancel-confirm-modal__body {
+    justify-content: center;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .cd-checkout-sheet.is-open .cd-checkout-header,
+    .cd-checkout-sheet.is-open .cd-checkout-pane-stack,
+    .cd-checkout-sheet.is-success .cd-checkout-header,
+    .cd-checkout-sheet.is-success .cd-checkout-pane-stack,
+    .cd-checkout-sheet.is-cancel-confirmed .cd-checkout-header,
+    .cd-checkout-sheet.is-cancel-confirmed .cd-checkout-pane-stack,
+    .cd-checkout-success-modal,
+    .cd-checkout-cancel-confirm,
+    .cd-checkout-success-modal .pl-success-modal__header,
+    .cd-checkout-success-modal .pl-success-modal__content,
+    .cd-checkout-success-modal .pl-success-modal__footer,
+    .cd-checkout-success-modal .pl-success-modal__check,
+    .cd-checkout-cancel-confirm .pl-cancel-confirm-modal__header,
+    .cd-checkout-cancel-confirm .pl-cancel-confirm-modal__body,
+    .cd-checkout-cancel-confirm .pl-cancel-confirm-modal__footer,
+    .cd-checkout-cancel-confirm .pl-cancel-confirm-modal__check {
+      transition: none !important;
+      transform: none !important;
+    }
+  }
+  /* Section headings (Payment, Cancellation Policy) + content blocks. */
+  .cd-checkout-section {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: 100%;
+  }
+  .cd-checkout-section-title {
+    margin: 0;
+  }
+  .cd-checkout-cancellation-block {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    width: 100%;
+  }
+  .cd-checkout-cancellation-cutoff,
+  .cd-checkout-cancellation-body {
+    margin: 0;
+  }
+  /* Footer dock — legal copy above the morphing CTA, full sheet width. */
+  .cd-checkout-footer {
+    flex-shrink: 0;
+    box-sizing: border-box;
+    width: 100%;
+    padding: 12px 20px 88px;
+    background: var(--pl-surface-default);
+    box-shadow: 0 12px 16px rgb(var(--pl-shadow-rgb) / 0.2);
+    transition: opacity 0.18s ease;
+  }
+  .cd-checkout-terms {
+    margin: 0;
+    font-family: var(--pl-caption-lg-medium-font);
+    font-size: var(--pl-caption-lg-medium-size);
+    font-weight: var(--pl-caption-lg-medium-weight);
+    line-height: var(--pl-caption-lg-medium-lineheight);
+    color: var(--pl-text-primary);
+  }
+  .cd-checkout-link {
+    color: var(--pl-text-link);
+    font-family: var(--pl-caption-lg-bold-font);
+    font-size: var(--pl-caption-lg-bold-size);
+    font-weight: var(--pl-caption-lg-bold-weight);
+    line-height: var(--pl-caption-lg-bold-lineheight);
+    text-decoration: underline;
+  }
+  .cd-checkout-link:active { opacity: 0.6; }
+  .cd-cancel-info {
+    display: flex;
+    flex-direction: column;
+  }
+  .cd-cancel-info .cd-checkout-class-title {
+    font-family: var(--pl-title-lg-medium-font);
+    font-size: var(--pl-title-lg-medium-size);
+    font-weight: var(--pl-title-lg-medium-weight);
+    line-height: var(--pl-title-lg-medium-lineheight);
+    color: var(--pl-text-primary);
+  }
+  .cd-cancel-info .cd-checkout-time {
+    font-family: var(--pl-label-lg-semibold-font);
+    font-size: var(--pl-label-lg-semibold-size);
+    font-weight: var(--pl-label-lg-semibold-weight);
+    line-height: var(--pl-label-lg-semibold-lineheight);
+    color: var(--pl-text-primary);
+  }
+  .cd-cancel-info .cd-checkout-instructor,
+  .cd-cancel-info .cd-checkout-venue {
+    font-family: var(--pl-body-md-regular-font);
+    font-size: var(--pl-body-md-regular-size);
+    font-weight: var(--pl-body-md-regular-weight);
+    line-height: var(--pl-body-md-regular-lineheight);
+    color: var(--pl-text-primary);
+  }
+  .cd-checkout-section-redeem {
+    gap: var(--pl-space-xs);
+  }
+  .cd-checkout-sheet:not(.is-pack-redeem) .cd-checkout-section-redeem {
+    display: none;
+  }
+  .cd-checkout-sheet.is-pack-redeem .pl-checkout-card__payment,
+  .cd-checkout-sheet.is-pack-redeem .pl-checkout-card__promo,
+  .cd-checkout-sheet.is-pack-redeem .cd-checkout-section-pay {
+    display: none;
+  }
+  /* Cancel-reservation mode: same sheet chrome, different body content.
+     Mode-specific subsections opt-in to display with .cd-checkout-mode-*. */
+  .cd-checkout-sheet:not(.is-cancel-mode) .cd-checkout-mode-cancel {
+    display: none;
+  }
+  .cd-checkout-sheet.is-cancel-mode .cd-checkout-mode-checkout {
+    display: none;
+  }
+  /* Refund summary card — mirrors the booking modal's bordered card.
+     Two rows: "Refund amount" (with bottom-border separator) and
+     "Refund to". */
+  .cd-cancel-block {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    border: 1px solid var(--pl-border-default);
+    border-radius: var(--pl-radius-semantic-lg);
+    padding: 16px;
+  }
+  .cd-cancel-line {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+  }
+  .cd-cancel-line--amount {
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--pl-border-default);
+  }
+  .cd-cancel-label {
+    font-family: var(--pl-label-md-semibold-font);
+    font-size: var(--pl-label-md-semibold-size);
+    font-weight: var(--pl-label-md-semibold-weight);
+    line-height: var(--pl-label-md-semibold-lineheight);
+    color: var(--pl-text-primary);
+  }
+  .cd-cancel-amount {
+    font-family: var(--pl-label-md-semibold-font);
+    font-size: var(--pl-label-md-semibold-size);
+    font-weight: var(--pl-label-md-semibold-weight);
+    line-height: var(--pl-label-md-semibold-lineheight);
+    color: var(--pl-text-primary);
+  }
+  .cd-cancel-caption {
+    font-family: var(--pl-body-sm-regular-font);
+    font-size: var(--pl-body-sm-regular-size);
+    font-weight: var(--pl-body-sm-regular-weight);
+    line-height: var(--pl-body-sm-regular-lineheight);
+    color: var(--pl-text-primary);
+    padding: 16px 0;
+  }
+  /* Cancellation toast — black pill that floats just above the booking
+     bar after a successful cancel. 12px radius, 8px gap between the
+     check icon and the message text. Slides up + fades on show, slides
+     down + fades on dismiss. Auto-hides after 2s (driven by JS). */
+  .cd-toast {
+    position: absolute;
+    left: 50%;
+    bottom: 112px;
+    transform: translateX(-50%) translateY(8px);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 16px;
+    background: var(--pl-button-inverse-bg-default);
+    color: var(--pl-text-inverse);
+    border-radius: var(--pl-radius-semantic-md);
+    font-family: var(--pl-body-sm-semibold-font);
+    font-size: var(--pl-body-sm-semibold-size);
+    font-weight: var(--pl-body-sm-semibold-weight);
+    line-height: var(--pl-body-sm-semibold-lineheight);
+    white-space: nowrap;
+    z-index: 37;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s ease, transform 0.25s ease;
+  }
+  .cd-toast.is-visible {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+  .cd-toast-icon {
+    display: inline-flex;
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+  }
+  .cd-toast-icon svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+  .cd-checkout-payment-card {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+  }
+  .cd-checkout-cta {
+    /* Anchored to bottom-right at the booking bar's Next coordinates
+       (right:20, bottom:32). The morph is intentionally minimal — only
+       the left edge moves, so the button grows leftward into a full-width
+       Book CTA. Right edge, bottom, padding and font stay fixed so there
+       is no vertical shift or right-edge jerk during the transition. */
+    position: absolute;
+    left: calc(100% - 120px);
+    right: 20px;
+    bottom: 32px;
+    outline: none;
+    /* Flex so the calendar icon in success mode can sit 8px left of the
+       label without disturbing the existing absolute spinner overlay. */
+    display: flex;
+    /* Long checkout label ("Buy and reserve") must never wrap into a
+       second line during the morph. */
+    overflow: hidden;
+    transition:
+      left 0.44s cubic-bezier(.32,.72,0,1),
+      right 0.44s cubic-bezier(.32,.72,0,1),
+      transform 0.12s cubic-bezier(.25,.46,.45,.94),
+      background-color 0.22s ease,
+      color 0.22s ease;
+  }
+  /* Reserved morph: when closing from the success state, the sheet's CTA
+     morphs to the black Cancel state that the booking bar underneath
+     shows, so the final frame of the close matches the bar's CTA exactly
+     instead of flashing red Book mid-morph. */
+  .cd-checkout-sheet .cd-checkout-cta.is-reserved {
+    --btn-bg: var(--pl-button-inverse-bg-default);
+    --btn-fg: var(--pl-button-inverse-fg-default);
+  }
+  .cd-checkout-sheet .cd-checkout-cta.is-reserved:active {
+    --btn-bg: var(--pl-button-inverse-bg-hovered);
+  }
+  .cd-cta-icon-calendar {
+    display: none;
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+    pointer-events: none;
+    user-select: none;
+    -webkit-user-drag: none;
+  }
+  .cd-checkout-sheet.is-success .cd-cta-icon-calendar {
+    display: inline-block;
+  }
+  .cd-checkout-sheet.is-open .cd-checkout-cta {
+    left: 20px;
+    bottom: 24px;
+  }
+  /* Option picker pane — tabs + scrollable lists + Done CTA. */
+  .cd-checkout-options-tabs {
+    flex-shrink: 0;
+    padding: 0 20px;
+    background: var(--pl-surface-default);
+  }
+  .cd-checkout-options-scroll {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    padding: 16px 20px 24px;
+    box-sizing: border-box;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .cd-checkout-options-scroll::-webkit-scrollbar {
+    display: none;
+  }
+  .cd-checkout-sheet.is-options-open .cd-checkout-options-scroll {
+    /* Reserve space for the fixed Done CTA (48px) + bottom inset (24px)
+       + breathing room so the last pack card footer clears the button. */
+    padding-bottom: 120px;
+  }
+  .cd-options-section {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: 100%;
+  }
+  .cd-options-section-title {
+    margin: 0;
+  }
+  .cd-options-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: 100%;
+  }
+  .cd-options-list .pl-pack {
+    width: 100%;
+    text-align: left;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .cd-pack-footer-list {
+    margin: 0;
+    padding-left: 18px;
+    list-style: disc;
+  }
+  .cd-pack-footer-list li + li {
+    margin-top: 0;
+  }
+  .cd-checkout-options-done {
+    position: absolute;
+    left: 20px;
+    right: 20px;
+    bottom: 24px;
+    z-index: 5;
+    outline: none;
+  }
+  .cd-checkout-options-done:active {
+    transform: scale(0.96);
+  }
+  .cd-checkout-cta:active {
+    transform: scale(0.96);
+  }
+  .cd-checkout-cta:focus,
+  .cd-checkout-cta:focus-visible {
+    outline: none;
+  }
+  /* Loading state: hide the label and reveal a centered iOS-style spinner.
+     The button keeps its position/size so only the inner content changes. */
+  .cd-checkout-cta .cd-cta-label {
+    transition: opacity 0.15s ease;
+  }
+  .cd-checkout-cta.is-loading .cd-cta-label {
+    opacity: 0;
+  }
+  .cd-cta-spinner {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 20px;
+    height: 20px;
+    transform: translate(-50%, -50%);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.15s ease;
+  }
+  .cd-checkout-cta.is-loading .cd-cta-spinner {
+    opacity: 1;
+  }
+  .cd-cta-spinner > span {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    width: 2px;
+    height: 6px;
+    margin-left: -1px;
+    background: var(--pl-surface-default);
+    border-radius: 1px;
+    transform-origin: 50% 10px;
+    animation: cd-cta-spinner-fade 1s linear infinite;
+  }
+  .cd-cta-spinner > span:nth-child(1)  { transform: rotate(0deg);   animation-delay: -1.0000s; }
+  .cd-cta-spinner > span:nth-child(2)  { transform: rotate(30deg);  animation-delay: -0.9167s; }
+  .cd-cta-spinner > span:nth-child(3)  { transform: rotate(60deg);  animation-delay: -0.8333s; }
+  .cd-cta-spinner > span:nth-child(4)  { transform: rotate(90deg);  animation-delay: -0.7500s; }
+  .cd-cta-spinner > span:nth-child(5)  { transform: rotate(120deg); animation-delay: -0.6667s; }
+  .cd-cta-spinner > span:nth-child(6)  { transform: rotate(150deg); animation-delay: -0.5833s; }
+  .cd-cta-spinner > span:nth-child(7)  { transform: rotate(180deg); animation-delay: -0.5000s; }
+  .cd-cta-spinner > span:nth-child(8)  { transform: rotate(210deg); animation-delay: -0.4167s; }
+  .cd-cta-spinner > span:nth-child(9)  { transform: rotate(240deg); animation-delay: -0.3333s; }
+  .cd-cta-spinner > span:nth-child(10) { transform: rotate(270deg); animation-delay: -0.2500s; }
+  .cd-cta-spinner > span:nth-child(11) { transform: rotate(300deg); animation-delay: -0.1667s; }
+  .cd-cta-spinner > span:nth-child(12) { transform: rotate(330deg); animation-delay: -0.0833s; }
+  @keyframes cd-cta-spinner-fade {
+    0%   { opacity: 1; }
+    100% { opacity: 0.15; }
+  }
+  /* Compact info inside the sheet that mirrors .cd-booking-info. Hidden
+     while the sheet is open; fades in during the close so the sheet's
+     end-of-morph state visually matches the two-row bar instead of
+     showing an empty white card. The bar takes over once the sheet
+     hides — both display the same content in the same position so the
+     swap is invisible. */
+  .cd-checkout-mini-summary {
+    position: absolute;
+    /* 20 matches the bar's padding-left so the swap from mini-summary to
+       the actual booking bar's info doesn't shift content horizontally. */
+    left: 20px;
+    /* Bar height ≈ 96 (padding 16+32 + cta content 48). The two-row
+       stack (40px) is centered in the 48px content row, so the stack's
+       bottom sits ~36px above the bar's bottom edge. */
+    bottom: 36px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.16s ease;
+  }
+  .cd-checkout-sheet.is-collapsing .cd-checkout-mini-summary {
+    /* Fade in starts after the sheet's body has finished its 0.22s
+       fade-out so the two don't overlap visually. */
+    opacity: 1;
+    transition: opacity 0.14s ease 0.18s;
+  }
+  /* Mini-summary type rules live alongside the booking-bar rules above
+     (combined selectors) so the two can never drift out of sync. The shared
+     rules cover .cd-mini-meta / .cd-mini-price-row / .cd-mini-price /
+     .cd-mini-price-sep / .cd-mini-instructor. */
+
+  /* Hide original booking card while the sheet covers it. The sheet's
+     CTA closed-state matches the bar's Next exactly, so the hand-off is
+     visually seamless. Opacity is applied to the children (not the bar
+     itself) so removing is-under-checkout at end-of-close fades the info
+     and CTA back in over 0.18s instead of snapping them in. */
+  .cd-booking-bar .cd-booking-info,
+  .cd-booking-bar .cd-booking-cta {
+    transition: opacity 0.18s ease;
+  }
+  .cd-booking-bar.is-under-checkout {
+    pointer-events: none;
+  }
+  /* Bar's shadow is suppressed for the entire time the sheet is on top —
+     including the close animation. Otherwise the bar's shadow + sheet's
+     shadow stack along the same edge as the sheet morphs into bar
+     geometry, producing a visibly darker shadow at the end of close.
+     This class lives on the bar separately from is-under-checkout (which
+     is released at close start so the children can fade in invisibly
+     behind the sheet) and is only released at transitionend. */
+  .cd-booking-bar.is-sheet-overlay {
+    box-shadow: none;
+  }
+  .cd-booking-bar.is-under-checkout .cd-booking-info,
+  .cd-booking-bar.is-under-checkout .cd-booking-cta {
+    opacity: 0;
+  }
+
+  /* ========== LIGHTBOX ==========
+     Image gallery scoped to the phone frame (positioned absolute relative
+     to .device-frame, which has overflow:hidden + rounded corners). The
+     active slide morphs from the tapped thumbnail's bounding rect into
+     its natural lightbox position when opening. */
+  .lightbox {
+    position: absolute;
+    inset: 0;
+    background: transparent;
+    z-index: 200;
+    display: flex;
+    flex-direction: column;
+    pointer-events: none;
+  }
+  .lightbox.open {
+    pointer-events: auto;
+  }
+  /* Solid background panel — separated from .lightbox so the dismiss
+     gesture can fade it independently of chrome and slides. */
+  .lightbox-bg {
+    position: absolute;
+    inset: 0;
+    background: var(--pl-surface-default);
+    opacity: 0;
+    transition: opacity 0.2s ease-out;
+    pointer-events: none;
+  }
+  .lightbox.open .lightbox-bg { opacity: 1; }
+  /* PLIconButton Raised / Medium (was a bespoke 40px circle). */
+  .lightbox-close {
+    position: absolute;
+    top: 60px;
+    left: 20px;
+    z-index: 2;
+    opacity: 0;
+    transition: opacity 0.2s ease-out;
+  }
+  .lightbox.open .lightbox-close { opacity: 1; }
+  .lightbox-header {
+    position: absolute;
+    top: 60px;
+    left: 0;
+    right: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    pointer-events: none;
+    z-index: 1;
+    opacity: 0;
+    transition: opacity 0.2s ease-out;
+  }
+  .lightbox.open .lightbox-header { opacity: 1; }
+  /* Drag-time: kill chrome transitions so each frame's opacity write isn't
+     interpolated by CSS (which would lag the drag and cause a flash on
+     release when the underlying inline value pops back). */
+  .lightbox.dragging .lightbox-bg,
+  .lightbox.dragging .lightbox-close,
+  .lightbox.dragging .lightbox-header,
+  .lightbox.dragging .lightbox-status-bar { transition: none; }
+  .lightbox-title {
+    font-family: var(--pl-title-md-bold-font);
+    font-size: var(--pl-title-md-bold-size);
+    font-weight: var(--pl-title-md-bold-weight);
+    line-height: var(--pl-title-md-bold-lineheight);
+    color: var(--pl-text-primary);
+    width: calc(100% - 160px);
+    text-align: center;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    word-break: break-word;
+  }
+  /* iOS-style shrink: long titles that won't fit on one line at 16px get
+     bumped down to 13px so they can fit on up to two lines. JS toggles
+     this class with the same logic used by the sticky nav title. */
+  .lightbox-title.is-compact {
+    font-size: 13px;
+    line-height: 18px;
+  }
+  .lightbox-counter {
+    font-family: var(--pl-body-md-medium-font);
+    font-size: var(--pl-body-md-medium-size);
+    font-weight: var(--pl-body-md-medium-weight);
+    line-height: var(--pl-body-md-medium-lineheight);
+    color: var(--pl-neutral-600);
+  }
+  .lightbox-status-bar {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 3;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.2s ease-out;
+  }
+  .lightbox.open .lightbox-status-bar { opacity: 1; }
+  .lightbox-status-bar img {
+    width: 100%;
+    display: block;
+  }
+  .lightbox-viewport {
+    position: relative;
+    z-index: 1;
+    flex: 1;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+  }
+  .lightbox-track {
+    display: flex;
+    width: 100%;
+    height: 100%;
+    align-items: center;
+    transform: translate3d(0, 0, 0);
+    transition: transform 0.32s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    will-change: transform;
+  }
+  .lightbox-track.dragging { transition: none; }
+  .lightbox-slide {
+    flex: 0 0 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 8px;
+    box-sizing: border-box;
+  }
+  .lightbox-slide-image {
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    background: var(--pl-neutral-400);
+    border-radius: var(--pl-radius-component-card-default);
+    transform-origin: center center;
+    will-change: transform, opacity;
+    transition: opacity 0.2s ease-out, aspect-ratio 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  /* ========== BOOKINGS TAB (empty state, Figma 12925:349136) ========== */
+  #screen-bookings {
+    background: var(--pl-bg-default);
+  }
+  .bookings-header {
+    flex-shrink: 0;
+    padding: 0 22px;
+  }
+  .bookings-header .pl-page-title {
+    margin: 28px 0 0;
+    color: var(--pl-text-primary);
+  }
+  .bookings-header .pl-tab-nav {
+    margin-top: 28px;
+  }
+  .bookings-body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    padding-bottom: 110px;
+  }
+  .bookings-body::-webkit-scrollbar {
+    display: none;
+  }
+  .bookings-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    width: 100%;
+    padding: 16px 18px 0;
+    box-sizing: border-box;
+  }
+  .bookings-list .pl-booking-card {
+    max-width: 100%;
+    cursor: pointer;
+  }
+  .bookings-list[hidden],
+  .bookings-empty[hidden] {
+    display: none;
+  }
+  .bookings-empty {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--pl-space-md);
+    width: 323px;
+    max-width: 100%;
+    margin: 0 auto;
+    padding: var(--pl-space-lg) var(--pl-modal-dialog-padding);
+    box-sizing: border-box;
+    text-align: center;
+  }
+  /* Native size of assets/calendar_empty_state.svg (45×44). Explicit both
+     axes so .pl-icon's 20px default can't squash the artwork. Grey matches
+     Figma's button/label/neutral/fg/disabled on the empty-state glyph. */
+  .bookings-empty__icon {
+    width: 45px;
+    height: 44px;
+    color: var(--pl-icon-disabled);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .bookings-empty__icon > .pl-icon {
+    width: 45px;
+    height: 44px;
+  }
+  .bookings-empty__copy {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--pl-space-xxs);
+    width: 100%;
+  }
+  .bookings-empty__title {
+    margin: 0;
+    color: var(--pl-text-primary);
+  }
+  .bookings-empty__subtitle {
+    margin: 0;
+    color: var(--pl-text-secondary);
+  }
+
+:root {
+  --accent: #e10e0e;
+  --text-primary: #020203;
+  --border-default: #e4e5e7;
+  --surface-white: #ffffff;
+  --link-blue: #0032d7;
+  --link-on-photo: #2483ff;
+  --brand-blue: #0055ff;
+  --surface-subtle: #f1f2f3;
+  --text-secondary: #43454c;
+}
+
+
+/* ===== Playlist demo: auth overlay + home tab ===== */
+.device-frame { --frame-radius: 40px; }
+
+#auth-stack {
+  position: absolute;
+  inset: 0;
+  z-index: 80;
+}
+#auth-stack.is-done {
+  display: none;
+}
+
+.device-frame:not(.in-app) #live-map,
+.device-frame.on-home-tab #live-map {
+  visibility: hidden;
+}
+
+.tab-bar-persistent.pre-app,
+.tab-bar-blur.pre-app {
+  visibility: hidden;
+  pointer-events: none;
+  opacity: 0;
+}
+
+#screen-home-tab {
+  background: var(--pl-bg-default);
+}
+.home-header {
+  flex-shrink: 0;
+  padding: 0 22px;
+}
+.home-header .pl-page-title {
+  margin: 28px 0 0;
+  color: var(--pl-text-primary);
+}
+
+/* Screen container — transform-based push navigation.
+   All screens stay in the layout; inactive ones sit off-screen (right) or
+   pushed behind (left). The device-frame clips the overflow. */
+.auth-screen {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface-white);
+  overflow: hidden;
+  transform: translateX(100%);
+  pointer-events: none;
+  transition: transform 0.38s cubic-bezier(0.32, 0.72, 0, 1);
+}
+/* Only promote a screen to its own layer while it's on-screen or animating,
+   to avoid overwhelming embedded-browser compositors with 8 permanent layers. */
+.auth-screen.active,
+.auth-screen.behind {
+  will-change: transform;
+}
+.auth-screen.active {
+  transform: translateX(0);
+  pointer-events: auto;
+}
+/* Previous screen pushed behind, iOS-style parallax + dim */
+.auth-screen.behind {
+  transform: translateX(-25%);
+  pointer-events: none;
+}
+/* The dim lives on every screen and fades with the push, so it reads as one
+   movement instead of snapping to full the instant .behind is applied. */
+.auth-screen::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 50;
+  background: rgba(0, 0, 0, 0.06);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.38s cubic-bezier(0.32, 0.72, 0, 1);
+}
+.auth-screen.behind::after { opacity: 1; }
+/* No transition on initial paint to avoid a flash */
+.auth-screen.no-anim { transition: none; }
+
+/* Status bar */
+#auth-stack .status-bar {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  z-index: 100;
+  pointer-events: none;
+}
+#auth-stack .status-bar img { width: 100%; display: block; }
+#auth-stack .status-bar { transition: opacity 0.28s ease-out; }
+#auth-stack .status-bar.hidden { opacity: 0; }
+
+/* ===== Home screen (app launcher) =====
+   The springboard is a flat export; only the Playlist icon is interactive. */
+.home-screen {
+  z-index: 80;
+  background: #000;
+  transition:
+    opacity 0.3s cubic-bezier(0.22, 0.61, 0.36, 1),
+    transform 0.42s cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+/* Wallpaper and icon sheet are both 393x854 pinned to the top-left, matching
+   how Figma places them — not scaled to fit, so the icon grid stays on grid. */
+.home-wallpaper,
+.home-icons {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: auto;
+  display: block;
+}
+/* Source status bar is black glyphs; the springboard needs white ones */
+.home-status-bar {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  display: block;
+  filter: invert(1);
+}
+
+.home-app-icon {
+  position: absolute;
+  left: 29px;
+  top: 481px;
+  width: 62.6px;
+  height: 62.6px;
+  padding: 0;
+  border: none;
+  /* The icon SVG carries its own squircle and gradient */
+  background: transparent;
+  cursor: pointer;
+  transition: transform 0.15s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+.home-app-icon img {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.home-app-icon:active { transform: scale(0.97); }
+.home-app-label {
+  position: absolute;
+  left: 29px;
+  top: 549px;
+  width: 62.6px;
+  text-align: center;
+  font-size: 11px;
+  line-height: 14px;
+  font-weight: 400;
+  color: #fff;
+  text-shadow: 0 0 3px rgba(0, 0, 0, 0.3);
+  letter-spacing: 0.02em;
+}
+
+/* Springboard zooms as the app opens, but stays opaque until the white
+   tile has covered the frame — otherwise welcome shows through. */
+.home-screen.launching {
+  transform: translateX(0) scale(1.12);
+  pointer-events: none;
+}
+.home-screen.launching .home-app-icon,
+.home-screen.launching .home-app-label { opacity: 0; }
+.home-screen.launching.covered { opacity: 0; }
+.home-screen.launching.settled { will-change: auto; }
+
+/* White fill lives on .launch-fill so the expand can run on transform
+   (composite) instead of clip-path, which was snapping instead of
+   interpolating. Logo is a sibling so the non-uniform scale doesn't squash it. */
+.launch-tile {
+  position: absolute;
+  inset: 0;
+  z-index: 90;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  visibility: hidden;
+  opacity: 1;
+}
+.launch-tile.running { visibility: visible; }
+.launch-tile.done {
+  opacity: 0;
+  transition: opacity 0.28s ease-out;
+}
+.launch-fill {
+  position: absolute;
+  inset: 0;
+  background: #fff;
+  transform-origin: 0 0;
+  /* Icon 62.6×62.6 at 29×481 inside 393×852. Radius is in pre-scale
+     space so 14px corners stay circular after the non-uniform scale:
+     14 / (62.6/393) ≈ 87.89, 14 / (62.6/852) ≈ 190.54. */
+  transform: translate(29px, 481px) scale(0.1592875, 0.0734742);
+  border-radius: 87.89px / 190.54px;
+  transition:
+    transform 0.42s cubic-bezier(0.22, 0.61, 0.36, 1),
+    border-radius 0.42s cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+.launch-tile.running .launch-fill { will-change: transform; }
+.launch-tile.expanding .launch-fill {
+  transform: translate(0, 0) scale(1);
+  border-radius: var(--frame-radius);
+}
+.launch-logo {
+  position: relative;
+  z-index: 1;
+  display: block;
+  width: 76px;
+  height: 61px;
+  opacity: 0;
+  transition: opacity 0.25s ease-out;
+}
+.launch-tile.show-mark .launch-logo { opacity: 1; }
+.launch-tile.done .launch-logo {
+  opacity: 0;
+  transition-delay: 0s;
+}
+
+/* Don't paint the welcome photo until the splash is covering the frame —
+   both screens start `.active`, so a transparent springboard would otherwise
+   flash the hero and buttons (the sequence in the recording). */
+#screen-welcome { visibility: hidden; }
+.device-frame.welcome-photo #screen-welcome { visibility: visible; }
+
+@media (prefers-reduced-motion: reduce) {
+  .home-screen.launching,
+  .home-screen.launching.covered,
+  .launch-tile,
+  .launch-tile.done,
+  .launch-fill,
+  .launch-tile.expanding .launch-fill,
+  .launch-logo,
+  .launch-tile.show-mark .launch-logo {
+    transition: none;
+    transition-delay: 0s;
+  }
+}
+
+/* ===== Welcome screen ===== */
+
+.welcome-screen { background: #000; }
+
+/* Combined logo on welcome hero (Figma 13081:6776). */
+.welcome-brand-logo {
+  position: absolute;
+  top: 62px;
+  left: 114px;
+  z-index: 2;
+  pointer-events: none;
+}
+.welcome-brand-logo img {
+  display: block;
+  width: 166px;
+  height: auto;
+}
+
+/* Hero title on welcome (Figma 13081:6792). */
+.welcome-title {
+  position: absolute;
+  top: 316px;
+  left: 57px;
+  width: 279px;
+  margin: 0;
+  z-index: 2;
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-optical-sizing: auto;
+  font-size: 63.795px;
+  font-weight: 400;
+  line-height: 1.1;
+  color: #fff;
+  text-align: center;
+}
+.welcome-title__line {
+  display: block;
+}
+
+/* Full-bleed hero. The leaf fills the screen box via object-fit:cover so the
+   2:3 source crops to the 393×852 frame the same way Figma's object-cover does. */
+.welcome-hero {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+.welcome-hero__media {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.welcome-hero__still { display: none; }
+.welcome-hero__scrim {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: linear-gradient(to bottom, rgba(0, 0, 0, 0) 35%, rgba(0, 0, 0, 0.66) 100%);
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .welcome-hero__media { display: none; }
+  .welcome-hero__still { display: block; }
+}
+
+/* Dark photo: invert the shared black status-bar glyphs once the splash
+   has cleared and Welcome is on top. */
+.device-frame.welcome-photo:has(#screen-welcome.active) #global-status-bar img {
+  filter: invert(1);
+}
+
+.welcome-actions {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 2;
+  padding: 24px 24px 32px 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.welcome-preamble {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* "Use your Playlist or ClassPass login", separated by a hairline rule */
+.login-lockup {
+  width: 100%;
+  border-top: 1px solid rgba(255, 255, 255, 0.3);
+  padding-top: 16px;
+  display: flex;
+  justify-content: center;
+}
+.login-lockup-label {
+  /* body/lg/medium — 16/24/500 */
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 500;
+  color: #fff;
+  text-align: center;
+}
+
+.legal-text {
+  font-size: 13px;
+  line-height: 16px;
+  color: var(--text-primary);
+  text-align: center;
+  font-weight: 400;
+}
+.welcome-screen .legal-text {
+  font-size: 12px;
+  color: #fff;
+}
+.legal-link {
+  color: var(--link-blue);
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-position: from-font;
+}
+.welcome-screen .legal-link {
+  color: var(--link-on-photo);
+  font-weight: 400;
+}
+
+.button-group {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+}
+
+.btn {
+  width: 100%;
+  height: 48px;
+  border: none;
+  border-radius: 999px;
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.15s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+              filter 0.15s ease;
+}
+.btn:active { transform: scale(0.97); }
+
+/* Primary red pill */
+.btn-primary {
+  background: var(--accent);
+  color: #fff;
+}
+.btn-primary:active { filter: brightness(0.92); }
+
+/* Neutral grey pill */
+.btn-neutral {
+  background: var(--surface-subtle);
+  color: var(--text-primary);
+}
+.btn-neutral:active { filter: brightness(0.95); }
+
+/* ===== Sign in with ClassPass screen ===== */
+.toolbar {
+  position: absolute;
+  top: 54px;
+  left: 0;
+  right: 0;
+  height: 54px;
+  z-index: 30;
+  padding: 0 16px;
+  display: flex;
+  align-items: center;
+}
+.icon-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: 999px;
+  background: #fff;
+  border: none;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: transform 0.15s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+.icon-btn:active { transform: scale(0.97); }
+
+/* ===== Continue with Playlist or ClassPass (12573:55135) ===== */
+.continue-content {
+  position: absolute;
+  top: 108px;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 16px 24px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+}
+.continue-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+}
+.continue-apps {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.continue-apps img {
+  display: block;
+  width: 40px;
+  height: 40px;
+}
+.continue-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  text-align: center;
+  color: var(--pl-text-primary);
+}
+.continue-copy h1,
+.continue-copy p { margin: 0; }
+.continue-copy .pl-text-body-sm-regular { color: var(--pl-text-secondary); }
+.continue-rule {
+  width: 100%;
+  margin: 0;
+  border: 0;
+  border-top: 1px solid var(--pl-border-default);
+}
+.continue-body {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  width: 100%;
+}
+.continue-legal {
+  margin: 0;
+  text-align: center;
+  color: var(--pl-text-primary);
+}
+.continue-actions,
+.continue-social,
+.continue-form,
+.continue-fields,
+.continue-submit {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+.continue-actions { gap: 16px; }
+.continue-social { gap: 16px; }
+.continue-form { gap: 20px; }
+.continue-fields { gap: 15px; }
+.continue-submit {
+  align-items: center;
+  gap: 20px;
+}
+.continue-submit .forgot-link { font-weight: 500; }
+/* Social marks are 24px; md buttons otherwise slot 16px icons. */
+.continue-social .pl-btn { --btn-icon: 24px; }
+.continue-screen .divider-label {
+  font-size: var(--pl-body-md-medium-size);
+  line-height: var(--pl-body-md-medium-lineheight);
+  font-weight: var(--pl-body-md-medium-weight);
+}
+
+.cp-content {
+  position: absolute;
+  top: 108px;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 20px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.cp-title {
+  font-size: 24px;
+  line-height: 28px;
+  font-weight: 900;
+  color: var(--text-primary);
+}
+
+/* Social sign-in buttons (Apple / Google) */
+.btn-social {
+  position: relative;
+  background: #fff;
+  border: 1px solid var(--border-default);
+  color: var(--text-primary);
+  padding: 0 16px;
+}
+.btn-social:active { background: #f7f7f8; }
+.social-icon {
+  position: absolute;
+  left: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 24px;
+  height: 24px;
+  display: flex;
+}
+.social-icon img { width: 100%; height: 100%; display: block; }
+.btn-social-label { width: 100%; text-align: center; }
+
+/* Divider with "or" */
+.divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.divider-line {
+  flex: 1 0 0;
+  height: 1px;
+  background: var(--border-default);
+}
+.divider-label {
+  font-size: 18px;
+  line-height: 28px;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+/* Form */
+.cp-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+.input-field {
+  position: relative;
+  background: var(--surface-subtle, #f1f2f3);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+}
+.input-field input {
+  flex: 1;
+  width: 100%;
+  border: none;
+  background: transparent;
+  outline: none;
+  padding: 16px;
+  font-family: inherit;
+  font-size: 16px;
+  line-height: 20px;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+.input-field input::placeholder {
+  color: #43454c;
+  font-weight: 500;
+}
+.visibility-toggle {
+  position: absolute;
+  right: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 24px;
+  height: 24px;
+  border: none;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+  display: flex;
+}
+/* Keep the 24px glyph but meet the 44x44 minimum tap target */
+.visibility-toggle::before {
+  content: "";
+  position: absolute;
+  inset: -10px;
+}
+.visibility-toggle img { width: 100%; height: 100%; display: block; }
+
+.cp-footer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+.forgot-link {
+  font-size: 16px;
+  line-height: 20px;
+  font-weight: 600;
+  color: var(--text-primary);
+  text-decoration: underline;
+  text-underline-position: from-font;
+}
+.cp-legal {
+  font-size: 13px;
+  line-height: 16px;
+  color: var(--text-primary);
+  font-weight: 400;
+}
+.cp-footer .btn-primary { width: 100%; }
+
+/* ===== Create an account (11155:7645) ===== */
+.signup-content {
+  position: absolute;
+  top: 108px;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 16px 24px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+}
+.signup-header,
+.signup-copy,
+.signup-body,
+.signup-actions,
+.signup-form,
+.signup-fields {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+.signup-header { gap: 12px; }
+.signup-copy {
+  gap: 8px;
+  text-align: center;
+  color: var(--pl-text-primary);
+}
+.signup-copy h1 { margin: 0; }
+.signup-actions { gap: 16px; }
+.signup-signin-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  margin: 0;
+}
+.signup-note {
+  width: 100%;
+  gap: var(--pl-space-xs);
+  padding: var(--pl-space-sm) var(--pl-space-xs);
+  background: var(--pl-surface-variant-blue);
+  border-radius: var(--pl-radius-semantic-md);
+  --banner-fg: var(--pl-text-secondary);
+}
+.signup-note .pl-banner__icon {
+  width: var(--pl-symbol-size-sm);
+  height: var(--pl-symbol-size-sm);
+  padding-top: var(--pl-space-xxs);
+  box-sizing: content-box;
+}
+.signup-note .pl-banner__icon > .pl-icon {
+  width: var(--pl-symbol-size-sm);
+  height: var(--pl-symbol-size-sm);
+}
+.signup-note .pl-banner__text { margin: 0; }
+.signup-body { gap: 24px; }
+.signup-form { gap: 20px; }
+.signup-fields { gap: 12px; }
+.signup-names {
+  display: flex;
+  gap: 12px;
+  width: 100%;
+}
+.signup-names .pl-field { flex: 1 0 0; min-width: 0; }
+
+/* ===== Create a password (12901:344368) ===== */
+.password-content {
+  position: absolute;
+  top: 108px;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 20px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.password-copy { width: 100%; color: var(--pl-text-primary); }
+.password-copy h1 { margin: 0; }
+.password-form,
+.password-fields {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+.password-form { gap: 20px; }
+.password-fields { gap: 12px; }
+.password-hint {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  width: 100%;
+}
+.password-hint__icon {
+  display: block;
+  flex: none;
+  width: 20px;
+  height: 20px;
+}
+.password-hint__text {
+  margin: 0;
+  flex: 1 0 0;
+  min-width: 0;
+  color: var(--pl-text-primary);
+}
+
+/* Disabled primary button */
+.btn.btn-disabled {
+  background: #f7f7f8;
+  color: #b3b5bc;
+  cursor: default;
+}
+.btn.btn-disabled:active { transform: none; filter: none; }
+
+/* ===== Verify your number (12901:344313) ===== */
+.verify-content {
+  position: absolute;
+  top: 108px;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 20px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.verify-copy,
+.verify-form {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+.verify-copy { gap: 12px; }
+.verify-copy h1 { margin: 0; color: var(--pl-text-primary); }
+.verify-copy p { margin: 0; color: var(--pl-text-secondary); }
+.verify-form { gap: 20px; }
+
+.cp-heading {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.cp-subtitle {
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 400;
+  color: var(--text-secondary);
+}
+
+/* ===== Enter the 4-digit code (12901:344338) ===== */
+.code-content {
+  position: absolute;
+  top: 108px;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  overflow: hidden;
+  padding: 20px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.code-copy,
+.code-form {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+.code-copy { gap: 12px; }
+.code-copy h1 { margin: 0; color: var(--pl-text-primary); }
+.code-copy p { margin: 0; color: var(--pl-text-secondary); }
+.code-form { gap: 20px; }
+.code-inputs {
+  display: flex;
+  gap: 12px;
+  width: 100%;
+}
+.code-field { width: 48px; flex: none; }
+.code-field .pl-field__box {
+  justify-content: center;
+  width: 48px;
+  padding-left: 0;
+  padding-right: 0;
+}
+.code-field .pl-field__input { text-align: center; }
+.code-resend {
+  margin: 0;
+  width: 100%;
+  color: var(--pl-text-primary);
+}
+.code-resend.active {
+  text-decoration: underline;
+  text-underline-position: from-font;
+  cursor: pointer;
+}
+
+.code-keyboard {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 24px 8px 76px;
+  background: #e6e9ed;
+  border-radius: 27px 27px 40px 40px;
+}
+.code-keyboard__row {
+  display: flex;
+  gap: 6px;
+  width: 100%;
+}
+.code-keyboard__key,
+.code-keyboard__spacer {
+  flex: 1 0 0;
+  min-width: 0;
+  height: 50px;
+}
+.code-keyboard__key {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3px 0 4px;
+  border: 0;
+  border-radius: 8.5px;
+  background: #fff;
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.18);
+  color: #000;
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Compact', 'SF Pro Text', sans-serif;
+  font-size: 23px;
+  line-height: 28px;
+  font-weight: 400;
+  cursor: pointer;
+  transition: transform 0.12s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+.code-keyboard__key:active { transform: scale(0.97); }
+.code-keyboard__delete { color: #595959; }
+.code-keyboard__delete svg { display: block; }
+
+@media (prefers-reduced-motion: reduce) {
+  .code-keyboard__key:active { transform: none; }
+}
+
+/* ===== Reset your password screen ===== */
+.reset-screen .btn-primary { width: 100%; }
+
+/* ===== Sign in with Apple sheet (13012:392078) =====
+   iOS system chrome, not Playlist DS — SF Pro, iOS greys, Apple blue.
+   Overlay uses --pl-bg-inverse at 30% to match the Figma scrim. */
+.siwa {
+  --siwa-out: 0.38s;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 110;
+  pointer-events: none;
+  visibility: hidden;
+  transition: visibility 0s linear var(--siwa-out);
+}
+.siwa.is-open {
+  pointer-events: auto;
+  visibility: visible;
+  transition: visibility 0s;
+}
+.siwa-scrim {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: var(--pl-bg-inverse, #161618);
+  opacity: 0;
+  cursor: pointer;
+  transition: opacity 0.25s ease;
+}
+.siwa.is-open .siwa-scrim { opacity: 0.3; }
+.siwa-sheet {
+  position: absolute;
+  left: 7px;
+  right: 7px;
+  bottom: 6px;
+  height: 328px;
+  display: flex;
+  flex-direction: column;
+  background: #ececec;
+  border-radius: 48px;
+  overflow: hidden;
+  transform: translateY(calc(100% + 12px));
+  transition: transform 0.38s cubic-bezier(0.32, 0.72, 0, 1);
+}
+.siwa.is-open .siwa-sheet {
+  transform: translateY(0);
+  will-change: transform;
+}
+
+.siwa-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 16px 8px 20px;
+  flex: none;
+}
+.siwa-title {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', sans-serif;
+  font-size: 22px;
+  line-height: 28px;
+  font-weight: 700;
+  letter-spacing: -0.44px;
+  color: #000;
+}
+.siwa-close {
+  --ibtn-bg: #e6e6e6;
+  --ibtn-fg: #000;
+  flex: none;
+}
+.siwa-close:hover { --ibtn-bg: #dedede; }
+.siwa-close:active { --ibtn-bg: #d4d4d4; }
+
+.siwa-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  padding: 8px 20px 24px;
+  flex: 1;
+}
+.siwa-app {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+}
+.siwa-app-icon {
+  flex: none;
+  display: block;
+  width: 53px;
+  height: 53px;
+}
+.siwa-app-copy {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif;
+  font-size: 15px;
+  line-height: 1.2;
+  font-weight: 500;
+  color: #000;
+}
+.siwa-account {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 12px;
+  background: #ddd;
+  border-radius: 40px;
+}
+.siwa-avatar {
+  flex: none;
+  display: block;
+  width: 35px;
+  height: 35px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+.siwa-account-copy {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.siwa-account-name {
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif;
+  font-size: 16px;
+  line-height: 1.2;
+  font-weight: 500;
+  color: #000;
+}
+.siwa-account-meta {
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif;
+  font-size: 13px;
+  line-height: 1.2;
+  font-weight: 400;
+  color: var(--pl-text-secondary, #43454c);
+}
+.siwa-signin {
+  flex: none;
+  width: 101px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: #0080fc;
+  color: #fff;
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif;
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: filter 0.15s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+.siwa-signin:active { filter: brightness(0.92); }
+
+/* ===== Google sign-in alert (13012:392650) =====
+   iOS ASWebAuthenticationSession chrome, not Playlist DS.
+   Same inverse 30% scrim as SIWA; the alert is a centered card. */
+.gauth {
+  --gauth-out: 0.38s;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 110;
+  pointer-events: none;
+  visibility: hidden;
+  transition: visibility 0s linear var(--gauth-out);
+}
+.gauth.is-open {
+  pointer-events: auto;
+  visibility: visible;
+  transition: visibility 0s;
+}
+.gauth-scrim {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: var(--pl-bg-inverse, #161618);
+  opacity: 0;
+  cursor: pointer;
+  transition: opacity 0.22s ease;
+}
+.gauth.is-open .gauth-scrim { opacity: 0.3; }
+.gauth-alert {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 319px;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 10px;
+  padding: 14px;
+  background: rgba(255, 255, 255, 0.97);
+  border-radius: 36px;
+  box-shadow: 0 6px 8px rgba(0, 0, 0, 0.14);
+  transform: translate(-50%, -50%) scale(0.94);
+  opacity: 0;
+  transform-origin: center center;
+  pointer-events: none;
+  transition:
+    transform 0.28s cubic-bezier(0.19, 1, 0.22, 1),
+    opacity 0.2s ease;
+}
+.gauth.is-alert .gauth-alert {
+  transform: translate(-50%, -50%) scale(1);
+  opacity: 1;
+  pointer-events: auto;
+  will-change: transform;
+}
+.gauth-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 24px 8px 8px;
+  text-align: left;
+  letter-spacing: -0.43px;
+}
+.gauth-title {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', sans-serif;
+  font-size: 17px;
+  line-height: 22px;
+  font-weight: 600;
+  color: var(--pl-text-primary, #020203);
+}
+.gauth-desc {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif;
+  font-size: 15px;
+  line-height: 22px;
+  font-weight: 400;
+  color: var(--pl-text-secondary, #43454c);
+}
+.gauth-actions {
+  display: flex;
+  align-items: stretch;
+  gap: 10px;
+  width: 100%;
+}
+.gauth-btn {
+  flex: 1 0 0;
+  min-width: 0;
+  height: 48px;
+  padding: 13px 16px;
+  border: 0;
+  border-radius: 100px;
+  background: var(--pl-surface-hover, #e4e5e7);
+  color: var(--pl-text-primary, #020203);
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif;
+  font-size: 17px;
+  line-height: 22px;
+  font-weight: 500;
+  letter-spacing: -0.43px;
+  cursor: pointer;
+  transition:
+    transform 0.15s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+    filter 0.15s ease;
+}
+.gauth-btn:active {
+  transform: scale(0.97);
+  filter: brightness(0.96);
+}
+
+/* Choose an account sheet (13041:393345) — slides up from the bottom
+   over the same inverse scrim after the iOS confirmation. */
+.gauth-sheet {
+  --gauth-sheet-out: 0.38s;
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 77px;
+  bottom: 0;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  border-radius: 32px 32px 0 0;
+  overflow: hidden;
+  font-family: 'Google Sans Flex', 'DM Sans', sans-serif;
+  transform: translateY(calc(100% + 12px));
+  pointer-events: none;
+  transition: transform 0.38s cubic-bezier(0.32, 0.72, 0, 1);
+}
+.gauth.is-sheet .gauth-sheet {
+  transform: translateY(0);
+  pointer-events: auto;
+  will-change: transform;
+}
+.gauth-sheet .pl-icon-btn > img {
+  width: 1em;
+  height: 1em;
+  display: block;
+}
+
+.gauth-chrome {
+  display: flex;
+  flex-direction: column;
+  gap: 26px;
+  padding: 12px;
+  border-bottom: 1px solid var(--pl-border-default, #e4e5e7);
+  flex: none;
+}
+.gauth-chrome-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+.gauth-chrome-url {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif;
+  font-size: 17px;
+  line-height: 20px;
+  font-weight: 600;
+  color: var(--pl-text-primary, #020203);
+  text-align: center;
+}
+.gauth-chrome-brand {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+}
+.gauth-chrome-brand img {
+  display: block;
+  width: 24px;
+  height: 24px;
+}
+.gauth-chrome-brand span {
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 500;
+  color: #343434;
+}
+
+.gauth-body {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  padding: 24px 20px;
+}
+.gauth-steps {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+}
+.gauth-step {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 42px;
+  width: 100%;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.22s ease;
+}
+.gauth-step.is-active {
+  opacity: 1;
+  pointer-events: auto;
+}
+.gauth-heading {
+  display: flex;
+  flex-direction: column;
+  gap: 34px;
+  align-items: flex-start;
+  max-width: 276px;
+}
+.gauth-heading--resume { max-width: none; width: 100%; }
+.gauth-heading--resume .gauth-sheet-title { line-height: 1.2; }
+.gauth-app-icon {
+  display: block;
+  width: 40px;
+  height: 40px;
+}
+.gauth-heading-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 31px;
+  width: 100%;
+}
+.gauth-sheet-title {
+  margin: 0;
+  font-size: 31px;
+  line-height: 36px;
+  font-weight: 400;
+  color: #1f1f1f;
+}
+.gauth-sheet-sub {
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.2;
+  font-weight: 500;
+  color: #343434;
+}
+.gauth-link {
+  color: #0b57d0;
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.gauth-accounts {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+.gauth-account {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  margin: 0;
+  padding: 12px 0;
+  border: 0;
+  border-bottom: 1px solid var(--pl-border-default, #e4e5e7);
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background-color 0.15s ease;
+}
+.gauth-account--other { padding: 16px 0; }
+.gauth-account:active { background: var(--pl-surface-hover, #e4e5e7); }
+.gauth-avatar {
+  display: block;
+  width: 27px;
+  height: 27px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex: none;
+}
+.gauth-account-glyph {
+  display: block;
+  width: 20px;
+  height: 20px;
+  flex: none;
+  color: #1f1f1f;
+}
+.gauth-account-copy {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+}
+.gauth-account-name {
+  font-size: 16px;
+  line-height: 1.2;
+  font-weight: 500;
+  color: var(--pl-text-primary, #020203);
+}
+.gauth-account-email {
+  font-size: 13px;
+  line-height: 1.2;
+  font-weight: 500;
+  color: var(--pl-text-secondary, #43454c);
+}
+.gauth-legal {
+  margin: 0;
+  padding: 4px;
+  max-width: 323px;
+  font-size: 14px;
+  line-height: 1.2;
+  font-weight: 400;
+  color: #333;
+}
+.gauth-legal-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  width: 100%;
+}
+.gauth-legal-stack .gauth-legal { max-width: none; }
+
+.gauth-chip {
+  display: flex;
+  align-items: center;
+  align-self: flex-start;
+  gap: 12px;
+  margin: 0;
+  padding: 4px 16px 4px 4px;
+  border: 1px solid var(--pl-border-focus, #161618);
+  border-radius: 32px;
+  background: #fff;
+  cursor: pointer;
+  font-family: inherit;
+  transition: transform 0.15s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+.gauth-chip:active { transform: scale(0.97); }
+.gauth-chip-label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.gauth-chip-email {
+  font-size: 13px;
+  line-height: 1.2;
+  font-weight: 500;
+  color: var(--pl-text-primary, #020203);
+}
+.gauth-chip-caret {
+  display: block;
+  width: 7.5px;
+  height: 4px;
+  flex: none;
+}
+
+.gauth-cta {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+}
+.gauth-outline {
+  flex: 1 0 0;
+  min-width: 0;
+  height: auto;
+  padding: 12px 24px;
+  border: 1px solid var(--pl-border-focus, #161618);
+  border-radius: 32px;
+  background: transparent;
+  color: #0b57d0;
+  font-family: inherit;
+  font-size: 13px;
+  line-height: 1.2;
+  font-weight: 500;
+  cursor: pointer;
+  transition:
+    transform 0.15s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+    background-color 0.15s ease;
+}
+.gauth-outline:active { transform: scale(0.97); }
+
+.gauth-meta {
+  transition: opacity 0.22s ease;
+}
+.gauth.is-resume .gauth-meta {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.gauth-foot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 27px;
+  width: 100%;
+  flex: none;
+}
+.gauth-meta {
+  display: flex;
+  align-items: center;
+  gap: 31px;
+  width: 100%;
+}
+.gauth-lang {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 12px;
+  line-height: 1.2;
+  font-weight: 500;
+  color: #333;
+  white-space: nowrap;
+}
+.gauth-lang img {
+  display: block;
+  width: 7.5px;
+  height: 4px;
+  color: #161618;
+}
+.gauth-meta-links {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 166px;
+  flex: none;
+  font-size: 12px;
+  line-height: 1.2;
+  font-weight: 500;
+  color: #333;
+}
+.gauth-meta-links a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.gauth-safari {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 343px;
+}
+.gauth-safari-back {
+  color: #afafaf;
+}
+.gauth-safari-back:disabled {
+  --ibtn-bg: #fff;
+  --ibtn-fg: #afafaf;
+  --ibtn-shadow: var(--pl-elevation-sm, 0 2px 8px rgba(0, 0, 0, 0.12));
+  opacity: 1;
+}
+.gauth-safari-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 104px;
+  height: 47px;
+  padding: 0 16px;
+  background: #fff;
+  border-radius: 999px;
+  box-shadow: var(--pl-elevation-sm, 0 2px 8px rgba(0, 0, 0, 0.12));
+}
+.gauth-safari-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #020203;
+  cursor: pointer;
+}
+.gauth-safari-icon .pl-icon,
+.gauth-safari-icon img {
+  display: block;
+  width: 20px;
+  height: 20px;
+}
+
+/* ===== Reduced motion =====
+   Gentler, not zero: the crossfades that explain what happened are kept, all
+   travel and zoom is dropped. Screens hide with opacity/visibility instead of
+   translateX, and the app launch becomes a plain dissolve (the red tile would
+   otherwise flash full-screen with nothing to justify it). */
+@media (prefers-reduced-motion: reduce) {
+  .auth-screen {
+    transform: none;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.2s ease, visibility 0.2s;
+  }
+  .auth-screen.active {
+    transform: none;
+    opacity: 1;
+    visibility: visible;
+  }
+  .auth-screen.behind {
+    transform: none;
+    opacity: 0;
+    visibility: hidden;
+  }
+  .auth-screen::after { display: none; }
+
+  .launch-tile { display: none; }
+  .home-screen.launching,
+  .home-screen.launching.covered {
+    transform: none;
+    opacity: 0;
+    transition: opacity 0.25s ease;
+  }
+
+  .siwa { --siwa-out: 0.2s; }
+  .siwa-scrim { transition: opacity 0.2s ease; }
+  .siwa-sheet {
+    transform: none;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+  }
+  .siwa.is-open .siwa-sheet {
+    transform: none;
+    opacity: 1;
+    will-change: auto;
+  }
+
+  .gauth { --gauth-out: 0.2s; }
+  .gauth-scrim { transition: opacity 0.2s ease; }
+  .gauth-alert {
+    transform: translate(-50%, -50%);
+    opacity: 0;
+    transition: opacity 0.2s ease;
+  }
+  .gauth.is-alert .gauth-alert {
+    transform: translate(-50%, -50%);
+    opacity: 1;
+    will-change: auto;
+  }
+  .gauth-btn:active { transform: none; }
+  .gauth-sheet {
+    transform: none;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+  }
+  .gauth.is-sheet .gauth-sheet {
+    transform: none;
+    opacity: 1;
+    will-change: auto;
+  }
+  .gauth-step {
+    transition: opacity 0.2s ease;
+  }
+  .gauth-chip:active,
+  .gauth-outline:active { transform: none; }
+}
+
+/* ===== Location prompt (12901:344255) ===== */
+.loc {
+  --loc-out: 0.28s;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 110;
+  pointer-events: none;
+  visibility: hidden;
+  transition: visibility 0s linear var(--loc-out);
+}
+.loc.is-open {
+  pointer-events: auto;
+  visibility: visible;
+  transition: visibility 0s;
+}
+.loc-scrim {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: var(--pl-bg-inverse, #161618);
+  opacity: 0;
+  transition: opacity 0.22s ease;
+}
+.loc.is-open .loc-scrim { opacity: 0.3; }
+.loc-dialog {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+  width: 360px;
+  padding: 0 0 24px;
+  background: var(--pl-surface-default, #fff);
+  border-radius: var(--pl-radius-component-modal-sheet, 24px);
+  overflow: hidden;
+  transform: translate(-50%, -50%) scale(0.94);
+  opacity: 0;
+  transform-origin: center center;
+  pointer-events: none;
+  transition:
+    transform 0.28s cubic-bezier(0.19, 1, 0.22, 1),
+    opacity 0.2s ease;
+}
+.loc.is-open .loc-dialog {
+  transform: translate(-50%, -50%) scale(1);
+  opacity: 1;
+  pointer-events: auto;
+  will-change: transform;
+}
+.loc-hero {
+  position: relative;
+  width: 360px;
+  height: 148px;
+  flex: none;
+  overflow: hidden;
+}
+.loc-hero__map {
+  display: block;
+  width: 360px;
+  height: 148px;
+  object-fit: cover;
+}
+.loc-hero__pin {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 80px;
+  height: 80px;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+.loc-hero__pin > .pl-icon {
+  display: block;
+  width: 80px;
+  height: 80px;
+}
+.loc-copy {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 0 24px;
+  text-align: center;
+}
+.loc-title {
+  margin: 0;
+  width: 100%;
+  color: var(--pl-text-primary);
+}
+.loc-desc {
+  margin: 0;
+  width: 100%;
+  color: var(--pl-text-secondary);
+}
+.loc-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  width: 100%;
+  padding: 0 24px;
+}
+
+/* iOS Allow Location alert (12901:344459) — stacked over the nearby modal */
+.loc-native-scrim {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: var(--pl-bg-inverse, #161618);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.22s ease;
+}
+.loc.is-native .loc-native-scrim {
+  opacity: 0.3;
+  pointer-events: auto;
+}
+.loc-native {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 4;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 10px;
+  width: 319px;
+  padding: 14px;
+  background: rgba(255, 255, 255, 0.97);
+  border-radius: 36px;
+  box-shadow: 0 6px 8px rgba(0, 0, 0, 0.14);
+  transform: translate(-50%, -50%) scale(0.94);
+  opacity: 0;
+  transform-origin: center center;
+  pointer-events: none;
+  transition:
+    transform 0.28s cubic-bezier(0.19, 1, 0.22, 1),
+    opacity 0.2s ease;
+}
+.loc.is-native .loc-native {
+  transform: translate(-50%, -50%) scale(1);
+  opacity: 1;
+  pointer-events: auto;
+  will-change: transform;
+}
+.loc-native-copy {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  width: 100%;
+  padding: 8px;
+}
+.loc-native-icon {
+  position: relative;
+  width: 65px;
+  height: 65px;
+  flex: none;
+  overflow: visible;
+}
+.loc-native-icon img {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: block;
+  width: 73px;
+  height: 69px;
+}
+.loc-native-text {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  width: 100%;
+  padding-top: 16px;
+  letter-spacing: -0.43px;
+}
+.loc-native-title {
+  margin: 0;
+  width: 100%;
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', sans-serif;
+  font-size: 17px;
+  line-height: 22px;
+  font-weight: 600;
+  color: #000;
+}
+.loc-native-desc {
+  margin: 0;
+  width: 100%;
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif;
+  font-size: 15px;
+  line-height: 22px;
+  font-weight: 400;
+  color: #000;
+}
+.loc-native-map-wrap {
+  padding: 0 0 16px;
+}
+.loc-native-map {
+  display: block;
+  width: 288px;
+  height: 180px;
+  object-fit: cover;
+  border-radius: 22px;
+}
+.loc-native-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
+  width: 100%;
+}
+.loc-native-btn {
+  width: 100%;
+  height: 48px;
+  padding: 13px 16px;
+  border: 0;
+  border-radius: 100px;
+  background: rgba(120, 120, 128, 0.16);
+  color: #000;
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif;
+  font-size: 17px;
+  line-height: 22px;
+  font-weight: 500;
+  letter-spacing: -0.43px;
+  cursor: pointer;
+  transition:
+    transform 0.15s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+    filter 0.15s ease;
+}
+.loc-native-btn:active {
+  transform: scale(0.97);
+  filter: brightness(0.96);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .loc { --loc-out: 0.2s; }
+  .loc-scrim,
+  .loc-native-scrim { transition: opacity 0.2s ease; }
+  .loc-dialog,
+  .loc-native {
+    transform: translate(-50%, -50%);
+    opacity: 0;
+    transition: opacity 0.2s ease;
+  }
+  .loc.is-open .loc-dialog,
+  .loc.is-native .loc-native {
+    transform: translate(-50%, -50%);
+    opacity: 1;
+    will-change: auto;
+  }
+  .loc-native-btn:active { transform: none; }
+}
+
+/* ===== Sign out confirm (11381:41894) ===== */
+.signout {
+  --signout-out: 0.28s;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 110;
+  pointer-events: none;
+  visibility: hidden;
+  transition: visibility 0s linear var(--signout-out);
+}
+.signout.is-open {
+  pointer-events: auto;
+  visibility: visible;
+  transition: visibility 0s;
+}
+.signout-scrim {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: #000;
+  opacity: 0;
+  transition: opacity 0.22s ease;
+}
+.signout.is-open .signout-scrim { opacity: 0.4; }
+.signout-alert {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 10px;
+  width: 319px;
+  padding: 14px;
+  background: rgba(255, 255, 255, 0.97);
+  border-radius: 36px;
+  box-shadow: 0 6px 8px rgba(0, 0, 0, 0.14);
+  transform: translate(-50%, -50%) scale(0.94);
+  opacity: 0;
+  transform-origin: center center;
+  pointer-events: none;
+  transition:
+    transform 0.28s cubic-bezier(0.19, 1, 0.22, 1),
+    opacity 0.2s ease;
+}
+.signout.is-open .signout-alert {
+  transform: translate(-50%, -50%) scale(1);
+  opacity: 1;
+  pointer-events: auto;
+  will-change: transform;
+}
+.signout-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 24px 8px 8px;
+  letter-spacing: -0.43px;
+}
+.signout-title {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', sans-serif;
+  font-size: 17px;
+  line-height: 22px;
+  font-weight: 600;
+  color: #000;
+}
+.signout-desc {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif;
+  font-size: 15px;
+  line-height: 22px;
+  font-weight: 400;
+  color: #000;
+}
+.signout-actions {
+  display: flex;
+  align-items: stretch;
+  gap: 10px;
+  width: 100%;
+}
+.signout-btn {
+  flex: 1 0 0;
+  min-width: 0;
+  height: 48px;
+  padding: 13px 16px;
+  border: 0;
+  border-radius: 100px;
+  background: rgba(120, 120, 128, 0.16);
+  color: #000;
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif;
+  font-size: 17px;
+  line-height: 22px;
+  font-weight: 500;
+  letter-spacing: -0.43px;
+  cursor: pointer;
+  transition:
+    transform 0.15s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+    filter 0.15s ease;
+}
+.signout-btn--danger { color: #ff383c; }
+.signout-btn:active {
+  transform: scale(0.97);
+  filter: brightness(0.96);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .signout { --signout-out: 0.2s; }
+  .signout-scrim { transition: opacity 0.2s ease; }
+  .signout-alert {
+    transform: translate(-50%, -50%);
+    opacity: 0;
+    transition: opacity 0.2s ease;
+  }
+  .signout.is-open .signout-alert {
+    transform: translate(-50%, -50%);
+    opacity: 1;
+    will-change: auto;
+  }
+  .signout-btn:active { transform: none; }
+}
