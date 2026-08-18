@@ -784,8 +784,12 @@
   // ========== FOURSQUARE PLACES API ==========
   const FOURSQUARE_KEY = window.FOURSQUARE_KEY;
   let placesAbort = null;
+  // Once Foursquare is out of credits (429) or rejects the key, stop
+  // retrying for this page load — fallback studios stay on screen.
+  let foursquareUnavailable = !FOURSQUARE_KEY;
 
   async function fetchNearbyPlaces(lat, lng, query) {
+    if (foursquareUnavailable) return [];
     if (placesAbort) placesAbort.abort();
     placesAbort = new AbortController();
     const params = new URLSearchParams({
@@ -817,6 +821,9 @@
       });
       if (!res.ok) {
         console.warn('Foursquare API returned', res.status);
+        if (res.status === 401 || res.status === 403 || res.status === 429) {
+          foursquareUnavailable = true;
+        }
         return [];
       }
       const data = await res.json();
@@ -861,8 +868,24 @@
     populateVenueList(screenId, places, search, location);
   }
 
+  // Hardcoded NYC studios so the sheet isn't empty while Foursquare loads,
+  // or when the CORS proxy fails on a plain localhost server.
+  function fallbackPlaces(lat, lng, search, locationLabel) {
+    return generatePins(search || '', locationLabel || 'nearby', { lat: lat, lng: lng }, 20).map(function(p, i) {
+      return {
+        name: p.name,
+        lat: p.lat,
+        lng: p.lng,
+        category: p.category || STUDIO_TAGS[p.name] || '',
+        locality: 'New York',
+        distance: 200 + i * 180
+      };
+    });
+  }
+
   // Fetch and display real places, replacing any placeholder pins
   async function loadRealPlaces(lat, lng, search, screenId, locationLabel) {
+    displayPlaces(fallbackPlaces(lat, lng, search, locationLabel), screenId, search, locationLabel);
     const places = await fetchNearbyPlaces(lat, lng, search || '');
     console.log('Foursquare returned', places ? places.length : 0, 'places', places && places[0]);
     if (!places || places.length === 0) return; // keep existing pins as fallback
@@ -1963,7 +1986,7 @@
       }
     }
 
-    // Fetch real places from Foursquare (no placeholder pins)
+    // Fallback studios first; Foursquare replaces them if it returns results
     loadRealPlaces(loc.lat, loc.lng, effectiveSearch, currentScreen, effectiveLocation || 'Nearby');
   }
 
@@ -1975,7 +1998,6 @@
     clearMarkers();
     ensureCurrentLocMarker(lng, lat);
 
-    // Load real places from Foursquare directly (no placeholder pins)
     loadRealPlaces(lat, lng, '', 'screen-map-default', locationLabel);
   }
 
@@ -3422,7 +3444,6 @@
 
     clearMarkers();
 
-    // Fetch real places from Foursquare directly (no placeholder pins)
     loadRealPlaces(loc.lat, loc.lng, searchTerm || '', currentScreen, 'Nearby');
   });
 
