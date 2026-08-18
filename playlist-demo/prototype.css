@@ -4379,7 +4379,7 @@
   right: 0;
   bottom: 0;
   z-index: 2;
-  padding: 24px;
+  padding: 24px 24px 32px 24px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -5416,9 +5416,6 @@
   transition: background-color 0.15s ease;
 }
 .gauth-account--other { padding: 16px 0; }
-@media (hover: hover) and (pointer: fine) {
-  .gauth-account:hover { background: var(--pl-surface-subtle, #f1f2f3); }
-}
 .gauth-account:active { background: var(--pl-surface-hover, #e4e5e7); }
 .gauth-avatar {
   display: block;
@@ -5528,9 +5525,6 @@
     background-color 0.15s ease;
 }
 .gauth-outline:active { transform: scale(0.97); }
-@media (hover: hover) and (pointer: fine) {
-  .gauth-outline:hover { background: var(--pl-surface-subtle, #f1f2f3); }
-}
 
 .gauth-meta {
   transition: opacity 0.22s ease;
