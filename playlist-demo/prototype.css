@@ -41,7 +41,8 @@
     border: 1px solid var(--pl-border-default);
     /* Device chrome, not app UI — the iPhone corner radius is a physical
        dimension and deliberately stays off the radius scale. */
-    border-radius: 40px;
+    --frame-radius: 48px;
+    border-radius: var(--frame-radius);
     overflow: hidden;
     position: relative;
     box-shadow: var(--pl-elevation-overlay);
@@ -297,7 +298,8 @@
      Held at 16 to match. To go DS-faithful instead, delete this rule and the
      guard at prototype.js:5528 — accepting zoom-on-focus on real iOS. */
   .map-search-pill .pl-search-bar__input,
-  .map-search-pill-default .pl-search-bar__input {
+  .map-search-pill-default .pl-search-bar__input,
+  #home-search-bar .pl-search-bar__input {
     font-size: var(--pl-body-lg-regular-size);
   }
   .map-close-pill {
@@ -1719,7 +1721,11 @@
     margin-right: -20px;
     padding-left: 20px;
     padding-right: 20px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
   }
+  .vd-tabs.pl-tab-nav::-webkit-scrollbar { display: none; }
 
   /* Tab panels */
   .vd-panel {
@@ -1741,6 +1747,18 @@
   }
   .vd-panel-schedule {
     gap: 0;
+  }
+  /* Pricing — Figma 13085:23013. 24px from tabs (40px content gap − 16px
+     pull-up), then 16px between chips and the Drop-ins / Packs stacks. */
+  .vd-panel-pricing {
+    gap: 16px;
+    margin-top: -16px;
+  }
+  .vd-panel-pricing .cd-options-list .pl-pack {
+    width: 100%;
+    text-align: left;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
   }
   .vd-panel-classes {
     gap: 12px;
@@ -1838,7 +1856,7 @@
   .vd-schedule-card.disabled { cursor: default; }
   /* .pl-price sets display:inline-flex, which beats the UA [hidden] rule.
      Hide drop-in prices on reserved cards, and on every class card / footer
-     while THIS venue still has unused pack visits. */
+     while THIS venue still has unused pack visits or drop-in credit. */
   .pl-price[hidden],
   .pl-card.is-reserved .pl-price,
   #venue-detail.has-active-pack .pl-price {
@@ -3474,6 +3492,73 @@
   .cd-checkout-sheet.is-pack-redeem .cd-checkout-section-pay {
     display: none;
   }
+  /* Prepaid drop-in (bought on Pricing): class card + cancel policy only.
+     Figma 13103:54326. Same as pack-redeem minus the Reserve-with pack card. */
+  .cd-checkout-sheet.is-dropin-redeem .pl-checkout-card__payment,
+  .cd-checkout-sheet.is-dropin-redeem .pl-checkout-card__promo,
+  .cd-checkout-sheet.is-dropin-redeem .cd-checkout-section-pay,
+  .cd-checkout-sheet.is-dropin-redeem .cd-checkout-section-redeem {
+    display: none;
+  }
+  /* Venue Pricing purchase (Figma 13103:53220): pack/drop-in card + payment. */
+  .cd-checkout-sheet:not(.is-pricing-purchase) #cd-pricing-purchase-card {
+    display: none;
+  }
+  .cd-checkout-sheet.is-pricing-purchase .pl-checkout-card,
+  .cd-checkout-sheet.is-pricing-purchase .cd-checkout-section-policy,
+  .cd-checkout-sheet.is-pricing-purchase .cd-checkout-section-redeem {
+    display: none;
+  }
+  #cd-pricing-purchase-card .pl-pack {
+    width: 100%;
+    text-align: left;
+    pointer-events: none;
+  }
+  .cd-checkout-sheet.is-pricing-purchase:not(.is-open) {
+    padding: 0;
+    min-height: 0;
+  }
+  .cd-checkout-sheet.is-pricing-purchase .cd-cta-icon-calendar,
+  .cd-checkout-sheet.is-success.is-pricing-purchase .cd-cta-icon-calendar {
+    display: none;
+  }
+  .cd-checkout-sheet.is-pricing-purchase #cd-success-instructor-row {
+    display: none;
+  }
+  /* [hidden] loses to .pl-success-modal__detail-row { display:flex }. */
+  .cd-checkout-sheet:not(.is-pricing-purchase) #cd-success-info-row {
+    display: none;
+  }
+  .cd-checkout-sheet:not(.is-pricing-purchase) #cd-checkout-success-find {
+    display: none;
+  }
+  .cd-checkout-sheet.is-pricing-purchase #cd-success-booking-actions {
+    display: none;
+  }
+  .cd-checkout-success-modal .pl-success-modal__detail-icon > img {
+    display: block;
+    width: 20px;
+    height: 20px;
+  }
+  .cd-checkout-sheet.is-pricing-purchase.is-collapsing .cd-checkout-mini-summary {
+    opacity: 0;
+    transition: none;
+  }
+  /* Pricing-tab purchase is a new sheet, not a morph from the booking bar.
+     Keep Buy pack / Buy drop-in full width — no pill grow. */
+  .cd-checkout-sheet.is-pricing-purchase .cd-checkout-cta,
+  .cd-checkout-sheet.is-pricing-purchase.is-open .cd-checkout-cta {
+    left: 20px;
+    right: 20px;
+    bottom: 24px;
+    transition:
+      transform 0.12s cubic-bezier(.25, .46, .45, .94),
+      background-color 0.22s ease,
+      color 0.22s ease;
+  }
+  #venue-detail.has-pricing-purchase .vd-tabs [data-tab="pricing"] {
+    display: none;
+  }
   /* Cancel-reservation mode: same sheet chrome, different body content.
      Mode-specific subsections opt-in to display with .cd-checkout-mode-*. */
   .cd-checkout-sheet:not(.is-cancel-mode) .cd-checkout-mode-cancel {
@@ -4052,7 +4137,7 @@
 
 
 /* ===== Playlist demo: auth overlay + home tab ===== */
-.device-frame { --frame-radius: 40px; }
+.device-frame { --frame-radius: 48px; }
 
 #auth-stack {
   position: absolute;
@@ -4078,13 +4163,81 @@
 #screen-home-tab {
   background: var(--pl-bg-default);
 }
-.home-header {
-  flex-shrink: 0;
-  padding: 0 22px;
+.home-body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  overscroll-behavior: contain;
 }
-.home-header .pl-page-title {
-  margin: 28px 0 0;
+.home-body::-webkit-scrollbar { display: none; }
+.home-logo {
+  width: 167px;
+  height: 22px;
+  flex-shrink: 0;
+  margin: var(--pl-space-xl) 0 0 var(--pl-space-lg);
+  background-color: var(--pl-accent-default);
+  -webkit-mask: url('../design-system/assets/playlist-logo.svg') no-repeat left center / contain;
+  mask: url('../design-system/assets/playlist-logo.svg') no-repeat left center / contain;
+}
+#home-search-bar {
+  appearance: none;
+  -webkit-appearance: none;
+  margin: var(--pl-space-xxl) var(--pl-space-xl) 0;
+  width: auto;
+  align-self: stretch;
+  cursor: pointer;
+  text-align: left;
+}
+#home-search-bar .pl-search-bar__input {
+  color: var(--pl-text-secondary);
+}
+#home-search-bar .pl-search-bar__icon > .pl-icon {
+  width: var(--pl-symbol-size-xxl);
+  height: var(--pl-symbol-size-xxl);
+}
+.home-sections {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pl-space-xl);
+  margin-top: var(--pl-space-xl);
+  padding-bottom: 110px;
+}
+.home-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pl-space-xs);
+  min-width: 0;
+}
+.home-section-title {
+  margin: 0;
+  padding: 0 var(--pl-space-xl);
   color: var(--pl-text-primary);
+}
+.home-hscroll.vd-hscroll {
+  margin-left: 0;
+  margin-right: 0;
+  padding-left: var(--pl-space-xl);
+  padding-right: var(--pl-space-xl);
+  scroll-snap-type: none;
+  touch-action: pan-x;
+}
+.home-tile {
+  flex-shrink: 0;
+  background: var(--pl-surface-subtle);
+  border-radius: var(--pl-radius-component-card-default);
+}
+.home-tile--sq {
+  width: 200px;
+  height: 200px;
+}
+.home-tile--wide {
+  width: 269px;
+  height: 200px;
 }
 
 /* Screen container — transform-based push navigation.
