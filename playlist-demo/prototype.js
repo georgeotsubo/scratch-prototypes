@@ -1238,6 +1238,8 @@
   // Hash by name so it stays stable across re-renders and sessions.
   function hasVenueIntroOffer(pin) {
     if (!pin || !pin.name) return false;
+    var key = (pin.name || '') + '|' + (pin.lat || '') + '|' + (pin.lng || '');
+    if (window.__venueTrialPurchased && key && window.__venueTrialPurchased[key]) return false;
     var h = 0;
     for (var i = 0; i < pin.name.length; i++) h = ((h << 5) - h) + pin.name.charCodeAt(i);
     return (Math.abs(h) % 2) === 0;
@@ -3557,6 +3559,7 @@
     // Render the Overview's "Available today" list from the same generated
     // classes so it matches the Schedule tab.
     if (window.__renderVdAvailableToday) window.__renderVdAvailableToday();
+    if (window.__renderVdPricing) window.__renderVdPricing();
     if (window.__syncClassPriceVisibility) window.__syncClassPriceVisibility();
     // Toggle the Overview intro-offer promo card based on this venue's flag
     const promoEl = document.getElementById('vd-section-promo');
@@ -3719,6 +3722,7 @@
         if (initialTab && window.__switchVenueDetailTab) {
           window.__switchVenueDetailTab(initialTab);
         }
+        if (window.__syncPricingTabVisibility) window.__syncPricingTabVisibility();
       });
     }
   }
@@ -4028,6 +4032,13 @@
     appEl.classList.remove('on-home-tab');
     openSearchTab();
   });
+
+  var homeSearchBar = document.getElementById('home-search-bar');
+  if (homeSearchBar) {
+    homeSearchBar.addEventListener('click', function () {
+      openSearchTab();
+    });
+  }
 
   var bookingsSectionTabs = document.getElementById('bookings-section-tabs');
   if (bookingsSectionTabs) {
@@ -4489,6 +4500,49 @@
       var aboutBlock = venueDetailEl.querySelector('.vd-about-block');
       if (aboutBlock) aboutBlock.hidden = false;
       if (venueDetailSheet) venueDetailSheet.classList.add('vd-tab-overview');
+    };
+  })();
+
+  // ========== PRICING PANEL ==========
+  // Drop-ins + Packs lists (same cards as checkout options). Tapping a card
+  // opens the purchase sheet.
+  (function() {
+    var panel = document.querySelector('.vd-panel-pricing');
+    var dropinsEl = document.getElementById('vd-pricing-dropins-list');
+    var packsEl = document.getElementById('vd-pricing-packs-list');
+    function renderPricingLists() {
+      if (!dropinsEl || !packsEl) return;
+      var pin = window.__currentVenuePin;
+      var venue = pin
+        ? (pin.name + (pin.locality ? ' – ' + pin.locality : ''))
+        : 'this studio';
+      var catalog = window.__cdBuildCheckoutOptionsCatalog
+        ? window.__cdBuildCheckoutOptionsCatalog(venue)
+        : [];
+      var dropHtml = '';
+      var packHtml = '';
+      var renderCard = window.__cdRenderOptionCard;
+      catalog.forEach(function(opt) {
+        var html = renderCard ? renderCard(opt, null) : '';
+        if (opt.section === 'dropins') dropHtml += html;
+        else if (opt.section === 'packs') packHtml += html;
+      });
+      dropinsEl.innerHTML = dropHtml;
+      packsEl.innerHTML = packHtml;
+    }
+
+    if (panel) {
+      panel.addEventListener('click', function(e) {
+        if (wasDragging) return;
+        var card = e.target.closest('.pl-pack');
+        if (!card) return;
+        var id = card.getAttribute('data-option-id');
+        if (id && window.__openPricingPurchase) window.__openPricingPurchase(id);
+      });
+    }
+
+    window.__renderVdPricing = function() {
+      renderPricingLists();
     };
   })();
 
@@ -5803,12 +5857,14 @@
     var cdCheckoutCta = document.getElementById('cd-checkout-cta');
     var cdCheckoutCtaLabel = cdCheckoutCta && cdCheckoutCta.querySelector('.cd-cta-label');
     var cdCheckoutOpen = false;
+    var cdPricingPurchaseMode = false;
     // Tapping "Book and Pay" (sheet open) shows a spinner for 2s, then
     // transitions to the design-system success modal. No real booking call.
     var cdCheckoutSuccessTimer = null;
     var cdCheckoutSuccessEl = document.getElementById('cd-checkout-success');
     var cdCheckoutSuccessCloseBtn = document.getElementById('cd-checkout-success-close');
     var cdCheckoutSuccessAddBtn = document.getElementById('cd-checkout-success-add');
+    var cdCheckoutSuccessFindBtn = document.getElementById('cd-checkout-success-find');
     var cdCancelConfirmTimer = null;
     var cdCancelToastTimer = null;
     var cdCancelToastEl = document.getElementById('cd-cancel-toast');
@@ -5824,8 +5880,15 @@
     var cdCheckoutTotalToggle = document.getElementById('cd-checkout-total-toggle');
     if (cdCheckoutPaymentSection && cdCheckoutTotalToggle) {
       cdCheckoutTotalToggle.addEventListener('click', function() {
+        var startH = cdCheckoutSheet ? cdCheckoutSheet.getBoundingClientRect().height : 0;
+        var breakdown = cdCheckoutPaymentSection.querySelector('.pl-payment-section__breakdown');
+        // Pause the max-height transition so height:auto measures the
+        // expanded/collapsed end state; the sheet then animates to it.
+        if (breakdown) breakdown.style.transition = 'none';
         var open = cdCheckoutPaymentSection.classList.toggle('is-expanded');
         cdCheckoutTotalToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+        cdAnimateCheckoutHeight(startH);
+        if (breakdown) breakdown.style.transition = '';
       });
     }
 
@@ -5841,15 +5904,39 @@
     var cdCheckoutOptionsCatalog = [];
     var cdOptionsIsEntry = false;
 
-    function cdFormatExpiryDate(monthsFromNow) {
-      var d = new Date();
-      d.setMonth(d.getMonth() + monthsFromNow);
+    function cdFormatDate(d) {
       var month = d.toLocaleDateString('en-US', { month: 'short' });
       return month + ' ' + d.getDate() + ', ' + d.getFullYear();
     }
 
-    function cdFormatPackExpiry(monthsFromNow) {
+    function cdFormatExpiryDate(monthsFromNow) {
+      var d = new Date();
+      d.setMonth(d.getMonth() + monthsFromNow);
+      return cdFormatDate(d);
+    }
+
+    function cdFormatExpiryInDays(days) {
+      var d = new Date();
+      d.setDate(d.getDate() + days);
+      return cdFormatDate(d);
+    }
+
+    function cdExpiryTimestamp(opts) {
+      var d = new Date();
+      if (opts && opts.days) d.setDate(d.getDate() + opts.days);
+      else d.setMonth(d.getMonth() + ((opts && opts.months) || 6));
+      return d.getTime();
+    }
+
+    function cdFormatPackExpiry(monthsFromNow, expiresAt) {
+      if (expiresAt) return 'Expires ' + cdFormatDate(new Date(expiresAt));
       return 'Expires ' + cdFormatExpiryDate(monthsFromNow);
+    }
+
+    function cdVenueLocationLine(pin) {
+      if (!pin) return '';
+      var loc = pin._resolvedNeighborhood || pin.neighborhood || pin.locality || '';
+      return loc ? (pin.name + ' – ' + loc) : (pin.name || '');
     }
 
     function cdReservationIsPack(r) {
@@ -5865,29 +5952,99 @@
       return (key || '').split('|')[0];
     }
 
-    function cdGetVenuePack(venueKey) {
-      if (!window.__venuePacks) return null;
+    function cdResolveCreditStoreKey(store, venueKey) {
       var key = venueKey || cdCurrentVenueKey();
-      if (key && window.__venuePacks[key]) return window.__venuePacks[key];
-      // Same studio can be keyed slightly differently (search pin vs
-      // bookings). Never fall back to a pack from another venue.
+      if (!store) return key;
+      if (key && store[key]) return key;
       var name = cdVenuePackName(key);
-      if (!name) return null;
-      var keys = Object.keys(window.__venuePacks);
+      if (!name) return key;
+      var keys = Object.keys(store);
       var i;
       for (i = 0; i < keys.length; i++) {
-        if (cdVenuePackName(keys[i]) === name) return window.__venuePacks[keys[i]];
+        if (cdVenuePackName(keys[i]) === name) return keys[i];
       }
-      return null;
+      return key;
+    }
+
+    function cdCreditList(store, venueKey) {
+      if (!store) return [];
+      var key = cdResolveCreditStoreKey(store, venueKey);
+      var val = key && store[key];
+      if (!val) return [];
+      return Array.isArray(val) ? val.slice() : [val];
+    }
+
+    function cdSortCreditsFifo(list) {
+      return list.slice().sort(function(a, b) {
+        var ax = a.expiresAt || 0;
+        var bx = b.expiresAt || 0;
+        if (ax !== bx) return ax - bx;
+        return (a.purchasedAt || 0) - (b.purchasedAt || 0);
+      });
+    }
+
+    function cdGetVenuePackList(venueKey) {
+      return cdCreditList(window.__venuePacks, venueKey);
+    }
+
+    function cdGetVenuePack(venueKey) {
+      var active = cdGetVenuePackList(venueKey).filter(function(p) {
+        return p && p.remaining > 0;
+      });
+      return cdSortCreditsFifo(active)[0] || null;
+    }
+
+    function cdFindVenuePack(venueKey, instanceId) {
+      if (!instanceId) return cdGetVenuePack(venueKey);
+      var list = cdGetVenuePackList(venueKey);
+      var i;
+      for (i = 0; i < list.length; i++) {
+        if (list[i].instanceId === instanceId) return list[i];
+      }
+      return cdGetVenuePack(venueKey);
+    }
+
+    function cdWriteVenuePackList(venueKey, list) {
+      if (!window.__venuePacks) window.__venuePacks = {};
+      var key = venueKey || cdCurrentVenueKey();
+      if (!key) return;
+      window.__venuePacks[key] = list;
+    }
+
+    function cdAddVenuePack(venueKey, pack) {
+      if (!pack) return pack;
+      var key = venueKey || pack.venueKey || cdCurrentVenueKey();
+      if (!key) return pack;
+      pack.venueKey = key;
+      pack.purchasedAt = pack.purchasedAt || Date.now();
+      pack.expiryMonths = pack.expiryMonths || 6;
+      pack.expiresAt = pack.expiresAt || cdExpiryTimestamp({ months: pack.expiryMonths });
+      pack.instanceId = pack.instanceId || ('pack-' + pack.purchasedAt + '-' + Math.random().toString(36).slice(2, 7));
+      var list = cdGetVenuePackList(key);
+      list.push(pack);
+      cdWriteVenuePackList(key, list);
+      return pack;
+    }
+
+    function cdUpdateVenuePack(venueKey, pack) {
+      if (!pack) return;
+      var key = venueKey || pack.venueKey || cdCurrentVenueKey();
+      var list = cdGetVenuePackList(key);
+      var i;
+      var found = false;
+      for (i = 0; i < list.length; i++) {
+        if (pack.instanceId && list[i].instanceId === pack.instanceId) {
+          list[i] = pack;
+          found = true;
+          break;
+        }
+      }
+      if (!found) list.push(pack);
+      cdWriteVenuePackList(key, list);
     }
 
     function cdSetVenuePack(venueKey, pack) {
-      if (!pack) return;
-      if (!window.__venuePacks) window.__venuePacks = {};
-      var key = venueKey || pack.venueKey || cdCurrentVenueKey();
-      if (!key) return;
-      pack.venueKey = key;
-      window.__venuePacks[key] = pack;
+      cdUpdateVenuePack(venueKey, pack);
     }
 
     function cdVenueHasRedeemablePack(venueKey) {
@@ -5896,13 +6053,78 @@
     }
 
     function syncClassPriceVisibility() {
-      var hasPack = cdVenueHasRedeemablePack();
+      var hidePrices = cdHasOwnedBookingCredit();
       ['venue-detail', 'cd-booking-bar', 'cd-checkout-sheet'].forEach(function(id) {
         var el = document.getElementById(id);
-        if (el) el.classList.toggle('has-active-pack', hasPack);
+        if (el) el.classList.toggle('has-active-pack', hidePrices);
       });
     }
     window.__syncClassPriceVisibility = syncClassPriceVisibility;
+
+    function cdGetVenueDropinList(venueKey) {
+      return cdCreditList(window.__venueDropins, venueKey);
+    }
+
+    function cdGetVenueDropin(venueKey) {
+      var active = cdGetVenueDropinList(venueKey).filter(function(d) {
+        return d && d.remaining > 0;
+      });
+      return cdSortCreditsFifo(active)[0] || null;
+    }
+
+    function cdSetVenueDropin(venueKey, dropin) {
+      if (!dropin) return dropin;
+      if (!window.__venueDropins) window.__venueDropins = {};
+      var key = venueKey || cdCurrentVenueKey();
+      if (!key) return dropin;
+      dropin.venueKey = key;
+      dropin.purchasedAt = dropin.purchasedAt || Date.now();
+      dropin.expiryDays = dropin.expiryDays || 30;
+      dropin.expiresAt = dropin.expiresAt || cdExpiryTimestamp({ days: dropin.expiryDays });
+      dropin.instanceId = dropin.instanceId || ('dropin-' + dropin.purchasedAt + '-' + Math.random().toString(36).slice(2, 7));
+      var list = cdGetVenueDropinList(key);
+      list.push(dropin);
+      window.__venueDropins[key] = list;
+      return dropin;
+    }
+
+    function cdVenueHasDropinCredit(venueKey) {
+      var d = cdGetVenueDropin(venueKey);
+      return !!(d && d.remaining > 0);
+    }
+
+    function cdHasOwnedBookingCredit(venueKey) {
+      return cdVenueHasRedeemablePack(venueKey) || cdVenueHasDropinCredit(venueKey);
+    }
+
+    function cdIsRedeemCheckout() {
+      return cdCheckoutSheet.classList.contains('is-pack-redeem')
+        || cdCheckoutSheet.classList.contains('is-dropin-redeem');
+    }
+
+    function cdConsumeVenueDropin(venueKey) {
+      var d = cdGetVenueDropin(venueKey);
+      if (!d || d.remaining <= 0) return;
+      d.remaining -= 1;
+    }
+
+    function cdMarkTrialPurchased(venueKey, optionId) {
+      if (optionId !== 'trial') return;
+      var key = venueKey || cdCurrentVenueKey();
+      if (!key) return;
+      if (!window.__venueTrialPurchased) window.__venueTrialPurchased = {};
+      window.__venueTrialPurchased[key] = true;
+      window.__currentVenueHasIntroOffer = false;
+      var promoEl = document.getElementById('vd-section-promo');
+      if (promoEl) promoEl.style.display = 'none';
+      if (window.__renderVdPricing) window.__renderVdPricing();
+      if (window.__renderVdSchedule) window.__renderVdSchedule();
+    }
+
+    function syncPricingTabVisibility() {
+      if (window.__renderVdPricing) window.__renderVdPricing();
+    }
+    window.__syncPricingTabVisibility = syncPricingTabVisibility;
 
     function cdFillPackCard(pack, ids) {
       if (!pack || !ids) return;
@@ -5910,7 +6132,7 @@
       var expiryEl = document.getElementById(ids.expiry);
       var badgeEl = document.getElementById(ids.badge);
       if (titleEl) titleEl.textContent = pack.title || '';
-      if (expiryEl) expiryEl.textContent = cdFormatPackExpiry(pack.expiryMonths || 12);
+      if (expiryEl) expiryEl.textContent = cdFormatPackExpiry(pack.expiryMonths || 6, pack.expiresAt);
       if (badgeEl) {
         badgeEl.textContent = pack.remaining + ' of ' + pack.classes + ' visits left';
       }
@@ -5920,50 +6142,82 @@
       if (!purchased || purchased.optionType !== 'pack') return;
       var venueKey = purchased.venueKey || cdCurrentVenueKey();
       if (!venueKey) return;
-      var pack = cdGetVenuePack(venueKey);
+      var pack = purchased.packInstanceId
+        ? cdFindVenuePack(venueKey, purchased.packInstanceId)
+        : cdGetVenuePack(venueKey);
       if (pack && pack.remaining > 0) {
         pack.remaining -= 1;
+        cdUpdateVenuePack(venueKey, pack);
       } else {
         var classes = purchased.classes || 10;
-        pack = {
+        cdAddVenuePack(venueKey, {
           venueKey: venueKey,
           title: purchased.optionTitle,
           classes: classes,
           remaining: Math.max(0, classes - 1),
-          expiryMonths: purchased.expiryMonths || 12,
+          expiryMonths: purchased.expiryMonths || 6,
           optionId: purchased.optionId
-        };
+        });
       }
-      pack.venueKey = venueKey;
-      cdSetVenuePack(venueKey, pack);
       syncClassPriceVisibility();
     }
 
     function cdReturnPackVisit(reservation) {
       if (!reservation || !cdReservationIsPack(reservation)) return null;
       var venueKey = reservation.venueKey || cdCurrentVenueKey();
-      var pack = cdGetVenuePack(venueKey);
+      var pack = cdFindVenuePack(venueKey, reservation.packInstanceId);
       var classes = (pack && pack.classes) || reservation.classes || 10;
       if (!pack) {
-        pack = {
+        pack = cdAddVenuePack(venueKey, {
           venueKey: venueKey,
           title: reservation.optionTitle,
           classes: classes,
-          remaining: Math.max(0, classes - 1),
-          expiryMonths: reservation.expiryMonths || 12,
-          optionId: reservation.optionId
-        };
+          remaining: 1,
+          expiryMonths: reservation.expiryMonths || 6,
+          optionId: reservation.optionId,
+          instanceId: reservation.packInstanceId
+        });
+      } else {
+        pack.remaining = Math.min(pack.classes || classes, (pack.remaining || 0) + 1);
+        pack.venueKey = venueKey || pack.venueKey;
+        cdUpdateVenuePack(venueKey, pack);
       }
-      pack.remaining = Math.min(pack.classes || classes, (pack.remaining || 0) + 1);
-      pack.venueKey = venueKey || pack.venueKey;
-      cdSetVenuePack(venueKey, pack);
       syncClassPriceVisibility();
       return pack;
     }
 
+    function applyPricingPurchase(purchased) {
+      if (!purchased) return;
+      var venueKey = purchased.venueKey || cdCurrentVenueKey();
+      if (purchased.optionType === 'pack') {
+        cdAddVenuePack(venueKey, {
+          venueKey: venueKey,
+          title: purchased.optionTitle,
+          classes: purchased.classes || 10,
+          remaining: purchased.classes || 10,
+          expiryMonths: purchased.expiryMonths || 6,
+          optionId: purchased.optionId
+        });
+      } else {
+        cdSetVenueDropin(venueKey, {
+          title: purchased.optionTitle,
+          remaining: 1,
+          optionId: purchased.optionId,
+          expiryDays: purchased.expiryDays || 30
+        });
+      }
+      cdMarkTrialPurchased(venueKey, purchased.optionId);
+      syncClassPriceVisibility();
+      if (window.__renderVdPricing) window.__renderVdPricing();
+    }
+
     function cdCheckoutPrimaryCopy() {
       if (cdCheckoutSheet.classList.contains('is-cancel-mode')) return 'Confirm cancellation';
+      if (cdCheckoutSheet.classList.contains('is-pricing-purchase')) {
+        return cdCheckoutSheet.classList.contains('is-pricing-pack') ? 'Buy pack' : 'Buy drop-in';
+      }
       if (cdCheckoutSheet.classList.contains('is-pack-redeem')) return 'Confirm reservation';
+      if (cdCheckoutSheet.classList.contains('is-dropin-redeem')) return 'Confirm reservation';
       return 'Buy and reserve';
     }
 
@@ -6042,7 +6296,9 @@
         optionType: isRedeem ? 'pack' : (opt ? opt.type : 'dropin'),
         optionTitle: isRedeem ? redeemPack.title : (opt ? opt.title : ''),
         classes: isRedeem ? redeemPack.classes : (opt && opt.classes ? opt.classes : null),
-        expiryMonths: isRedeem ? (redeemPack.expiryMonths || 12) : (opt && opt.expiryMonths ? opt.expiryMonths : 12)
+        expiryMonths: isRedeem ? (redeemPack.expiryMonths || 6) : (opt && opt.expiryMonths ? opt.expiryMonths : 6),
+        expiryDays: isRedeem ? null : (opt && opt.expiryDays ? opt.expiryDays : 30),
+        packInstanceId: isRedeem ? redeemPack.instanceId : null
       };
     }
 
@@ -6065,16 +6321,16 @@
         : (strikePriceEl ? strikePriceEl.textContent.trim() : '$40.00');
       var options = [];
       if (cdCurrentVenueHasIntroOffer()) {
-        options.push({ id: 'trial', section: 'dropins', type: 'dropin', title: 'New Member Trial Class', qty: '1 class', price: '$25.00' });
+        options.push({ id: 'trial', section: 'dropins', type: 'dropin', title: 'New Member Trial Class', qty: '1 class', price: '$25.00', expiryDays: 30 });
       }
       options.push(
-        { id: 'dropin', section: 'dropins', type: 'dropin', title: 'Drop-in Class (inc. Mat + Towel)', qty: '1 class', price: dropinPrice },
+        { id: 'dropin', section: 'dropins', type: 'dropin', title: 'Drop-in Class (inc. Mat + Towel)', qty: '1 class', price: dropinPrice, expiryDays: 30 },
         { id: 'pack5', section: 'packs', type: 'pack', badge: '$40 / class', title: '5 class card (mat + towel included)', qty: '5 classes', price: '$200.00', classes: 5, expiryMonths: 6,
           footerLines: ['Expires in 6 months.', 'Eligible at ' + venue + '.', 'Valid for all classes.'] },
-        { id: 'pack10', section: 'packs', type: 'pack', badge: '$35 / class', title: '10 class card (mat + towel included)', qty: '10 classes', price: '$350.00', classes: 10, expiryMonths: 12,
-          footerLines: ['Expires in 12 months.', 'Eligible at ' + venue + '.', 'Valid for all classes.'] },
-        { id: 'pack20', section: 'packs', type: 'pack', badge: '$27.25 / class', title: '20 class card (mat + towel included)', qty: '20 classes', price: '$545.00', classes: 20, expiryMonths: 12,
-          footerLines: ['Expires in 12 months.', 'Eligible at ' + venue + '.', 'Valid for all classes.'] }
+        { id: 'pack10', section: 'packs', type: 'pack', badge: '$35 / class', title: '10 class card (mat + towel included)', qty: '10 classes', price: '$350.00', classes: 10, expiryMonths: 6,
+          footerLines: ['Expires in 6 months.', 'Eligible at ' + venue + '.', 'Valid for all classes.'] },
+        { id: 'pack20', section: 'packs', type: 'pack', badge: '$27.25 / class', title: '20 class card (mat + towel included)', qty: '20 classes', price: '$545.00', classes: 20, expiryMonths: 6,
+          footerLines: ['Expires in 6 months.', 'Eligible at ' + venue + '.', 'Valid for all classes.'] }
       );
       return options;
     }
@@ -6095,8 +6351,8 @@
       return cdDefaultCheckoutOptionId();
     }
 
-    function cdRenderOptionCard(opt) {
-      var selected = opt.id === cdCheckoutPendingId;
+    function cdRenderOptionCard(opt, selectedId) {
+      var selected = opt.id === (selectedId !== undefined ? selectedId : cdCheckoutPendingId);
       var cls = 'pl-card pl-pack' + (selected ? ' is-selected' : '');
       if (opt.type === 'pack') {
         var footerHtml = (opt.footerLines || []).map(function(line) {
@@ -6118,6 +6374,9 @@
         + '<span class="pl-pack__price">' + opt.price + '</span></span></span>'
         + '</button>';
     }
+
+    window.__cdBuildCheckoutOptionsCatalog = cdBuildCheckoutOptionsCatalog;
+    window.__cdRenderOptionCard = cdRenderOptionCard;
 
     function cdRenderCheckoutOptionsLists() {
       var dropinsEl = document.getElementById('cd-options-dropins-list');
@@ -6156,7 +6415,7 @@
       var refundEl = document.getElementById('cd-cancel-refund-amount');
       if (opt.type === 'pack') {
         var remaining = Math.max(0, opt.classes - 1);
-        var expiryStr = cdFormatPackExpiry(opt.expiryMonths || 12);
+        var expiryStr = cdFormatPackExpiry(opt.expiryMonths || 6);
         paymentBlock.innerHTML = ''
           + '<div class="pl-checkout-card__product pl-checkout-card__product--pack" id="cd-checkout-product">' + opt.title + '</div>'
           + '<div class="pl-checkout-card__row pl-checkout-card__row--pack" id="cd-checkout-payment-row">'
@@ -6180,18 +6439,61 @@
     }
 
     function cdPopulateSuccessModal() {
-      var classTitleEl = document.getElementById('cd-checkout-class-title');
-      var timeEl = document.getElementById('cd-checkout-time');
-      var instructorEl = document.getElementById('cd-checkout-instructor');
-      var venueEl = document.getElementById('cd-checkout-venue');
+      var navEl = document.getElementById('cd-success-nav-title');
+      var headlineEl = document.getElementById('cd-success-headline');
       var successClassEl = document.getElementById('cd-success-class-title');
       var successTimeEl = document.getElementById('cd-success-time');
       var successInstructorEl = document.getElementById('cd-success-instructor');
       var successVenueEl = document.getElementById('cd-success-venue');
+      var successInfoEl = document.getElementById('cd-success-info');
+      var instructorRow = document.getElementById('cd-success-instructor-row');
+      var infoRow = document.getElementById('cd-success-info-row');
+      var pin = window.__currentVenuePin;
+
+      if (cdPricingPurchaseMode) {
+        var opt = cdGetCheckoutOptionById(cdCheckoutSelectedId);
+        var isPack = !!(opt && opt.type === 'pack');
+        if (navEl) navEl.textContent = isPack ? 'Purchase pack' : 'Purchase drop-in';
+        if (headlineEl) headlineEl.textContent = isPack ? 'Your pack is ready!' : 'You\u2019re all set!';
+        if (successClassEl) successClassEl.textContent = opt ? opt.title : '';
+        if (successTimeEl) {
+          successTimeEl.textContent = isPack
+            ? 'Expires on ' + cdFormatExpiryDate((opt && opt.expiryMonths) || 6)
+            : 'Expires on ' + cdFormatExpiryInDays((opt && opt.expiryDays) || 30);
+        }
+        if (successVenueEl) successVenueEl.textContent = cdVenueLocationLine(pin);
+        if (successInfoEl) successInfoEl.textContent = 'Valid for all classes';
+        if (instructorRow) {
+          instructorRow.hidden = true;
+          instructorRow.setAttribute('aria-hidden', 'true');
+        }
+        if (infoRow) {
+          infoRow.hidden = false;
+          infoRow.removeAttribute('aria-hidden');
+        }
+        return;
+      }
+
+      if (navEl) navEl.textContent = 'Booking confirmed';
+      if (headlineEl) headlineEl.textContent = 'You\u2019re booked!';
+      if (instructorRow) {
+        instructorRow.hidden = false;
+        instructorRow.removeAttribute('aria-hidden');
+      }
+      if (infoRow) {
+        infoRow.hidden = true;
+        infoRow.setAttribute('aria-hidden', 'true');
+      }
+      var classTitleEl = document.getElementById('cd-checkout-class-title');
+      var timeEl = document.getElementById('cd-checkout-time');
+      var instructorEl = document.getElementById('cd-checkout-instructor');
+      var venueEl = document.getElementById('cd-checkout-venue');
       if (successClassEl && classTitleEl) successClassEl.textContent = classTitleEl.textContent;
       if (successTimeEl && timeEl) successTimeEl.textContent = timeEl.textContent;
       if (successInstructorEl && instructorEl) successInstructorEl.textContent = instructorEl.textContent;
-      if (successVenueEl && venueEl) successVenueEl.textContent = venueEl.textContent;
+      if (successVenueEl) {
+        successVenueEl.textContent = cdVenueLocationLine(pin) || (venueEl ? venueEl.textContent : '');
+      }
     }
 
     function populateCancelModal() {
@@ -6200,8 +6502,9 @@
       var isPack = cdReservationIsPack(r);
       var modal = document.getElementById('cd-cancel-modal');
       if (modal) modal.classList.toggle('pl-cancel-modal--pack', isPack);
-      var expiryMonths = (r && r.expiryMonths) || 12;
-      var expiryDate = cdFormatExpiryDate(expiryMonths);
+      var expiryDate = isPack
+        ? cdFormatExpiryDate((r && r.expiryMonths) || 6)
+        : cdFormatExpiryInDays((r && r.expiryDays) || 30);
       var policyEl = document.getElementById('cd-cancel-policy-text');
       if (policyEl) {
         policyEl.textContent = isPack
@@ -6238,7 +6541,7 @@
         title: r.optionTitle,
         classes: r.classes || 10,
         remaining: r.classes || 10,
-        expiryMonths: r.expiryMonths || 12
+        expiryMonths: r.expiryMonths || 6
       };
       cdFillPackCard(pack, {
         title: 'cd-cancel-confirm-pack-title',
@@ -6279,6 +6582,7 @@
 
     function cdEnterCheckoutSuccess() {
       cdPopulateSuccessModal();
+      if (cdPricingPurchaseMode) applyPricingPurchase(cdSnapshotPurchase());
       cdCheckoutCta.classList.remove('is-loading');
       var startH = cdCheckoutSheet.getBoundingClientRect().height;
       cdCheckoutSheet.style.height = startH + 'px';
@@ -6343,6 +6647,7 @@
 
     function cdOpenCheckoutOptions() {
       if (!cdCheckoutOpen || cdCheckoutSheet.classList.contains('is-cancel-mode')) return;
+      if (cdIsRedeemCheckout() || cdHasOwnedBookingCredit()) return;
       if (purchaseFlow === 'B' && cdCheckoutSheet.classList.contains('is-pushing-checkout')) {
         cdPopCheckoutToOptions();
         return;
@@ -6442,6 +6747,8 @@
     window.__reservations = window.__reservations || [];
     window.__reservation = window.__reservation || null;
     window.__venuePacks = {};
+    window.__venueDropins = {};
+    window.__venueTrialPurchased = window.__venueTrialPurchased || {};
     function currentSlotMatchesReservation() {
       return !!window.__findReservationForCurrentSlot();
     }
@@ -6581,16 +6888,21 @@
       document.getElementById('cd-checkout-instructor').textContent = instructor;
       document.getElementById('cd-checkout-venue').textContent = venueStr;
       var redeemPack = cdGetVenuePack(cdCurrentVenueKey());
+      var dropinCredit = cdGetVenueDropin(cdCurrentVenueKey());
       var redeeming = !cdCheckoutSheet.classList.contains('is-cancel-mode')
         && !!(redeemPack && redeemPack.remaining > 0);
+      var redeemingDropin = !cdCheckoutSheet.classList.contains('is-cancel-mode')
+        && !redeeming
+        && !!(dropinCredit && dropinCredit.remaining > 0);
       cdCheckoutSheet.classList.toggle('is-pack-redeem', redeeming);
+      cdCheckoutSheet.classList.toggle('is-dropin-redeem', redeemingDropin);
       if (redeeming) {
         cdFillPackCard(redeemPack, {
           title: 'cd-checkout-pack-title',
           expiry: 'cd-checkout-pack-expiry',
           badge: 'cd-checkout-pack-badge'
         });
-      } else {
+      } else if (!redeemingDropin) {
         cdCheckoutOptionsCatalog = cdBuildCheckoutOptionsCatalog(venueStr);
         cdCheckoutSelectedId = cdEnsureValidCheckoutOptionId(cdCheckoutSelectedId);
         cdApplyCheckoutOptionToCard();
@@ -6622,6 +6934,41 @@
       }
     }
 
+    function populatePricingPurchase(opt) {
+      if (!opt) return;
+      var isPack = opt.type === 'pack';
+      cdCheckoutSheet.classList.add('is-pricing-purchase');
+      cdCheckoutSheet.classList.toggle('is-pricing-pack', isPack);
+      cdCheckoutSheet.classList.remove('is-pack-redeem', 'is-dropin-redeem', 'is-cancel-mode');
+      var titleEl = document.getElementById('cd-checkout-title');
+      if (titleEl) titleEl.textContent = isPack ? 'Purchase pack' : 'Purchase drop-in';
+      var cardEl = document.getElementById('cd-pricing-purchase-card');
+      if (cardEl) {
+        cardEl.innerHTML = cdRenderOptionCard(opt, null);
+      }
+      var linePriceEl = document.getElementById('cd-checkout-line-price');
+      var totalEl = document.getElementById('cd-checkout-total');
+      var subtotalEl = document.getElementById('cd-checkout-subtotal');
+      if (linePriceEl) linePriceEl.textContent = opt.price;
+      if (totalEl) totalEl.textContent = opt.price;
+      if (subtotalEl) subtotalEl.textContent = opt.price;
+      cdSyncCheckoutPrimaryCopy();
+    }
+
+    window.__openPricingPurchase = function(optionId) {
+      if (cdCheckoutOpen) return;
+      var pin = window.__currentVenuePin;
+      var venue = pin
+        ? (pin.name + (pin.locality ? ' – ' + pin.locality : ''))
+        : '';
+      cdCheckoutOptionsCatalog = cdBuildCheckoutOptionsCatalog(venue);
+      var opt = cdGetCheckoutOptionById(optionId);
+      if (!opt) return;
+      cdCheckoutSelectedId = opt.id;
+      cdCheckoutPendingId = opt.id;
+      openCheckout({ fromPricing: true, option: opt });
+    };
+
     // Pure CSS-driven morph: every animated property (height, left, right,
     // bottom, border-radius, background, shadow, backdrop-filter) uses the
     // same CSS transition rule so they all land on the same frame — no
@@ -6633,13 +6980,20 @@
       if (cdCheckoutOpen) return;
       opts = opts || {};
       cdCheckoutOpen = true;
-      populateCheckout();
-      var redeeming = cdCheckoutSheet.classList.contains('is-pack-redeem');
+      cdPricingPurchaseMode = !!opts.fromPricing;
+      if (cdPricingPurchaseMode) {
+        populatePricingPurchase(opts.option);
+      } else {
+        cdCheckoutSheet.classList.remove('is-pricing-purchase', 'is-pricing-pack');
+        populateCheckout();
+      }
+      var redeeming = cdIsRedeemCheckout();
       var openOnOptions = !!opts.openOnOptions
         && !cdCheckoutSheet.classList.contains('is-cancel-mode')
-        && !redeeming;
+        && !redeeming
+        && !cdPricingPurchaseMode;
       cdOptionsIsEntry = openOnOptions;
-      cdCheckoutSheet.classList.toggle('is-flow-b', purchaseFlow === 'B' && !cdCheckoutSheet.classList.contains('is-cancel-mode') && !redeeming);
+      cdCheckoutSheet.classList.toggle('is-flow-b', purchaseFlow === 'B' && !cdCheckoutSheet.classList.contains('is-cancel-mode') && !redeeming && !cdPricingPurchaseMode);
       cdCheckoutSheet.classList.toggle('is-options-entry', openOnOptions);
       if (openOnOptions) cdPrepareCheckoutOptions();
       // Clear any lingering transitionend listener or pending hide timer
@@ -6671,7 +7025,7 @@
       // sheet uses border-box + extra padding when open, so we briefly add
       // is-open (with transitions disabled) to get the true open-state
       // content height, then revert for the animated open.
-      var startH = cdBookingBar.getBoundingClientRect().height;
+      var startH = cdPricingPurchaseMode ? 0 : cdBookingBar.getBoundingClientRect().height;
       cdCheckoutSheet.style.transition = 'none';
       // Also pause CTA transitions during the measure-toggle — otherwise the
       // CTA starts a tiny morph toward Book-position and back, which the user
@@ -6699,8 +7053,10 @@
       var targetH = Math.min(naturalH, maxH);
       cdCheckoutSheet.style.visibility = 'visible';
       cdCheckoutSheet.setAttribute('aria-hidden', 'false');
-      cdBookingBar.classList.add('is-under-checkout');
-      cdBookingBar.classList.add('is-sheet-overlay');
+      if (!cdPricingPurchaseMode) {
+        cdBookingBar.classList.add('is-under-checkout');
+        cdBookingBar.classList.add('is-sheet-overlay');
+      }
       cdCheckoutScrim.classList.add('is-visible');
       // Swap the label immediately so the morph from the bar's short pill
       // ("Book" / "Cancel") to the full-width modal CTA reads as a single
@@ -6745,7 +7101,10 @@
       // height — sub-pixel mismatch between the animated target and the
       // bar's integer-rounded height shows up as a 1px jitter at the end
       // of the close.
-      var targetH = Math.round(cdBookingBar.getBoundingClientRect().height) || 130;
+      var wasPricingPurchase = cdPricingPurchaseMode;
+      var targetH = wasPricingPurchase
+        ? 0
+        : (Math.round(cdBookingBar.getBoundingClientRect().height) || 130);
       // Mirror the bar's datetime + price-row into the sheet's mini-summary
       // so the sheet's end-of-morph visual matches the bar exactly.
       // - mini-meta gets the datetime (bold black, top row)
@@ -6801,13 +7160,26 @@
       // The purchased option (drop-in vs pack, and which pack) is stored
       // so a later Cancel opens the matching cancel / confirm modals.
       if (cdCheckoutSheet.classList.contains('is-success')) {
-        cdApplyPackAfterPurchase(purchased);
-        if (typeof window.__addReservation === 'function') window.__addReservation(purchased);
-        else window.__reservation = purchased;
-        if (window.__applyReservedHighlights) window.__applyReservedHighlights();
-        if (window.__syncBookingsCard) window.__syncBookingsCard();
+        if (wasPricingPurchase) {
+          // Stored on success enter so the Pricing list can update behind the modal.
+        } else {
+          cdApplyPackAfterPurchase(purchased);
+          if (cdCheckoutSheet.classList.contains('is-dropin-redeem')) {
+            cdConsumeVenueDropin(purchased && purchased.venueKey);
+          }
+          if (purchased) cdMarkTrialPurchased(purchased.venueKey, purchased.optionId);
+          if (typeof window.__addReservation === 'function') window.__addReservation(purchased);
+          else window.__reservation = purchased;
+          if (window.__applyReservedHighlights) window.__applyReservedHighlights();
+          if (window.__syncBookingsCard) window.__syncBookingsCard();
+        }
       }
-      cdCheckoutSheet.classList.remove('is-success', 'is-cancel-confirmed', 'is-pack-redeem');
+      if (wasPricingPurchase) {
+        cdCheckoutSheet.classList.remove('is-cancel-confirmed', 'is-pack-redeem', 'is-dropin-redeem');
+      } else {
+        cdCheckoutSheet.classList.remove('is-success', 'is-cancel-confirmed', 'is-pack-redeem', 'is-dropin-redeem', 'is-pricing-purchase', 'is-pricing-pack');
+      }
+      cdPricingPurchaseMode = false;
       if (cdCheckoutSuccessEl) cdCheckoutSuccessEl.setAttribute('aria-hidden', 'true');
       if (cdCancelConfirmEl) cdCancelConfirmEl.setAttribute('aria-hidden', 'true');
       // Morph the sheet's CTA to whatever state the booking bar will show
@@ -6815,10 +7187,16 @@
       // viewed slot, red "Book" otherwise. The sheet sits at z 36 over the
       // bar (z 35), so without this the user sees the sheet's red Book
       // collapse and then the bar's black Cancel snap in at end-of-morph.
-      var willShowCancel = currentSlotMatchesReservation();
-      if (cdCheckoutCtaLabel) cdCheckoutCtaLabel.textContent = willShowCancel ? 'Cancel' : 'Book';
-      if (willShowCancel) {
-        cdCheckoutCta.classList.add('is-reserved');
+      // Pricing purchase dismisses to height 0 over the venue page, so skip
+      // the bar CTA swap — there is no booking bar underneath.
+      if (!wasPricingPurchase) {
+        var willShowCancel = currentSlotMatchesReservation();
+        if (cdCheckoutCtaLabel) cdCheckoutCtaLabel.textContent = willShowCancel ? 'Cancel' : 'Book';
+        if (willShowCancel) {
+          cdCheckoutCta.classList.add('is-reserved');
+        } else {
+          cdCheckoutCta.classList.remove('is-reserved');
+        }
       } else {
         cdCheckoutCta.classList.remove('is-reserved');
       }
@@ -6854,7 +7232,7 @@
         cdCheckoutEndHandler = null;
         cdCheckoutSheet.style.visibility = 'hidden';
         cdCheckoutSheet.setAttribute('aria-hidden', 'true');
-        cdCheckoutSheet.classList.remove('is-collapsing');
+        cdCheckoutSheet.classList.remove('is-collapsing', 'is-success', 'is-pricing-purchase', 'is-pricing-pack');
         // Sheet is now invisible — return the bar's shadow.
         cdBookingBar.classList.remove('is-sheet-overlay');
       };
@@ -6870,7 +7248,7 @@
         openCancelCheckout();
         return;
       }
-      if (purchaseFlow === 'B') {
+      if (purchaseFlow === 'B' && !cdHasOwnedBookingCredit()) {
         openCheckout({ openOnOptions: true });
         return;
       }
@@ -6902,6 +7280,12 @@
     if (cdCheckoutSuccessAddBtn) {
       cdCheckoutSuccessAddBtn.addEventListener('click', function() {
         /* Visual affordance only — no calendar integration in the prototype. */
+      });
+    }
+    if (cdCheckoutSuccessFindBtn) {
+      cdCheckoutSuccessFindBtn.addEventListener('click', function() {
+        closeCheckout();
+        if (window.__switchVenueDetailTab) window.__switchVenueDetailTab('schedule');
       });
     }
     if (cdCheckoutScrim) cdCheckoutScrim.addEventListener('click', closeCheckout);
@@ -7263,6 +7647,9 @@
     // still pan carousels horizontally via native deltaX; mouse-wheel users
     // now keep vertical scrolling all the way through the page.
   });
+
+  var homeBody = document.querySelector('#screen-home-tab .home-body');
+  if (homeBody) addVerticalDragScroll(homeBody);
 
   // Venue detail vertical scroll
   addVerticalDragScroll(venueDetailScroll);

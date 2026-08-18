@@ -18,7 +18,7 @@
      Deferred is wrong here: prototype.js builds icon markup as strings at load. -->
 <script src="../design-system/icons.js?v=20260817calendaradd16"></script>
 <script>if (window === window.top) document.documentElement.classList.add('is-standalone');</script>
-<link rel="stylesheet" href="prototype.css?v=20260818welcometitle">
+<link rel="stylesheet" href="prototype.css?v=20260818successinfo">
 <script src="https://cdn.jsdelivr.net/npm/motion@11.18.2/dist/motion.js"></script>
 <script src="config.js"></script>
 </head>
@@ -688,13 +688,48 @@
   <!-- Persistent map backdrop (never moves) -->
   <div id="live-map"></div>
 
-  <!-- ===== SCREEN 0: Home tab (blank, post-auth) ===== -->
+  <!-- ===== SCREEN 0: Home tab (Figma 13106:62595 placeholder) ===== -->
   <div class="screen" id="screen-home-tab">
     <div class="status-bar">
       <img src="figma-screens/status-bar.png" alt="Status bar">
     </div>
-    <div class="home-header">
-      <h1 class="pl-page-title">Home</h1>
+    <div class="home-body">
+      <div class="home-logo" role="img" aria-label="Playlist"></div>
+      <button type="button" class="pl-search-bar" id="home-search-bar" aria-label="Search for yoga, barre, cycling...">
+        <span class="pl-search-bar__icon"><svg class="pl-icon" aria-hidden="true"><use href="#pl-search"></use></svg></span>
+        <span class="pl-search-bar__input">Search for yoga, barre, cycling...</span>
+      </button>
+      <div class="home-sections">
+        <section class="home-section">
+          <h2 class="pl-text-heading-h3 home-section-title">Collections</h2>
+          <div class="vd-hscroll home-hscroll" aria-label="Collections">
+            <div class="home-tile home-tile--sq"></div>
+            <div class="home-tile home-tile--sq"></div>
+            <div class="home-tile home-tile--sq"></div>
+            <div class="home-tile home-tile--sq"></div>
+            <div class="home-tile home-tile--sq"></div>
+          </div>
+        </section>
+        <section class="home-section">
+          <h2 class="pl-text-heading-h3 home-section-title">Recommended</h2>
+          <div class="vd-hscroll home-hscroll" aria-label="Recommended">
+            <div class="home-tile home-tile--wide"></div>
+            <div class="home-tile home-tile--wide"></div>
+            <div class="home-tile home-tile--wide"></div>
+            <div class="home-tile home-tile--wide"></div>
+          </div>
+        </section>
+        <section class="home-section">
+          <h2 class="pl-text-heading-h3 home-section-title">Trending</h2>
+          <div class="vd-hscroll home-hscroll" aria-label="Trending">
+            <div class="home-tile home-tile--sq"></div>
+            <div class="home-tile home-tile--sq"></div>
+            <div class="home-tile home-tile--sq"></div>
+            <div class="home-tile home-tile--sq"></div>
+            <div class="home-tile home-tile--sq"></div>
+          </div>
+        </section>
+      </div>
     </div>
   </div>
 
@@ -1072,6 +1107,10 @@
               <span class="pl-tab-nav__label">Schedule</span>
               <span class="pl-tab-nav__indicator" aria-hidden="true"></span>
             </button>
+            <button type="button" class="pl-tab-nav__item" data-tab="pricing" role="tab" aria-selected="false">
+              <span class="pl-tab-nav__label">Pricing</span>
+              <span class="pl-tab-nav__indicator" aria-hidden="true"></span>
+            </button>
             <button type="button" class="pl-tab-nav__item" data-tab="reviews" role="tab" aria-selected="false">
               <span class="pl-tab-nav__label">Reviews</span>
               <span class="pl-tab-nav__indicator" aria-hidden="true"></span>
@@ -1215,6 +1254,20 @@
             <div class="vd-date-picker" id="vd-date-picker"></div>
             <!-- Class list -->
             <div class="vd-schedule-list" id="vd-schedule-list"></div>
+          </div>
+
+          <!-- ===== PRICING PANEL =====
+               Figma 13085:23013. Same Drop-ins / Packs card lists as the
+               checkout options screen. Tapping a card opens purchase checkout. -->
+          <div class="vd-panel vd-panel-pricing" data-panel="pricing">
+            <section class="cd-options-section" id="vd-pricing-section-value" data-pricing-section="value">
+              <h3 class="cd-options-section-title pl-text-heading-h3">Drop-ins</h3>
+              <div class="cd-options-list" id="vd-pricing-dropins-list"></div>
+            </section>
+            <section class="cd-options-section" id="vd-pricing-section-packs" data-pricing-section="packs">
+              <h3 class="cd-options-section-title pl-text-heading-h3">Packs</h3>
+              <div class="cd-options-list" id="vd-pricing-packs-list"></div>
+            </section>
           </div>
 
           <!-- ===== REVIEWS PANEL ===== -->
@@ -1489,6 +1542,8 @@
     <div class="cd-checkout-pane-stack">
       <div class="cd-checkout-pane cd-checkout-pane--main">
     <div class="cd-checkout-body">
+      <!-- Checkout mode: pack/drop-in card when buying from venue Pricing. -->
+      <div class="cd-pricing-purchase-card cd-checkout-mode-checkout" id="cd-pricing-purchase-card"></div>
       <!-- Checkout mode: DS checkout card, payment section, cancellation copy. -->
       <div class="pl-checkout-card cd-checkout-mode-checkout">
         <div class="pl-checkout-card__class">
@@ -1552,7 +1607,7 @@
           </div>
         </div>
       </div>
-      <div class="cd-checkout-section cd-checkout-mode-checkout">
+      <div class="cd-checkout-section cd-checkout-mode-checkout cd-checkout-section-policy">
         <h3 class="cd-checkout-section-title pl-text-title-md-medium">Cancellation Policy</h3>
         <div class="cd-checkout-cancellation-block">
           <p class="cd-checkout-cancellation-cutoff pl-text-caption-lg-bold" id="cd-checkout-cancel-cutoff">Cancel by Tue, Mar 2 at 2:00 PM ET</p>
@@ -1614,7 +1669,7 @@
       <header class="pl-success-modal__header">
         <div class="pl-success-modal__toolbar">
           <span class="pl-success-modal__leading" aria-hidden="true"></span>
-          <h2 class="pl-success-modal__nav-title pl-body-medium-semibold">Booking confirmed</h2>
+          <h2 class="pl-success-modal__nav-title pl-body-medium-semibold" id="cd-success-nav-title">Booking confirmed</h2>
           <button type="button" class="pl-icon-btn pl-icon-btn--md pl-icon-btn--raised pl-success-modal__close" id="cd-checkout-success-close" aria-label="Close">
             <svg class="pl-icon" aria-hidden="true"><use href="#pl-close"></use></svg>
           </button>
@@ -1625,30 +1680,34 @@
           <div class="pl-success-modal__hero">
             <img class="pl-success-modal__check" src="../design-system/assets/check_success.svg" alt="" width="40" height="40">
             <div class="pl-success-modal__headline">
-              <p class="pl-success-modal__headline-title pl-section-header">You&rsquo;re booked!</p>
+              <p class="pl-success-modal__headline-title pl-section-header" id="cd-success-headline">You&rsquo;re booked!</p>
               <p class="pl-success-modal__subtitle pl-button-label-small-medium" id="cd-success-class-title">Reformer Vitality</p>
             </div>
           </div>
           <div class="pl-success-modal__details-wrap">
             <div class="pl-success-modal__details">
-              <div class="pl-success-modal__detail-row">
+              <div class="pl-success-modal__detail-row" id="cd-success-time-row">
                 <span class="pl-success-modal__detail-icon" aria-hidden="true"><svg class="pl-icon"><use href="#pl-calendar-small"></use></svg></span>
                 <span class="pl-success-modal__detail-text pl-body-small-regular" id="cd-success-time">Tue, Mar 1 · 2:00 PM</span>
               </div>
-              <div class="pl-success-modal__detail-row">
+              <div class="pl-success-modal__detail-row" id="cd-success-instructor-row">
                 <span class="pl-success-modal__detail-icon" aria-hidden="true"><svg class="pl-icon"><use href="#pl-person-small"></use></svg></span>
                 <span class="pl-success-modal__detail-text pl-body-small-regular" id="cd-success-instructor">Regina N.</span>
               </div>
-              <div class="pl-success-modal__detail-row">
+              <div class="pl-success-modal__detail-row" id="cd-success-venue-row">
                 <span class="pl-success-modal__detail-icon" aria-hidden="true"><svg class="pl-icon"><use href="#pl-location-pin-small"></use></svg></span>
                 <span class="pl-success-modal__detail-text pl-body-small-regular" id="cd-success-venue">KIN Kollective - Nomad</span>
+              </div>
+              <div class="pl-success-modal__detail-row" id="cd-success-info-row" hidden>
+                <span class="pl-success-modal__detail-icon" aria-hidden="true"><img src="../assets/iOS-info.svg" alt="" width="20" height="20"></span>
+                <span class="pl-success-modal__detail-text pl-body-small-regular" id="cd-success-info">Valid for all classes</span>
               </div>
             </div>
           </div>
         </div>
       </div>
       <footer class="pl-success-modal__footer">
-        <div class="pl-success-modal__actions">
+        <div class="pl-success-modal__actions" id="cd-success-booking-actions">
           <button type="button" class="pl-btn pl-btn--md pl-btn--neutral pl-btn--pill" id="cd-checkout-success-add">
             <span class="pl-btn__icon" aria-hidden="true"><svg class="pl-icon"><use href="#pl-calendar-add"></use></svg></span>
             Add
@@ -1658,6 +1717,7 @@
             Share
           </button>
         </div>
+        <button type="button" class="pl-btn pl-btn--md pl-btn--primary pl-btn--pill pl-btn--full" id="cd-checkout-success-find">Find a class</button>
       </footer>
     </div>
     <!-- Cancel confirmed — design-system .pl-cancel-confirm-modal
@@ -1828,6 +1888,6 @@
 </div>
 </div>
 
-<script src="prototype.js?v=20260818cancel"></script>
+<script src="prototype.js?v=20260818successvenue"></script>
 </body>
 </html>
