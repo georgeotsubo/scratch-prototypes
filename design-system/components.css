@@ -772,7 +772,12 @@ button.pl-card { cursor: pointer; -webkit-tap-highlight-color: transparent; }
   color: var(--pl-text-secondary);
 }
 
-/* --- Schedule card — .pl-schedule-card (1194:1271) ------------------------ */
+/* --- Schedule card — .pl-schedule-card (1194:1271 venue detail,
+   12925:349238 search schedule view) --------------------------------------
+
+   Same card in both places. Search schedule view adds `__venue`
+   (studio · neighborhood) between the title and the rating row.
+   Omit that child in venue detail. */
 
 .pl-schedule-card__body { display: flex; flex-direction: column; }
 
