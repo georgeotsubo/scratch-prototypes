@@ -147,7 +147,7 @@
 
   cpSignin.addEventListener('click', () => {
     if (cpSignin.disabled) return;
-    console.log('[signup] ClassPass sign in submitted');
+    enterApp();
   });
 
   // Sign in with Apple — iOS system sheet over a dimmed overlay.
@@ -246,6 +246,7 @@
   document.addEventListener('keydown', (e) => {
     if (e.key !== 'Escape') return;
     if (gauth.classList.contains('is-open')) closeGauth();
+    else if (signout.classList.contains('is-open')) closeSignout();
     else if (loc.classList.contains('is-open')) finishLocPrompt();
     else closeSiwa();
   });
@@ -384,41 +385,88 @@
     openLocPrompt();
   });
 
-  // Location prompt over Create a password (12901:344255).
+  // Location prompt over Create a password (12901:344255),
+  // then the iOS permission alert (12901:344459) after Enable location.
   const loc = document.getElementById('loc');
+  const locDialog = loc.querySelector('.loc-dialog');
   const locEnable = document.getElementById('loc-enable');
+  const locNative = document.getElementById('loc-native');
+  const locAllowOnce = document.getElementById('loc-allow-once');
   function openLocPrompt() {
     loc.classList.add('is-open');
+    loc.classList.remove('is-native');
     loc.setAttribute('aria-hidden', 'false');
+    locNative.setAttribute('aria-hidden', 'true');
+    locDialog.removeAttribute('inert');
     document.getElementById('screen-password').setAttribute('inert', '');
     locEnable.focus({ preventScroll: true });
   }
+  function openLocNative() {
+    loc.classList.add('is-native');
+    locNative.setAttribute('aria-hidden', 'false');
+    locDialog.setAttribute('inert', '');
+    locAllowOnce.focus({ preventScroll: true });
+  }
   function finishLocPrompt() {
     if (!loc.classList.contains('is-open')) return;
-    loc.classList.remove('is-open');
+    loc.classList.remove('is-open', 'is-native');
     loc.setAttribute('aria-hidden', 'true');
+    locNative.setAttribute('aria-hidden', 'true');
+    locDialog.removeAttribute('inert');
     pushScreen('screen-verify');
   }
-  locEnable.addEventListener('click', () => {
-    const done = () => finishLocPrompt();
-    if (!navigator.geolocation) { done(); return; }
-    navigator.geolocation.getCurrentPosition(done, done, { timeout: 4000, maximumAge: 0 });
-  });
+  locEnable.addEventListener('click', openLocNative);
   document.getElementById('loc-later').addEventListener('click', finishLocPrompt);
+  locAllowOnce.addEventListener('click', finishLocPrompt);
+  document.getElementById('loc-allow-while').addEventListener('click', finishLocPrompt);
+  document.getElementById('loc-dont-allow').addEventListener('click', finishLocPrompt);
 
-  // ===== Verify your number screen interactions =====
-  document.getElementById('btn-back-verify')
-    .addEventListener('click', goBack);
+  // Sign out confirm over Verify your number (11381:41894).
+  const signout = document.getElementById('signout');
+  const signoutCancel = document.getElementById('signout-cancel');
+  function openSignout() {
+    signout.classList.add('is-open');
+    signout.setAttribute('aria-hidden', 'false');
+    document.getElementById('screen-verify').setAttribute('inert', '');
+    signoutCancel.focus({ preventScroll: true });
+  }
+  function closeSignout() {
+    if (!signout.classList.contains('is-open')) return;
+    signout.classList.remove('is-open');
+    signout.setAttribute('aria-hidden', 'true');
+    document.getElementById('screen-verify').removeAttribute('inert');
+    document.getElementById('btn-back-verify').focus({ preventScroll: true });
+  }
+  function signOutToWelcome() {
+    if (animating) return;
+    closeSignout();
+    const from = document.getElementById(currentId());
+    while (navStack.length > 1) navStack.pop();
+    const to = document.getElementById('screen-welcome');
+    animating = true;
+    document.querySelectorAll('#app > .screen').forEach((el) => {
+      if (el !== from && el !== to) {
+        el.classList.remove('active', 'behind');
+        el.style.zIndex = '';
+      }
+    });
+    from.classList.remove('active');
+    to.classList.remove('behind');
+    to.classList.add('active');
+    syncScreenInert();
+    releaseAfterAnim(() => { from.style.zIndex = ''; });
+  }
+  document.getElementById('btn-back-verify').addEventListener('click', openSignout);
+  signoutCancel.addEventListener('click', closeSignout);
+  document.getElementById('signout-scrim').addEventListener('click', closeSignout);
+  document.getElementById('signout-confirm').addEventListener('click', signOutToWelcome);
 
   const vnPhone = document.getElementById('vn-phone');
   const vnContinue = document.getElementById('btn-vn-continue');
 
   vnPhone.addEventListener('input', () => {
-    // Enable once a plausible US number (10 digits) is entered.
     const digits = vnPhone.value.replace(/\D/g, '');
-    const ok = digits.length >= 10;
-    vnContinue.disabled = !ok;
-    vnContinue.classList.toggle('btn-disabled', !ok);
+    vnContinue.disabled = digits.length < 10;
   });
 
   vnContinue.addEventListener('click', () => {
@@ -462,26 +510,64 @@
     }, 1000);
   }
 
+  function checkCodeComplete() {
+    if (codeBoxes.every((b) => b.value)) enterApp();
+  }
+
+  function typeCodeDigit(digit) {
+    const target = codeBoxes.find((b) => !b.value);
+    if (!target) return;
+    target.value = digit;
+    const next = codeBoxes[codeBoxes.indexOf(target) + 1];
+    (next || target).focus({ preventScroll: true });
+    checkCodeComplete();
+  }
+
+  function deleteCodeDigit() {
+    const focused = codeBoxes.find((b) => b === document.activeElement);
+    if (focused && focused.value) {
+      focused.value = '';
+      focused.focus({ preventScroll: true });
+      return;
+    }
+    const lastFilled = [...codeBoxes].reverse().find((b) => b.value);
+    if (!lastFilled) {
+      codeBoxes[0].focus({ preventScroll: true });
+      return;
+    }
+    lastFilled.value = '';
+    lastFilled.focus({ preventScroll: true });
+  }
+
   resendText.addEventListener('click', () => {
     if (!resendText.classList.contains('active')) return;
-    codeBoxes.forEach(b => (b.value = ''));
-    codeBoxes[0].focus();
+    codeBoxes.forEach((b) => (b.value = ''));
+    codeBoxes[0].focus({ preventScroll: true });
     startResendCountdown();
+  });
+
+  document.getElementById('code-keyboard').addEventListener('click', (e) => {
+    const key = e.target.closest('.code-keyboard__key');
+    if (!key) return;
+    if (key.hasAttribute('data-delete')) deleteCodeDigit();
+    else if (key.dataset.digit) typeCodeDigit(key.dataset.digit);
   });
 
   codeBoxes.forEach((box, i) => {
     box.addEventListener('input', () => {
       box.value = box.value.replace(/\D/g, '').slice(0, 1);
-      if (box.value && i < codeBoxes.length - 1) codeBoxes[i + 1].focus();
-      if (codeBoxes.every(b => b.value)) {
-        console.log('[signup] Code entered:', codeBoxes.map(b => b.value).join(''));
-      }
+      if (box.value && i < codeBoxes.length - 1) codeBoxes[i + 1].focus({ preventScroll: true });
+      checkCodeComplete();
     });
     box.addEventListener('keydown', (e) => {
-      if (e.key === 'Backspace' && !box.value && i > 0) {
-        codeBoxes[i - 1].focus();
-        codeBoxes[i - 1].value = '';
+      if (e.key >= '0' && e.key <= '9') {
         e.preventDefault();
+        typeCodeDigit(e.key);
+        return;
+      }
+      if (e.key === 'Backspace') {
+        e.preventDefault();
+        deleteCodeDigit();
       }
     });
   });
@@ -522,7 +608,7 @@
 
   lgSignin.addEventListener('click', () => {
     if (lgSignin.disabled) return;
-    console.log('[signup] Log in submitted');
+    enterApp();
   });
 
   // Prevent dead links from navigating
