@@ -50,10 +50,14 @@
   <!-- ===== SCREEN 1: Welcome ===== -->
   <div class="screen welcome-screen active" id="screen-welcome" inert>
 
-    <!-- Full-bleed hero (12854:337932). Gradient lives on ::after so the
-         photo itself stays an unmodified asset. -->
+    <!-- Full-bleed hero (12854:337932). Scrim 12866:338962 sits on the photo
+         so the asset itself stays unmodified. -->
     <div class="welcome-hero" aria-hidden="true">
-      <img src="figma-screens/welcome-hero.jpg" alt="">
+      <video class="welcome-hero__media" id="welcome-hero-video" muted loop playsinline poster="figma-screens/welcome-hero.jpg">
+        <source src="figma-screens/Welcome.mp4" type="video/mp4">
+      </video>
+      <img class="welcome-hero__media welcome-hero__still" src="figma-screens/welcome-hero.jpg" alt="">
+      <div class="welcome-hero__scrim"></div>
     </div>
 
     <!-- Bottom action block — sits on the photo gradient, no opaque sheet. -->
@@ -474,9 +478,9 @@
           <p class="siwa-app-copy">Sign in to Playlist using your Apple Account.</p>
         </div>
         <div class="siwa-account">
-          <img class="siwa-avatar" src="figma-screens/siwa-avatar.jpg" alt="" width="35" height="35">
+          <img class="siwa-avatar" src="figma-screens/siwa-avatar-lindsey.jpg" alt="" width="35" height="35">
           <div class="siwa-account-copy">
-            <span class="siwa-account-name">george otsubo</span>
+            <span class="siwa-account-name">Lindsey Diaz</span>
             <span class="siwa-account-meta">Your account</span>
           </div>
         </div>
@@ -529,10 +533,10 @@
 
             <div class="gauth-accounts">
               <button type="button" class="gauth-account" id="gauth-pick-account">
-                <img class="gauth-avatar" src="figma-screens/siwa-avatar.jpg" alt="" width="27" height="27">
+                <img class="gauth-avatar" src="figma-screens/siwa-avatar-lindsey.jpg" alt="" width="27" height="27">
                 <span class="gauth-account-copy">
-                  <span class="gauth-account-name">George Otsubo</span>
-                  <span class="gauth-account-email">g.otsubo@gmail.com</span>
+                  <span class="gauth-account-name">Lindsey Diaz</span>
+                  <span class="gauth-account-email">lindsey.diaz@gmail.com</span>
                 </span>
               </button>
               <button type="button" class="gauth-account gauth-account--other">
@@ -556,10 +560,10 @@
               <img class="gauth-app-icon" src="figma-screens/playlist_app.svg" alt="" width="40" height="40">
               <div class="gauth-heading-copy">
                 <h2 class="gauth-sheet-title" id="gauth-resume-title">You’re signing back in to Playlist</h2>
-                <button type="button" class="gauth-chip" id="gauth-chip" aria-label="G.Otsubo@gmail.com, change account">
-                  <img class="gauth-avatar" src="figma-screens/siwa-avatar.jpg" alt="" width="27" height="27">
+                <button type="button" class="gauth-chip" id="gauth-chip" aria-label="lindsey.diaz@gmail.com, change account">
+                  <img class="gauth-avatar" src="figma-screens/siwa-avatar-lindsey.jpg" alt="" width="27" height="27">
                   <span class="gauth-chip-label">
-                    <span class="gauth-chip-email">G.Otsubo@gmail.com</span>
+                    <span class="gauth-chip-email">lindsey.diaz@gmail.com</span>
                     <img class="gauth-chip-caret" src="figma-screens/gauth-caret.svg" alt="" width="8" height="4">
                   </span>
                 </button>

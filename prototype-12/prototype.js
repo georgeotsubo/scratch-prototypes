@@ -80,11 +80,19 @@
   const LAUNCH_MS = 430;
   const SPLASH_HOLD_MS = 550;
   const SPLASH_FADE_MS = 280;
+  const welcomeVideo = document.getElementById('welcome-hero-video');
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  function playWelcomeVideo() {
+    if (!welcomeVideo || reduceMotion) return;
+    const play = welcomeVideo.play();
+    if (play && play.catch) play.catch(() => {});
+  }
 
   function revealWelcome() {
     launchTile.classList.add('done');
     appFrame.classList.add('welcome-photo');
+    playWelcomeVideo();
     setTimeout(() => {
       launchTile.classList.remove('running', 'expanding', 'show-mark', 'done');
       homeScreen.classList.add('settled');
