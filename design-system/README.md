@@ -276,8 +276,30 @@ states are really three independent things:
 </button>
 ```
 
-**`.pl-schedule-card`** adds `__meta` (time · instructor), `__title`, optional
-`__venue`, and a footer row with `__rating` and the price.
+**`.pl-schedule-card`** (`1194:1271` venue detail · `12925:349238` search
+schedule view) adds `__meta` (time · instructor), `__title`, optional
+`__venue`, and a footer row with `__rating` and the price. Venue detail
+omits `__venue`. Search schedule view includes it — studio · neighborhood
+— because results span multiple venues.
+
+```html
+<div class="pl-card pl-schedule-card">
+  <div class="pl-schedule-card__body">
+    <div class="pl-schedule-card__row">
+      <span class="pl-schedule-card__meta">10:00 AM · Sue Dickey M.</span>
+      <span class="pl-schedule-card__duration">60 min</span>
+    </div>
+    <div class="pl-schedule-card__title">Sculpt &amp; Tone</div>
+    <div class="pl-schedule-card__venue">Avea Pilates · Greenwich Village</div>
+    <div class="pl-schedule-card__row">
+      <span class="pl-schedule-card__rating">… 4.9 (250)</span>
+      <span class="pl-price"><span class="pl-price__amounts">
+        <span class="pl-price__current">$25</span>
+      </span></span>
+    </div>
+  </div>
+</div>
+```
 
 **`.pl-price`** (Schedule price, `1194:1153`) — `__amounts` wraps `__current` and
 optional `__original`. Add `.pl-price--offer` to turn the current price green

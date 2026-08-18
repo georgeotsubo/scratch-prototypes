@@ -487,8 +487,22 @@
     </section>
 
     <section id="c-schedulecard">
-      <h2>Schedule card <span class="count">.pl-schedule-card · 1194:1271</span></h2>
+      <h2>Schedule card <span class="count">.pl-schedule-card · 1194:1271 · 12925:349238</span></h2>
+      <p class="lede">Venue detail omits the studio line. Search schedule view
+        adds <code>__venue</code> (<code>bodySmall regular</code>) between the
+        title and the rating row — same card, location included because
+        results span multiple venues.</p>
       <div class="stage" style="max-width:321px">
+        <div class="pl-card pl-schedule-card" id="sc-search"><div class="pl-schedule-card__body">
+          <div class="pl-schedule-card__row"><span class="pl-schedule-card__meta">10:00 AM · Sue Dickey M.</span>
+            <span class="pl-schedule-card__duration">60 min</span></div>
+          <div class="pl-schedule-card__title">Sculpt &amp; Tone</div>
+          <div class="pl-schedule-card__venue">Avea Pilates · Greenwich Village</div>
+          <div class="pl-schedule-card__row">
+            <span class="pl-schedule-card__rating"><span class="pl-schedule-card__star"><svg class="pl-icon" aria-hidden="true"><use href="#pl-star-fill"></use></svg></span>4.9 (250)</span>
+            <span class="pl-price"><span class="pl-price__amounts">
+              <span class="pl-price__current">$25</span></span></span></div>
+        </div></div>
         <div class="pl-card pl-schedule-card" id="sc"><div class="pl-schedule-card__body">
           <div class="pl-schedule-card__row"><span class="pl-schedule-card__meta">12:00 PM · Sue Dickey M.</span>
             <span class="pl-schedule-card__duration">60 min</span></div>
@@ -1527,6 +1541,7 @@ Valid for all classes.</span>
     ['Search bar radius', 'searchbar', 'style:border-radius', '24px'],
     ['Class card height', 'cc', 'offsetHeight', 76], ['Class card booking window', 'cc-bw', 'offsetHeight', 102],
     ['Schedule card height', 'sc', 'offsetHeight', 92],
+    ['Schedule card search height', 'sc-search', 'offsetHeight', 110],
     ['Pack drop-in height', 'pack-dropin', 'offsetHeight', 74],
     ['Pack multi height', 'pack-multi', 'offsetHeight', 172],
     ['Review card height', 'rc', 'offsetHeight', 180],

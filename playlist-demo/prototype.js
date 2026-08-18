@@ -786,11 +786,47 @@
   // Once Foursquare is out of credits (429) or rejects the key, stop
   // retrying for this page load — fallback studios stay on screen.
   let foursquareUnavailable = !FOURSQUARE_KEY;
+  // Last search we painted (rounded lat|lng|query). Used so tab returns
+  // and identical searches do not fire another paid request.
+  let lastDisplayedPlacesKey = '';
+  const PLACES_CACHE_STORAGE_KEY = 'playlist-foursquare-cache';
+
+  function getPlacesCacheKey(lat, lng, query) {
+    return [
+      Number(lat).toFixed(3),
+      Number(lng).toFixed(3),
+      (query || '').trim().toLowerCase()
+    ].join('|');
+  }
+
+  function loadPlacesCache() {
+    try {
+      return JSON.parse(sessionStorage.getItem(PLACES_CACHE_STORAGE_KEY)) || {};
+    } catch (e) {
+      return {};
+    }
+  }
+
+  let placesCache = loadPlacesCache();
+
+  function savePlacesCache() {
+    try {
+      sessionStorage.setItem(PLACES_CACHE_STORAGE_KEY, JSON.stringify(placesCache));
+    } catch (error) {
+      console.warn('Could not save Foursquare cache:', error);
+    }
+  }
 
   async function fetchNearbyPlaces(lat, lng, query) {
     if (foursquareUnavailable) return [];
+    const cacheKey = getPlacesCacheKey(lat, lng, query);
+    if (placesCache[cacheKey] && placesCache[cacheKey].length) {
+      console.log('[Foursquare] CACHE HIT', { lat: lat, lng: lng, query: query || '' });
+      return placesCache[cacheKey];
+    }
     if (placesAbort) placesAbort.abort();
     placesAbort = new AbortController();
+    console.log('[Foursquare] API CALL', { lat: lat, lng: lng, query: query || '' });
     const params = new URLSearchParams({
       ll: `${lat},${lng}`,
       radius: 5000,
@@ -827,7 +863,7 @@
       }
       const data = await res.json();
       if (!data.results) return [];
-      return data.results.filter(p => p.latitude && p.longitude).map(p => ({
+      const places = data.results.filter(p => p.latitude && p.longitude).map(p => ({
         name: p.name,
         lat: p.latitude,
         lng: p.longitude,
@@ -837,6 +873,11 @@
         neighborhood: (p.location && p.location.neighborhood && p.location.neighborhood[0]) || '',
         distance: p.distance
       }));
+      if (places.length) {
+        placesCache[cacheKey] = places;
+        savePlacesCache();
+      }
+      return places;
     } catch (e) {
       if (e.name === 'AbortError') return null;
       console.warn('Foursquare error:', e);
@@ -882,13 +923,23 @@
     });
   }
 
-  // Fetch and display real places, replacing any placeholder pins
+  // Fetch and display real places, replacing any placeholder pins.
+  // Cache hits paint immediately — no fallback flash, no network.
   async function loadRealPlaces(lat, lng, search, screenId, locationLabel) {
+    const cacheKey = getPlacesCacheKey(lat, lng, search || '');
+    if (placesCache[cacheKey] && placesCache[cacheKey].length) {
+      console.log('[Foursquare] CACHE HIT', { lat: lat, lng: lng, query: search || '' });
+      displayPlaces(placesCache[cacheKey], screenId, search, locationLabel);
+      lastDisplayedPlacesKey = cacheKey;
+      return;
+    }
     displayPlaces(fallbackPlaces(lat, lng, search, locationLabel), screenId, search, locationLabel);
+    lastDisplayedPlacesKey = cacheKey;
+    console.log('[Foursquare] FALLBACK', { lat: lat, lng: lng, query: search || '' });
     const places = await fetchNearbyPlaces(lat, lng, search || '');
-    console.log('Foursquare returned', places ? places.length : 0, 'places', places && places[0]);
     if (!places || places.length === 0) return; // keep existing pins as fallback
     displayPlaces(places, screenId, search, locationLabel);
+    lastDisplayedPlacesKey = cacheKey;
   }
 
   // ========== PIN GENERATION (fallback/placeholder) ==========
@@ -1988,7 +2039,6 @@
     } else {
       loc = { lat: DEFAULT_LAT, lng: DEFAULT_LNG, zoom: DEFAULT_MAP_ZOOM };
     }
-    clearMarkers();
     // Pick icon: current location → circle dot, searched location → pin badge
     const isCurrentLoc = !locationTerm || locationTerm === 'Current location';
     setUserMarker(loc.lng, loc.lat, isCurrentLoc ? 'user' : 'location');
@@ -2010,7 +2060,28 @@
       }
     }
 
-    // Fallback studios first; Foursquare replaces them if it returns results
+    // Default map is demo pins only — opening the prototype or returning
+    // to the Search tab must not spend a Foursquare call.
+    if (currentScreen === 'screen-map-default') {
+      if (!currentPins.length) {
+        const places = fallbackPlaces(loc.lat, loc.lng, '', effectiveLocation || 'Nearby');
+        displayPlaces(places, currentScreen, '', effectiveLocation || 'Nearby');
+        lastDisplayedPlacesKey = getPlacesCacheKey(loc.lat, loc.lng, '');
+        console.log('[Foursquare] FALLBACK', { lat: loc.lat, lng: loc.lng, query: '' });
+      }
+      return;
+    }
+
+    const requestKey = getPlacesCacheKey(loc.lat, loc.lng, effectiveSearch);
+    if (lastDisplayedPlacesKey === requestKey && currentPins.length) {
+      console.log('[Foursquare] SKIP refetch — same search already on screen', {
+        lat: loc.lat,
+        lng: loc.lng,
+        query: effectiveSearch
+      });
+      return;
+    }
+
     loadRealPlaces(loc.lat, loc.lng, effectiveSearch, currentScreen, effectiveLocation || 'Nearby');
   }
 
@@ -2022,7 +2093,10 @@
     clearMarkers();
     ensureCurrentLocMarker(lng, lat);
 
-    loadRealPlaces(lat, lng, '', 'screen-map-default', locationLabel);
+    const places = fallbackPlaces(lat, lng, '', locationLabel);
+    displayPlaces(places, 'screen-map-default', '', locationLabel);
+    lastDisplayedPlacesKey = getPlacesCacheKey(lat, lng, '');
+    console.log('[Foursquare] FALLBACK', { lat: lat, lng: lng, query: '' });
   }
 
   // Show NYC default immediately so venue cards appear right away
@@ -4155,6 +4229,8 @@
     var mapDefault = document.getElementById('screen-map-default');
     var mapVisible = mapDefault && mapDefault.classList.contains('active');
     if (!MAP_SCREENS.includes(currentScreen) || !mapVisible) {
+      preserveMapView = true;
+      preserveMapContents = true;
       showScreen('screen-map-default');
     }
     if (typeof map !== 'undefined' && map && map.resize) {
