@@ -72,9 +72,28 @@
   }
 
   /* Desktop hover on a phone-frame prototype reads as a stuck hover. Keep
-     press (:active) so taps still dim; skip the hovered fill. */
-  .pl-btn--primary:hover {
-    --btn-bg: var(--pl-accent-default);
+     press (:active) so taps still dim; skip the hovered fill.
+     `:not(:active)` so these resets don't override the DS pressed state. */
+  .pl-btn--primary:hover:not(:active) { --btn-bg: var(--pl-accent-default); }
+  .pl-btn--secondary:hover:not(:active) { --btn-bg: var(--pl-button-secondary-bg-default); }
+  .pl-btn--neutral:hover:not(:active) { --btn-bg: var(--pl-button-neutral-bg-default); }
+  .pl-btn--neutral-solid:hover:not(:active) { --btn-bg: var(--pl-button-neutralsolid-bg-default); }
+  .pl-btn--outline:hover:not(:active) { --btn-bg: var(--pl-button-outline-bg-default); }
+  .pl-btn--destructive:hover:not(:active) { --btn-bg: var(--pl-button-destructive-bg-default); }
+  .pl-btn--inverse:hover:not(:active) { --btn-bg: var(--pl-button-inverse-bg-default); }
+  .pl-btn--ghost:hover:not(:active) { --btn-bg: var(--pl-button-ghost-bg-default); }
+
+  .pl-icon-btn--primary:hover:not(:active) { --ibtn-bg: var(--pl-accent-default); }
+  .pl-icon-btn--raised:hover:not(:active) { --ibtn-bg: var(--pl-button-neutralsolid-bg-default); }
+  .pl-icon-btn--ghost:hover:not(:active) { --ibtn-bg: var(--pl-button-ghost-bg-default); }
+  .pl-icon-btn--neutral:hover:not(:active) { --ibtn-bg: var(--pl-button-neutral-bg-default); }
+  .pl-icon-btn--inverse:hover:not(:active) { --ibtn-bg: var(--pl-button-inverse-bg-default); }
+
+  /* Reserved CTAs stay `.pl-btn--primary` in markup but paint inverse.
+     Don't let the primary hover reset turn Cancel red. */
+  .cd-booking-cta.is-reserved:hover:not(:active),
+  .cd-checkout-sheet .cd-checkout-cta.is-reserved:hover:not(:active) {
+    --btn-bg: var(--pl-button-inverse-bg-default);
   }
 
   /* Persistent map backdrop */
