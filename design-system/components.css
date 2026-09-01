@@ -9,6 +9,7 @@
      Text field    798:1537    (page "Form")
      Pasword field 800:31      (page "Form")
      Class card    1361:5034   Schedule card 1194:1271   Schedule price 1194:1153
+     Class pack    14262:67737 · 14262:67740
      Map card      1662:1623   See all       1662:1693   Venue card    1456:15761
      Booking card  12909:348896
      Icons         "Icons WIP" page (iOS set) — see icons/ and icons.js
@@ -27,7 +28,8 @@
 /* ===========================================================================
    PLButton — .pl-btn
    Variant × State × Radius × Size. States are driven by real CSS pseudo-classes,
-   so :hover / :active / :disabled map to Figma's Hovered / Pressed / Disabled.
+   so :active / :disabled map to Figma's Pressed / Disabled. Hover is omitted —
+   these components ship in phone-frame prototypes where :hover reads as stuck.
    Each variant only sets custom properties; the base rule consumes them.
    =========================================================================== */
 
@@ -121,7 +123,6 @@
   --btn-bg: var(--pl-accent-default);
   --btn-fg: var(--pl-text-onaccent);
 }
-.pl-btn--primary:hover { --btn-bg: var(--pl-accent-hover); }
 .pl-btn--primary:active { --btn-bg: var(--pl-accent-pressed); }
 .pl-btn--primary:disabled,
 .pl-btn--primary[aria-disabled="true"] {
@@ -133,7 +134,6 @@
   --btn-bg: var(--pl-button-secondary-bg-default);
   --btn-fg: var(--pl-button-secondary-fg-default);
 }
-.pl-btn--secondary:hover { --btn-bg: var(--pl-button-secondary-bg-hovered); }
 .pl-btn--secondary:active { --btn-bg: var(--pl-button-secondary-bg-pressed); }
 .pl-btn--secondary:disabled,
 .pl-btn--secondary[aria-disabled="true"] {
@@ -145,7 +145,6 @@
   --btn-bg: var(--pl-button-neutral-bg-default);
   --btn-fg: var(--pl-button-neutral-fg-default);
 }
-.pl-btn--neutral:hover { --btn-bg: var(--pl-button-neutral-bg-hovered); }
 .pl-btn--neutral:active { --btn-bg: var(--pl-button-neutral-bg-pressed); }
 .pl-btn--neutral:disabled,
 .pl-btn--neutral[aria-disabled="true"] {
@@ -157,7 +156,6 @@
   --btn-bg: var(--pl-button-neutralsolid-bg-default);
   --btn-fg: var(--pl-button-neutralsolid-fg-default);
 }
-.pl-btn--neutral-solid:hover { --btn-bg: var(--pl-button-neutralsolid-bg-hovered); }
 .pl-btn--neutral-solid:active { --btn-bg: var(--pl-button-neutralsolid-bg-pressed); }
 .pl-btn--neutral-solid:disabled,
 .pl-btn--neutral-solid[aria-disabled="true"] {
@@ -171,7 +169,6 @@
   --btn-border: var(--pl-border-default);
   --btn-border-width: var(--pl-border-semantic-100);
 }
-.pl-btn--outline:hover { --btn-bg: var(--pl-button-outline-bg-hovered); }
 .pl-btn--outline:active { --btn-bg: var(--pl-button-outline-bg-pressed); }
 .pl-btn--outline:disabled,
 .pl-btn--outline[aria-disabled="true"] {
@@ -184,10 +181,6 @@
   --btn-bg: var(--pl-button-destructive-bg-default);
   --btn-fg: var(--pl-button-destructive-fg-default);
 }
-/* NOTE: Figma's Destructive "Hovered" is bound to bg/default — identical to rest.
-   The button/destructive/bg/hovered token exists but is unused. Wired up here so
-   hover isn't dead; swap to bg/default if you need to match Figma exactly. */
-.pl-btn--destructive:hover { --btn-bg: var(--pl-button-destructive-bg-hovered); }
 .pl-btn--destructive:active { --btn-bg: var(--pl-button-destructive-bg-pressed); }
 .pl-btn--destructive:disabled,
 .pl-btn--destructive[aria-disabled="true"] {
@@ -200,7 +193,6 @@
   --btn-bg: var(--pl-button-inverse-bg-default);
   --btn-fg: var(--pl-button-inverse-fg-default);
 }
-.pl-btn--inverse:hover { --btn-bg: var(--pl-button-inverse-bg-hovered); }
 .pl-btn--inverse:active { --btn-bg: var(--pl-button-inverse-bg-pressed); }
 .pl-btn--inverse:disabled,
 .pl-btn--inverse[aria-disabled="true"] {
@@ -217,7 +209,6 @@
   --btn-border: transparent;
   --btn-border-width: var(--pl-border-semantic-100);
 }
-.pl-btn--ghost:hover { --btn-bg: var(--pl-button-ghost-bg-hovered); }
 .pl-btn--ghost:active { --btn-bg: var(--pl-button-ghost-bg-pressed); }
 .pl-btn--ghost:disabled,
 .pl-btn--ghost[aria-disabled="true"] {
@@ -310,7 +301,6 @@
   --ibtn-bg: var(--pl-accent-default);
   --ibtn-fg: var(--pl-text-onaccent);
 }
-.pl-icon-btn--primary:hover { --ibtn-bg: var(--pl-accent-hover); }
 .pl-icon-btn--primary:active { --ibtn-bg: var(--pl-accent-pressed); }
 .pl-icon-btn--primary:disabled,
 .pl-icon-btn--primary[aria-disabled="true"] {
@@ -323,7 +313,6 @@
   --ibtn-fg: var(--pl-button-neutral-fg-default);
   --ibtn-shadow: var(--pl-elevation-sm);
 }
-.pl-icon-btn--raised:hover { --ibtn-bg: var(--pl-button-neutralsolid-bg-hovered); }
 .pl-icon-btn--raised:active { --ibtn-bg: var(--pl-button-neutralsolid-bg-pressed); }
 .pl-icon-btn--raised:disabled,
 .pl-icon-btn--raised[aria-disabled="true"] {
@@ -335,7 +324,6 @@
   --ibtn-bg: var(--pl-button-ghost-bg-default);
   --ibtn-fg: var(--pl-button-ghost-fg-default);
 }
-.pl-icon-btn--ghost:hover { --ibtn-bg: var(--pl-button-ghost-bg-hovered); }
 /* Figma uses the neutral pressed/disabled backgrounds for ghost icon buttons. */
 .pl-icon-btn--ghost:active { --ibtn-bg: var(--pl-button-neutral-bg-pressed); }
 .pl-icon-btn--ghost:disabled,
@@ -348,7 +336,6 @@
   --ibtn-bg: var(--pl-button-neutral-bg-default);
   --ibtn-fg: var(--pl-button-neutral-fg-default);
 }
-.pl-icon-btn--neutral:hover { --ibtn-bg: var(--pl-button-neutral-bg-hovered); }
 .pl-icon-btn--neutral:active { --ibtn-bg: var(--pl-button-neutral-bg-pressed); }
 .pl-icon-btn--neutral:disabled,
 .pl-icon-btn--neutral[aria-disabled="true"] {
@@ -360,7 +347,6 @@
   --ibtn-bg: var(--pl-button-inverse-bg-default);
   --ibtn-fg: var(--pl-button-inverse-fg-default);
 }
-.pl-icon-btn--inverse:hover { --ibtn-bg: var(--pl-button-inverse-bg-hovered); }
 .pl-icon-btn--inverse:active { --ibtn-bg: var(--pl-button-inverse-bg-pressed); }
 .pl-icon-btn--inverse:disabled,
 .pl-icon-btn--inverse[aria-disabled="true"] {
@@ -828,26 +814,30 @@ button.pl-card { cursor: pointer; -webkit-tap-highlight-color: transparent; }
 /* Stars paint fixed baked-in hex colours (not currentColor) — dimmed cards fade them with opacity instead. */
 .pl-card.is-dimmed .pl-schedule-card__star > .pl-icon { opacity: 0.45; }
 
-/* --- Pack — .pl-pack (2491:8059) ------------------------------------------
+/* --- Pack — .pl-pack (14262:67737 drop-in · 14262:67740 Class pack card) --
 
    Drop-in / Pack picker used in the booking flow. Same .pl-card shell
    (surface/default, Card/default radius, card/padding-md, 1px border/default
    → 2px border/focus when .is-selected). Figma Type is structural, not a
-   modifier: Drop-in is title + qty/price; Pack adds the per-class badge
-   and a terms footer. Omit those children for Drop-in.
+   modifier: Drop-in is title + price on one row and qty underneath, no
+   footer (76). Pack adds an optional Save badge, a unit-price on the
+   meta row, and an icon-row terms footer (149).
 
    Figma binds padding-x to inline/md, which isn't in the token export —
    it renders 16px, same as space/md / card/padding-md, which .pl-card
-   already applies. Body stack gap is 4px (space/xxs); card↔footer gap
-   is space/sm. The Selected Pack footer is a bulleted list in Figma;
-   Default is stacked lines. That's text-formatting drift, not a state —
-   the CSS follows Default. */
+   already applies. Pack cards zero the shell's bottom padding so the
+   footer can own space/md (minus the inside stroke). Heights at 353
+   wide: drop-in 76, pack 149. */
 
 .pl-pack {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: var(--pl-space-sm);
+  overflow: hidden;
+}
+
+.pl-pack:has(.pl-pack__footer) {
+  padding-bottom: 0;
 }
 
 .pl-pack__body {
@@ -859,27 +849,41 @@ button.pl-card { cursor: pointer; -webkit-tap-highlight-color: transparent; }
   min-width: 0;
 }
 
+.pl-pack:has(.pl-pack__footer) .pl-pack__body {
+  padding-bottom: var(--pl-space-md);
+}
+
+.pl-pack__heading {
+  display: flex;
+  align-items: center;
+  gap: var(--pl-space-xs);
+  min-width: 0;
+}
+
+/* Save badge (_Class pack badge). Figma binds body/sm/semibold but the
+   instance renders 12/16 — caption/lg metrics — inside space/xxs padding
+   so the pill stays 24, level with the title. */
 .pl-pack__badge {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   flex: none;
-  padding: var(--pl-space-xxs) var(--pl-space-xs);
+  padding: var(--pl-space-xxs);
   background: var(--pl-surface-variant-green);
   border-radius: var(--pl-radius-semantic-sm);
   color: var(--pl-text-status-green);
-  font-family: var(--pl-label-md-semibold-font);
-  font-size: var(--pl-label-md-semibold-size);
-  line-height: var(--pl-label-md-semibold-lineheight);
-  font-weight: var(--pl-label-md-semibold-weight);
+  font-family: var(--pl-caption-lg-medium-font);
+  font-size: var(--pl-caption-lg-medium-size);
+  line-height: var(--pl-caption-lg-medium-lineheight);
+  font-weight: var(--pl-caption-lg-medium-weight);
   white-space: nowrap;
 }
 
 .pl-pack__title {
-  font-family: var(--pl-body-md-semibold-font);
-  font-size: var(--pl-body-md-semibold-size);
-  line-height: var(--pl-body-md-semibold-lineheight);
-  font-weight: var(--pl-body-md-semibold-weight);
+  font-family: var(--pl-title-md-medium-font);
+  font-size: var(--pl-title-md-medium-size);
+  line-height: var(--pl-title-md-medium-lineheight);
+  font-weight: var(--pl-title-md-medium-weight);
   color: var(--pl-text-primary);
   white-space: nowrap;
 }
@@ -889,39 +893,117 @@ button.pl-card { cursor: pointer; -webkit-tap-highlight-color: transparent; }
   align-items: center;
   justify-content: space-between;
   width: 100%;
-  gap: var(--pl-space-xs);
+  gap: var(--pl-space-md);
 }
 
-.pl-pack__qty {
-  font-family: var(--pl-body-sm-regular-font);
-  font-size: var(--pl-body-sm-regular-size);
-  line-height: var(--pl-body-sm-regular-lineheight);
-  font-weight: var(--pl-body-sm-regular-weight);
+/* __qty is the pre-13528:73777 name for the left-hand meta line. */
+.pl-pack__meta,
+.pl-pack__qty,
+.pl-pack__unit {
+  font-family: var(--pl-caption-lg-font);
+  font-size: var(--pl-caption-lg-size);
+  line-height: var(--pl-caption-lg-lineheight);
+  font-weight: var(--pl-caption-lg-weight);
   color: var(--pl-text-secondary);
+  white-space: nowrap;
+}
+
+.pl-pack__meta,
+.pl-pack__qty {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pl-pack__unit {
+  flex: none;
 }
 
 .pl-pack__price {
-  font-family: var(--pl-label-sm-semibold-font);
-  font-size: var(--pl-label-sm-semibold-size);
-  line-height: var(--pl-label-sm-semibold-lineheight);
-  font-weight: var(--pl-label-sm-semibold-weight);
+  flex: none;
+  font-family: var(--pl-body-md-medium-font);
+  font-size: var(--pl-body-md-medium-size);
+  line-height: var(--pl-body-md-medium-lineheight);
+  font-weight: var(--pl-body-md-medium-weight);
   color: var(--pl-text-primary);
   white-space: nowrap;
 }
 
-/* Top rule is drawn inside the 12px pad so the card stays 172 with or
-   without a 1px stroke — same absorb trick as .pl-card's selected border. */
 .pl-pack__footer {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: var(--pl-space-xs);
   box-sizing: border-box;
   width: 100%;
-  padding-top: calc(var(--pl-space-sm) - var(--pl-border-semantic-100));
+  padding-top: var(--pl-space-sm);
+  padding-bottom: calc(var(--pl-space-md) - var(--card-border-width));
   border-top: var(--pl-border-semantic-100) solid var(--pl-border-default);
-  color: var(--pl-text-secondary);
-  font-family: var(--pl-caption-sm-font);
-  font-size: var(--pl-caption-sm-size);
-  line-height: var(--pl-caption-sm-lineheight);
-  font-weight: var(--pl-caption-sm-weight);
-  white-space: pre-line;
+}
+
+.pl-pack__term {
+  display: flex;
+  align-items: center;
+  gap: var(--pl-space-xs);
+  width: 100%;
+  min-width: 0;
+  color: var(--pl-text-primary);
+}
+
+/* SF Symbol calendar / mappin.and.ellipse at symbol/size/xs (11). Figma's
+   text node is 14×11 — the 14px advance is the outer box; the glyph is 11. */
+.pl-pack__term-icon {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: var(--pl-symbol-size-xs);
+  color: var(--pl-text-primary);
+}
+
+.pl-pack__term-icon > .pl-icon {
+  display: block;
+  width: var(--pl-symbol-size-xs);
+  height: var(--pl-symbol-size-xs);
+}
+
+.pl-pack__term-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--pl-body-sm-regular-font);
+  font-size: var(--pl-body-sm-regular-size);
+  line-height: var(--pl-body-sm-regular-lineheight);
+  font-weight: var(--pl-body-sm-regular-weight);
+}
+
+.pl-pack__more {
+  display: flex;
+  align-items: center;
+  gap: var(--pl-space-xxs);
+  flex: none;
+  color: var(--pl-text-primary);
+}
+
+.pl-pack__more-plus {
+  font-family: var(--pl-body-sm-regular-font);
+  font-size: var(--pl-body-sm-regular-size);
+  line-height: var(--pl-body-sm-regular-lineheight);
+  font-weight: var(--pl-body-sm-regular-weight);
+}
+
+.pl-pack__more-link {
+  font-family: var(--pl-label-sm-medium-font);
+  font-size: var(--pl-label-sm-medium-size);
+  line-height: var(--pl-label-sm-medium-lineheight);
+  font-weight: var(--pl-label-sm-medium-weight);
+  color: var(--pl-button-ghost-fg-default);
+  text-decoration: underline;
+  text-underline-position: from-font;
+  white-space: nowrap;
 }
 
 /* --- Map card — .pl-map-card (1662:1623) ---------------------------------- */

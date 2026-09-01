@@ -4183,6 +4183,11 @@
     if (panel) {
       panel.addEventListener('click', function(e) {
         if (wasDragging) return;
+        if (e.target.closest('.pl-pack__more')) {
+          e.preventDefault();
+          e.stopPropagation();
+          return;
+        }
         var card = e.target.closest('.pl-pack');
         if (!card) return;
         var id = card.getAttribute('data-option-id');
@@ -5666,8 +5671,11 @@
       if (!key) return pack;
       pack.venueKey = key;
       pack.purchasedAt = pack.purchasedAt || Date.now();
-      pack.expiryMonths = pack.expiryMonths || 6;
-      pack.expiresAt = pack.expiresAt || cdExpiryTimestamp({ months: pack.expiryMonths });
+      if (!pack.expiresAt) {
+        if (pack.expiryDays) pack.expiresAt = cdExpiryTimestamp({ days: pack.expiryDays });
+        else pack.expiresAt = cdExpiryTimestamp({ months: pack.expiryMonths || 6 });
+      }
+      if (!pack.expiryMonths && !pack.expiryDays) pack.expiryMonths = 6;
       pack.instanceId = pack.instanceId || ('pack-' + pack.purchasedAt + '-' + Math.random().toString(36).slice(2, 7));
       var list = cdGetVenuePackList(key);
       list.push(pack);
@@ -5804,7 +5812,8 @@
           title: purchased.optionTitle,
           classes: classes,
           remaining: Math.max(0, classes - 1),
-          expiryMonths: purchased.expiryMonths || 6,
+          expiryDays: purchased.expiryDays,
+          expiryMonths: purchased.expiryMonths,
           optionId: purchased.optionId
         });
       }
@@ -5822,7 +5831,8 @@
           title: reservation.optionTitle,
           classes: classes,
           remaining: 1,
-          expiryMonths: reservation.expiryMonths || 6,
+          expiryDays: reservation.expiryDays,
+          expiryMonths: reservation.expiryMonths,
           optionId: reservation.optionId,
           instanceId: reservation.packInstanceId
         });
@@ -5844,7 +5854,8 @@
           title: purchased.optionTitle,
           classes: purchased.classes || 10,
           remaining: purchased.classes || 10,
-          expiryMonths: purchased.expiryMonths || 6,
+          expiryDays: purchased.expiryDays,
+          expiryMonths: purchased.expiryMonths,
           optionId: purchased.optionId
         });
       } else {
@@ -5945,8 +5956,8 @@
         optionType: isRedeem ? 'pack' : (opt ? opt.type : 'dropin'),
         optionTitle: isRedeem ? redeemPack.title : (opt ? opt.title : ''),
         classes: isRedeem ? redeemPack.classes : (opt && opt.classes ? opt.classes : null),
-        expiryMonths: isRedeem ? (redeemPack.expiryMonths || 6) : (opt && opt.expiryMonths ? opt.expiryMonths : 6),
-        expiryDays: isRedeem ? null : (opt && opt.expiryDays ? opt.expiryDays : 30),
+        expiryMonths: isRedeem ? redeemPack.expiryMonths : (opt && opt.expiryMonths ? opt.expiryMonths : null),
+        expiryDays: isRedeem ? redeemPack.expiryDays : (opt && opt.expiryDays ? opt.expiryDays : 30),
         packInstanceId: isRedeem ? redeemPack.instanceId : null
       };
     }
@@ -5970,16 +5981,13 @@
         : (strikePriceEl ? strikePriceEl.textContent.trim() : '$40.00');
       var options = [];
       if (cdCurrentVenueHasIntroOffer()) {
-        options.push({ id: 'trial', section: 'dropins', type: 'dropin', title: 'New Member Trial Class', qty: '1 class', price: '$25.00', expiryDays: 30 });
+        options.push({ id: 'trial', section: 'dropins', type: 'dropin', title: 'New Member Trial Class', qty: '1 class', price: '$25.00', expiryDays: 30, venue: venue });
       }
       options.push(
-        { id: 'dropin', section: 'dropins', type: 'dropin', title: 'Drop-in Class (inc. Mat + Towel)', qty: '1 class', price: dropinPrice, expiryDays: 30 },
-        { id: 'pack5', section: 'packs', type: 'pack', badge: '$40 / class', title: '5 class card (mat + towel included)', qty: '5 classes', price: '$200.00', classes: 5, expiryMonths: 6,
-          footerLines: ['Expires in 6 months.', 'Eligible at ' + venue + '.', 'Valid for all classes.'] },
-        { id: 'pack10', section: 'packs', type: 'pack', badge: '$35 / class', title: '10 class card (mat + towel included)', qty: '10 classes', price: '$350.00', classes: 10, expiryMonths: 6,
-          footerLines: ['Expires in 6 months.', 'Eligible at ' + venue + '.', 'Valid for all classes.'] },
-        { id: 'pack20', section: 'packs', type: 'pack', badge: '$27.25 / class', title: '20 class card (mat + towel included)', qty: '20 classes', price: '$545.00', classes: 20, expiryMonths: 6,
-          footerLines: ['Expires in 6 months.', 'Eligible at ' + venue + '.', 'Valid for all classes.'] }
+        { id: 'dropin', section: 'dropins', type: 'dropin', title: 'Drop-in', qty: '1 class', price: dropinPrice, expiryDays: 30, venue: venue },
+        { id: 'pack5', section: 'packs', type: 'pack', title: '5 class pack', qty: '5 classes', price: '$200.00', unitPrice: '$40/class', classes: 5, expiryDays: 60, venue: venue, validFor: 'Valid for YS - Yoga Sculpt 45 Minutes', moreCount: 2 },
+        { id: 'pack10', section: 'packs', type: 'pack', badge: 'Save 12%', title: '10 class pack', qty: '10 classes', price: '$350.00', unitPrice: '$35/class', classes: 10, expiryDays: 90, venue: venue, validFor: 'Valid for all classes', moreCount: 2 },
+        { id: 'pack20', section: 'packs', type: 'pack', badge: 'Save 32%', title: '20 class pack', qty: '20 classes', price: '$545.00', unitPrice: '$27.25/class', classes: 20, expiryDays: 180, venue: venue, validFor: 'Valid for all classes', moreCount: 2 }
       );
       return options;
     }
@@ -6000,27 +6008,63 @@
       return cdDefaultCheckoutOptionId();
     }
 
+    function cdPackDisplayPrice(price) {
+      return String(price || '').replace(/\.00$/, '');
+    }
+
+    function cdPackMetaLine(opt) {
+      if (opt.meta) return opt.meta;
+      if (opt.type === 'dropin' || opt.section === 'dropins') return opt.qty || '';
+      var expiry = opt.expiryDays
+        ? 'Expires after ' + opt.expiryDays + ' days'
+        : (opt.expiryMonths ? 'Expires after ' + opt.expiryMonths + ' months' : '');
+      return expiry ? opt.qty + ' ·\u00a0' + expiry : (opt.qty || '');
+    }
+
+    function cdPackTermHtml(icon, text, moreCount) {
+      var more = moreCount
+        ? '<span class="pl-pack__more">'
+          + '<span class="pl-pack__more-plus">+</span>'
+          + '<span class="pl-pack__more-link">' + moreCount + ' more</span>'
+          + '</span>'
+        : '';
+      return '<span class="pl-pack__term">'
+        + '<span class="pl-pack__term-icon" aria-hidden="true">'
+        + '<svg class="pl-icon"><use href="#pl-' + icon + '"></use></svg></span>'
+        + '<span class="pl-pack__term-text">' + text + '</span>'
+        + more
+        + '</span>';
+    }
+
+    function cdPackFooterHtml(opt) {
+      if (!opt || opt.type === 'dropin' || opt.section === 'dropins') return '';
+      var venue = opt.venue || 'ID Hot Yoga - Tribeca';
+      var validFor = opt.validFor || 'Valid for all classes';
+      var more = opt.moreCount != null ? opt.moreCount : 2;
+      return '<span class="pl-pack__footer">'
+        + cdPackTermHtml('calendar-small', validFor)
+        + cdPackTermHtml('location-pin-small', 'Eligible at ' + venue, more)
+        + '</span>';
+    }
+
     function cdRenderOptionCard(opt, selectedId) {
       var selected = opt.id === (selectedId !== undefined ? selectedId : cdCheckoutPendingId);
       var cls = 'pl-card pl-pack' + (selected ? ' is-selected' : '');
-      if (opt.type === 'pack') {
-        var footerHtml = (opt.footerLines || []).map(function(line) {
-          return '<li>' + line + '</li>';
-        }).join('');
-        return '<button type="button" class="' + cls + '" data-option-id="' + opt.id + '">'
-          + '<span class="pl-pack__body">'
-          + '<span class="pl-pack__badge">' + opt.badge + '</span>'
-          + '<span class="pl-pack__title">' + opt.title + '</span>'
-          + '<span class="pl-pack__row"><span class="pl-pack__qty">' + opt.qty + '</span>'
-          + '<span class="pl-pack__price">' + opt.price + '</span></span></span>'
-          + '<span class="pl-pack__footer"><ul class="cd-pack-footer-list">' + footerHtml + '</ul></span>'
-          + '</button>';
-      }
+      var badge = opt.badge
+        ? '<span class="pl-pack__badge">' + opt.badge + '</span>'
+        : '';
+      var unit = opt.unitPrice
+        ? '<span class="pl-pack__unit">' + opt.unitPrice + '</span>'
+        : '';
       return '<button type="button" class="' + cls + '" data-option-id="' + opt.id + '">'
         + '<span class="pl-pack__body">'
+        + '<span class="pl-pack__row"><span class="pl-pack__heading">'
         + '<span class="pl-pack__title">' + opt.title + '</span>'
-        + '<span class="pl-pack__row"><span class="pl-pack__qty">' + opt.qty + '</span>'
-        + '<span class="pl-pack__price">' + opt.price + '</span></span></span>'
+        + badge
+        + '</span><span class="pl-pack__price">' + cdPackDisplayPrice(opt.price) + '</span></span>'
+        + '<span class="pl-pack__row"><span class="pl-pack__meta">' + cdPackMetaLine(opt) + '</span>'
+        + unit + '</span></span>'
+        + cdPackFooterHtml(opt)
         + '</button>';
     }
 
@@ -6064,7 +6108,9 @@
       var refundEl = document.getElementById('cd-cancel-refund-amount');
       if (opt.type === 'pack') {
         var remaining = Math.max(0, opt.classes - 1);
-        var expiryStr = cdFormatPackExpiry(opt.expiryMonths || 6);
+        var expiryStr = opt.expiryDays
+          ? 'Expires ' + cdFormatExpiryInDays(opt.expiryDays)
+          : cdFormatPackExpiry(opt.expiryMonths || 6);
         paymentBlock.innerHTML = ''
           + '<div class="pl-checkout-card__product pl-checkout-card__product--pack" id="cd-checkout-product">' + opt.title + '</div>'
           + '<div class="pl-checkout-card__row pl-checkout-card__row--pack" id="cd-checkout-payment-row">'
@@ -6107,7 +6153,9 @@
         if (successClassEl) successClassEl.textContent = opt ? opt.title : '';
         if (successTimeEl) {
           successTimeEl.textContent = isPack
-            ? 'Expires on ' + cdFormatExpiryDate((opt && opt.expiryMonths) || 6)
+            ? 'Expires on ' + (opt && opt.expiryDays
+              ? cdFormatExpiryInDays(opt.expiryDays)
+              : cdFormatExpiryDate((opt && opt.expiryMonths) || 6))
             : 'Expires on ' + cdFormatExpiryInDays((opt && opt.expiryDays) || 30);
         }
         if (successVenueEl) successVenueEl.textContent = cdVenueLocationLine(pin);
@@ -6152,7 +6200,9 @@
       var modal = document.getElementById('cd-cancel-modal');
       if (modal) modal.classList.toggle('pl-cancel-modal--pack', isPack);
       var expiryDate = isPack
-        ? cdFormatExpiryDate((r && r.expiryMonths) || 6)
+        ? (r && r.expiryDays
+          ? cdFormatExpiryInDays(r.expiryDays)
+          : cdFormatExpiryDate((r && r.expiryMonths) || 6))
         : cdFormatExpiryInDays((r && r.expiryDays) || 30);
       var policyEl = document.getElementById('cd-cancel-policy-text');
       if (policyEl) {
@@ -6367,6 +6417,11 @@
     }
     if (cdCheckoutOptionsScroll) {
       cdCheckoutOptionsScroll.addEventListener('click', function(e) {
+        if (e.target.closest('.pl-pack__more')) {
+          e.preventDefault();
+          e.stopPropagation();
+          return;
+        }
         var card = e.target.closest('[data-option-id]');
         if (!card) return;
         cdSelectCheckoutOption(card.dataset.optionId);
