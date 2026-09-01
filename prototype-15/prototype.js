@@ -6300,6 +6300,9 @@
       if (cdCancelConfirmEl) cdCancelConfirmEl.setAttribute('aria-hidden', 'false');
     }
 
+    var cdOptionsTabScrollLock = '';
+    var cdOptionsTabScrollLockGen = 0;
+
     function cdSetOptionsTab(section) {
       if (!cdCheckoutOptionsTabs) return;
       cdCheckoutOptionsTabs.querySelectorAll('.pl-tab-nav__item').forEach(function(tab) {
@@ -6309,15 +6312,37 @@
       });
     }
 
+    function cdSyncOptionsTabFromScroll() {
+      if (cdOptionsTabScrollLock || !cdCheckoutOptionsScroll) return;
+      var packs = document.getElementById('cd-options-section-packs');
+      if (!packs) return;
+      var scrollRect = cdCheckoutOptionsScroll.getBoundingClientRect();
+      var packsTop = packs.getBoundingClientRect().top;
+      var probe = scrollRect.top + Math.min(100, Math.max(40, scrollRect.height * 0.18));
+      cdSetOptionsTab(packsTop <= probe ? 'packs' : 'dropins');
+    }
+
     function cdScrollToOptionsSection(section) {
       var target = document.getElementById('cd-options-section-' + section);
       if (target && cdCheckoutOptionsScroll) {
         var top = target.getBoundingClientRect().top
           - cdCheckoutOptionsScroll.getBoundingClientRect().top
           + cdCheckoutOptionsScroll.scrollTop - 8;
+        var gen = ++cdOptionsTabScrollLockGen;
+        cdOptionsTabScrollLock = section;
+        cdSetOptionsTab(section);
         cdCheckoutOptionsScroll.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
+        var unlock = function() {
+          if (gen !== cdOptionsTabScrollLockGen) return;
+          cdCheckoutOptionsScroll.removeEventListener('scrollend', unlock);
+          cdOptionsTabScrollLock = '';
+          cdSyncOptionsTabFromScroll();
+        };
+        cdCheckoutOptionsScroll.addEventListener('scrollend', unlock);
+        setTimeout(unlock, 450);
+      } else {
+        cdSetOptionsTab(section);
       }
-      cdSetOptionsTab(section);
     }
 
     function cdPrepareCheckoutOptions() {
@@ -6422,18 +6447,19 @@
           e.stopPropagation();
           return;
         }
+        // Drag-scroll on a pack card still fires click on mouseup.
+        if (wasDragging) {
+          e.preventDefault();
+          return;
+        }
         var card = e.target.closest('[data-option-id]');
         if (!card) return;
         cdSelectCheckoutOption(card.dataset.optionId);
       });
-      // Keep the sticky tab indicator in sync while scrolling long lists.
-      cdCheckoutOptionsScroll.addEventListener('scroll', function() {
-        var packsSection = document.getElementById('cd-options-section-packs');
-        if (!packsSection) return;
-        var scrollTop = cdCheckoutOptionsScroll.scrollTop;
-        var packsTop = packsSection.offsetTop - 24;
-        cdSetOptionsTab(scrollTop >= packsTop ? 'packs' : 'dropins');
-      }, { passive: true });
+      // Keep the sticky tab indicator in sync while scrolling. Use a viewport
+      // probe — offsetTop includes the pane header, so scrollTop never
+      // reached it after drop-in cards got shorter.
+      cdCheckoutOptionsScroll.addEventListener('scroll', cdSyncOptionsTabFromScroll, { passive: true });
     }
     function showCancelToast() {
       if (!cdCancelToastEl) return;
