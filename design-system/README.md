@@ -112,9 +112,9 @@ chrome --headless --allow-file-access-from-files --virtual-time-budget=6000 \
   --dump-dom file://$PWD/index.html | sed -n '/id="checks"/,/<\/tbody>/p'
 ```
 
-Interactive states use real pseudo-classes, so Figma's Hovered / Pressed / Disabled
-map to `:hover` / `:active` / `:disabled`. Each variant only sets custom properties;
-the base rule consumes them.
+Interactive states use real pseudo-classes, so Figma's Pressed / Disabled map to
+`:active` / `:disabled`. Hover is omitted — phone-frame prototypes treat `:hover`
+as a stuck fill. Each variant only sets custom properties; the base rule consumes them.
 
 ### `.pl-btn` — PLButton (`1560:1318`)
 
@@ -306,45 +306,66 @@ optional `__original`. Add `.pl-price--offer` to turn the current price green
 (`text/price/discount`) and strike through the original. `.is-disabled`, or an
 ancestor `.is-dimmed`, greys the whole thing.
 
-**`.pl-pack`** (`2491:8059`) — Drop-in / Pack picker for the booking flow. Same
-`.pl-card` shell; selected is `.is-selected`. Drop-in is title + qty/price;
-Pack adds the per-class badge and a terms footer — omit those children for
-Drop-in.
+**`.pl-pack`** (`14262:67737` drop-in · `14262:67740` pack) — Drop-in / Pack
+picker for the booking flow. Same `.pl-card` shell; selected is `.is-selected`.
+Title and price share the top row. Drop-in is qty only — no footer. Pack adds
+a unit price, optional green Save badge, and an icon-row terms footer.
 
 ```html
 <button class="pl-card pl-pack">
   <span class="pl-pack__body">
-    <span class="pl-pack__title">Nomad Drop-in Class (inc. Mat + Towel)</span>
     <span class="pl-pack__row">
-      <span class="pl-pack__qty">1 class</span>
-      <span class="pl-pack__price">$40.00</span>
+      <span class="pl-pack__heading">
+        <span class="pl-pack__title">Drop-in</span>
+      </span>
+      <span class="pl-pack__price">$40</span>
+    </span>
+    <span class="pl-pack__row">
+      <span class="pl-pack__meta">1 class</span>
     </span>
   </span>
 </button>
 
 <button class="pl-card pl-pack is-selected">
   <span class="pl-pack__body">
-    <span class="pl-pack__badge">$27.25 / class</span>
-    <span class="pl-pack__title">Nomad 5 class card (mat + towel included)</span>
     <span class="pl-pack__row">
-      <span class="pl-pack__qty">5 classes</span>
-      <span class="pl-pack__price">$200.00</span>
+      <span class="pl-pack__heading">
+        <span class="pl-pack__title">10 class pack</span>
+        <span class="pl-pack__badge">Save 12%</span>
+      </span>
+      <span class="pl-pack__price">$350</span>
+    </span>
+    <span class="pl-pack__row">
+      <span class="pl-pack__meta">10 classes · Expires after 90 days</span>
+      <span class="pl-pack__unit">$35/class</span>
     </span>
   </span>
-  <span class="pl-pack__footer">Expires 6 months after first use.
-Eligible at ID Hot Yoga - Chelsea.
-Valid for all classes.</span>
+  <span class="pl-pack__footer">
+    <span class="pl-pack__term">
+      <span class="pl-pack__term-icon" aria-hidden="true"><svg class="pl-icon"><use href="#pl-calendar-small"></use></svg></span>
+      <span class="pl-pack__term-text">Valid for all classes</span>
+    </span>
+    <span class="pl-pack__term">
+      <span class="pl-pack__term-icon" aria-hidden="true"><svg class="pl-icon"><use href="#pl-location-pin-small"></use></svg></span>
+      <span class="pl-pack__term-text">Eligible at ID Hot Yoga - Tribeca</span>
+      <span class="pl-pack__more">
+        <span class="pl-pack__more-plus">+</span>
+        <span class="pl-pack__more-link">2 more</span>
+      </span>
+    </span>
+  </span>
 </button>
 ```
 
-Title is `bodyMedium semiBold`, qty is `bodySmall regular` / `text/secondary`,
-price is `buttonLabelSmall semibold`. The badge is `label/md/semibold` on
-`surface/variant/green` with `text/status/green` — `Radius/Semantic/sm`,
-`space/xxs` × `space/xs` padding. Footer is `captionSecondary`. Figma binds
+Title is `title/md/medium` (`role/listTitle`), meta and unit price are
+`caption/lg` / `text/secondary`, price is `body/md/medium`. The Save badge is
+`caption/lg/medium` on `surface/variant/green` with `text/status/green` —
+`Radius/Semantic/sm`, `space/xxs` padding. Footer terms are `body/sm/regular`
+/ `text/primary` with `#pl-calendar-small` and `#pl-location-pin-small` at
+`symbol/size/xs` (11px) in a 14×11 slot. `+ N more` is `label/sm/medium`
+underlined. Heights at 353 wide: drop-in **76**, pack **149**. Figma binds
 padding-x to `inline/md` (not in the export; renders 16, same as
-`card/padding-md`). The Selected Pack footer is a bulleted list in Figma;
-Default is stacked lines — that's text-formatting drift, so the CSS follows
-Default.
+`card/padding-md`).
 
 **`.pl-checkout-card`** (`2511:10595` · `2510:10502`) — booking checkout summary
 with class details, a payment line, and an optional green promo row. Not a
@@ -932,9 +953,8 @@ Found while building the components:
   this. (`button/icon/neutral/*` is also a *remote* library variable, so it never reaches
   the token export.)
 - **PLButton Destructive has no hover.** Its `Hovered` variant is bound to
-  `button/destructive/bg/default` — visually identical to rest. The
-  `button/destructive/bg/hovered` token exists but nothing uses it. `components.css`
-  wires the hover token up so the state isn't dead; swap it back to match Figma exactly.
+  `button/destructive/bg/default` — visually identical to rest. Button hover is
+  omitted in CSS anyway.
 - **PLButton Destructive Disabled keeps `fg/default`**, so the label doesn't dim.
   `button/destructive/fg/disabled` exists and is unused.
 - **PLButton Ghost's border points at a variable that isn't in this file** —

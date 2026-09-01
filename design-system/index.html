@@ -9,7 +9,7 @@
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="tokens.css">
 <link rel="stylesheet" href="typography.css">
-<link rel="stylesheet" href="components.css?v=20260818bookingscroll">
+<link rel="stylesheet" href="components.css?v=20260901btn">
 <style>
   * { box-sizing: border-box; }
   html { scroll-behavior: smooth; }
@@ -524,56 +524,98 @@
     </section>
 
     <section id="c-pack">
-      <h2>Pack <span class="count">.pl-pack · 2491:8059</span></h2>
+      <h2>Pack <span class="count">.pl-pack · 14262:67737 / 14262:67740</span></h2>
       <p class="lede">Drop-in / Pack picker for the booking flow. Built on
         <code>.pl-card</code> — selected is <code>.is-selected</code>.
-        Drop-in is title + qty/price; Pack adds the per-class badge
-        (<code>label/md/semibold</code> on <code>surface/variant/green</code>)
-        and a <code>caption/sm</code> terms footer. Omit those children for Drop-in.</p>
-      <div class="stage" style="max-width:351px">
+        Title and price share the top row. Drop-in is qty only (no footer).
+        Pack adds a unit price, optional green Save badge
+        (<code>caption/lg/medium</code> on <code>surface/variant/green</code>),
+        and an icon-row terms footer with an underlined
+        <code>+ N more</code> locations link
+        (<code>#pl-calendar-small</code>, <code>#pl-location-pin-small</code>).</p>
+      <div class="stage" style="max-width:353px">
         <button class="pl-card pl-pack" id="pack-dropin" type="button">
           <span class="pl-pack__body">
-            <span class="pl-pack__title">Nomad Drop-in Class (inc. Mat + Towel)</span>
             <span class="pl-pack__row">
-              <span class="pl-pack__qty">1 class</span>
-              <span class="pl-pack__price">$40.00</span>
+              <span class="pl-pack__heading">
+                <span class="pl-pack__title">Drop-in</span>
+              </span>
+              <span class="pl-pack__price">$40</span>
+            </span>
+            <span class="pl-pack__row">
+              <span class="pl-pack__meta">1 class</span>
             </span>
           </span>
         </button>
         <button class="pl-card pl-pack is-selected" type="button">
           <span class="pl-pack__body">
-            <span class="pl-pack__title">Nomad Drop-in Class (inc. Mat + Towel)</span>
             <span class="pl-pack__row">
-              <span class="pl-pack__qty">1 class</span>
-              <span class="pl-pack__price">$40.00</span>
+              <span class="pl-pack__heading">
+                <span class="pl-pack__title">Drop-in</span>
+              </span>
+              <span class="pl-pack__price">$40</span>
+            </span>
+            <span class="pl-pack__row">
+              <span class="pl-pack__meta">1 class</span>
             </span>
           </span>
         </button>
         <button class="pl-card pl-pack" id="pack-multi" type="button">
           <span class="pl-pack__body">
-            <span class="pl-pack__badge">$27.25 / class</span>
-            <span class="pl-pack__title">Nomad 5 class card (mat + towel included)</span>
             <span class="pl-pack__row">
-              <span class="pl-pack__qty">5 classes</span>
-              <span class="pl-pack__price">$200.00</span>
+              <span class="pl-pack__heading">
+                <span class="pl-pack__title">5 class pack</span>
+              </span>
+              <span class="pl-pack__price">$200</span>
+            </span>
+            <span class="pl-pack__row">
+              <span class="pl-pack__meta">5 classes ·&nbsp;Expires after 60 days</span>
+              <span class="pl-pack__unit">$40/class</span>
             </span>
           </span>
-          <span class="pl-pack__footer">Expires 6 months after first use.
-Eligible at ID Hot Yoga - Chelsea.
-Valid for all classes.</span>
+          <span class="pl-pack__footer">
+            <span class="pl-pack__term">
+              <span class="pl-pack__term-icon" aria-hidden="true"><svg class="pl-icon"><use href="#pl-calendar-small"></use></svg></span>
+              <span class="pl-pack__term-text">Valid for YS - Yoga Sculpt 45 Minutes</span>
+            </span>
+            <span class="pl-pack__term">
+              <span class="pl-pack__term-icon" aria-hidden="true"><svg class="pl-icon"><use href="#pl-location-pin-small"></use></svg></span>
+              <span class="pl-pack__term-text">Eligible at ID Hot Yoga - Tribeca</span>
+              <span class="pl-pack__more">
+                <span class="pl-pack__more-plus">+</span>
+                <span class="pl-pack__more-link">2 more</span>
+              </span>
+            </span>
+          </span>
         </button>
         <button class="pl-card pl-pack is-selected" type="button">
           <span class="pl-pack__body">
-            <span class="pl-pack__badge">$27.25 / class</span>
-            <span class="pl-pack__title">Nomad 5 class card (mat + towel included)</span>
             <span class="pl-pack__row">
-              <span class="pl-pack__qty">5 classes</span>
-              <span class="pl-pack__price">$200.00</span>
+              <span class="pl-pack__heading">
+                <span class="pl-pack__title">10 class pack</span>
+                <span class="pl-pack__badge">Save 12%</span>
+              </span>
+              <span class="pl-pack__price">$350</span>
+            </span>
+            <span class="pl-pack__row">
+              <span class="pl-pack__meta">10 classes ·&nbsp;Expires after 90 days</span>
+              <span class="pl-pack__unit">$35/class</span>
             </span>
           </span>
-          <span class="pl-pack__footer">Expires 6 months after first use.
-Eligible at ID Hot Yoga - Chelsea.
-Valid for all classes.</span>
+          <span class="pl-pack__footer">
+            <span class="pl-pack__term">
+              <span class="pl-pack__term-icon" aria-hidden="true"><svg class="pl-icon"><use href="#pl-calendar-small"></use></svg></span>
+              <span class="pl-pack__term-text">Valid for all classes</span>
+            </span>
+            <span class="pl-pack__term">
+              <span class="pl-pack__term-icon" aria-hidden="true"><svg class="pl-icon"><use href="#pl-location-pin-small"></use></svg></span>
+              <span class="pl-pack__term-text">Eligible at ID Hot Yoga - Tribeca</span>
+              <span class="pl-pack__more">
+                <span class="pl-pack__more-plus">+</span>
+                <span class="pl-pack__more-link">2 more</span>
+              </span>
+            </span>
+          </span>
         </button>
       </div>
     </section>
@@ -1542,8 +1584,8 @@ Valid for all classes.</span>
     ['Class card height', 'cc', 'offsetHeight', 76], ['Class card booking window', 'cc-bw', 'offsetHeight', 102],
     ['Schedule card height', 'sc', 'offsetHeight', 92],
     ['Schedule card search height', 'sc-search', 'offsetHeight', 110],
-    ['Pack drop-in height', 'pack-dropin', 'offsetHeight', 74],
-    ['Pack multi height', 'pack-multi', 'offsetHeight', 172],
+    ['Pack drop-in height', 'pack-dropin', 'offsetHeight', 76],
+    ['Pack multi height', 'pack-multi', 'offsetHeight', 149],
     ['Review card height', 'rc', 'offsetHeight', 180],
     ['Ratings summary height', 'rs-rated', 'offsetHeight', 68],
     ['Rating distribution height', 'rd-rated', 'offsetHeight', 144],

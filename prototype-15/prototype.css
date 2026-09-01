@@ -71,12 +71,6 @@
     }
   }
 
-  /* Desktop hover on a phone-frame prototype reads as a stuck hover. Keep
-     press (:active) so taps still dim; skip the hovered fill. */
-  .pl-btn--primary:hover {
-    --btn-bg: var(--pl-accent-default);
-  }
-
   /* Persistent map backdrop */
   #live-map {
     position: absolute;
@@ -3760,14 +3754,6 @@
     text-align: left;
     cursor: pointer;
     -webkit-tap-highlight-color: transparent;
-  }
-  .cd-pack-footer-list {
-    margin: 0;
-    padding-left: 18px;
-    list-style: disc;
-  }
-  .cd-pack-footer-list li + li {
-    margin-top: 0;
   }
   .cd-checkout-options-done {
     position: absolute;
